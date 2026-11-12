@@ -1,0 +1,23 @@
+# docker compose up --build   ->  http://localhost:8000
+services:
+  linkiq:
+    build: .
+    ports: ["8000:8000"]
+    volumes: ["linkiq-data:/data"]
+    environment:
+      KAMSTRUP_MODE: sim          # "live" = endpoint-ul real Kamstrup
+      SIM_SPEED: "4"
+      # Cu KAMSTRUP_MODE=live, cuplarea telefoanelor devine obligatorie (scripts/pairing.py)
+    restart: unless-stopped
+
+  # HTTPS (obligatoriu pe telefon pentru GPS și instalarea PWA). Caddy = Apache-2.0,
+  # certificat Let's Encrypt automat. Decomentează și pune domeniul real.
+  # caddy:
+  #   image: caddy:2
+  #   ports: ["80:80", "443:443"]
+  #   command: caddy reverse-proxy --from linkiq.exemplu.dk --to linkiq:8000
+  #   volumes: ["caddy-data:/data"]
+
+volumes:
+  linkiq-data:
+  # caddy-data:
