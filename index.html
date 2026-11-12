@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b2a3c">
+<title>LinkIQ Field Assistant</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <h1>LinkIQ Field Assistant <small id="ver"></small></h1>
+  <button id="lang-btn" class="lang" type="button" aria-label="Sprog / Limbă">RO</button>
+  <span id="net" class="pill" hidden>fără conexiune</span>
+  <span id="mode" class="pill demo" hidden>SIMULATOR</span>
+</header>
+
+<main>
+  <!-- Cuplare -->
+  <section id="view-pair" class="view" hidden>
+    <div class="card">
+      <h2>Aplicația nu este cuplată</h2>
+      <p class="hint">Scanează codul de cuplare primit de la administrator. Se face o singură dată pe acest telefon.</p>
+    </div>
+    <button id="pair-scan-btn" class="primary big">Scanează codul de cuplare</button>
+    <form id="pair-form" class="card">
+      <label for="pair-code">sau introdu codul</label>
+      <input id="pair-code" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button type="submit" class="secondary">Cuplează</button>
+    </form>
+    <p id="pair-error" class="error" hidden></p>
+  </section>
+
+  <!-- Start -->
+  <section id="view-start" class="view">
+    <form id="start-form" class="card">
+      <label for="meter">Seria contorului</label>
+      <div class="with-btn">
+        <input id="meter" inputmode="numeric" autocomplete="off" required pattern="[0-9A-Za-z]{4,20}" placeholder="ex. 12345678">
+        <button type="button" id="scan-btn" class="secondary">Scanează</button>
+      </div>
+      <p id="scan-info" class="hint" hidden></p>
+      <div id="scan-chips" class="chips" hidden></div>
+      <label for="tech">Instalator</label>
+      <input id="tech" autocomplete="name" required placeholder="Numele tău">
+      <p id="paired" class="hint" hidden><span id="paired-text"></span> <button type="button" id="unpair-btn" class="link">Decuplează</button></p>
+      <label>Poziția contorului (opțional)</label>
+      <div class="two">
+        <button type="button" id="gps-btn" class="secondary">GPS</button>
+        <button type="button" id="pick-btn" class="secondary">Alege pe hartă</button>
+      </div>
+      <p id="gps-info" class="hint">Măsurarea funcționează și fără GPS. Poziția doar propune site-ul probabil și apare pe hartă.</p>
+      <button type="submit" class="primary">Începe</button>
+      <p id="start-error" class="error" hidden></p>
+    </form>
+    <div id="data-card" class="card" hidden>
+      <h2>Date pe acest dispozitiv</h2>
+      <p id="reg-info" class="hint"></p>
+      <label class="file-btn">Încarcă site-uri (CSV)<input type="file" id="sites-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
+      <label class="file-btn">Încarcă concentratoare (CSV)<input type="file" id="conc-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
+      <p id="reg-msg" class="hint" hidden></p>
+      <p class="hint"><button type="button" id="reg-clear" class="link">Șterge registrul de pe dispozitiv</button></p>
+      <p id="sess-info" class="hint"></p>
+      <button type="button" id="export-btn" class="secondary">Exportă măsurătorile (CSV)</button>
+      <label class="check"><input type="checkbox" id="demo-toggle"> Mod demonstrație, fără contor</label>
+    </div>
+    <div id="candidates" class="card" hidden>
+      <h2>Site-uri apropiate</h2>
+      <ul id="candidate-list" class="rows"></ul>
+    </div>
+  </section>
+
+  <!-- Aliniere -->
+  <section id="view-align" class="view" hidden>
+    <div id="instruction" class="instruction blue">
+      <strong id="ins-title"></strong>
+      <span id="ins-text"></span>
+    </div>
+    <div class="pizza-wrap">
+      <svg id="pizza" viewBox="-110 -110 220 220" role="img" aria-label="Sectoarele antenei"></svg>
+    </div>
+    <div id="fine-bar" class="fine-bar" hidden></div>
+    <div id="live-panel" class="card live" hidden>
+      <div class="live-now"><b id="live-rssi">–</b><span id="live-trend"></span></div>
+      <div id="live-bars" class="live-bars" aria-hidden="true"></div>
+      <p id="live-age" class="hint"></p>
+    </div>
+    <div class="stats">
+      <div><small>Acum</small><b id="st-now">–</b></div>
+      <div><small>Cel mai bun</small><b id="st-best">–</b></div>
+      <div><small>Receptor</small><b id="st-recv">–</b></div>
+    </div>
+    <div id="finish-box" class="card" hidden>
+      <label for="outcome">Rezultat</label>
+      <select id="outcome"></select>
+      <label for="note">Observații (opțional)</label>
+      <textarea id="note" rows="2" maxlength="1000"></textarea>
+    </div>
+    <div id="report-box" class="card" hidden>
+      <h2>Raport</h2>
+      <p class="hint">La final poți salva un raport cu rezultatele și o fotografie a antenei cu datele măsurătorii.</p>
+      <button type="button" id="report-btn" class="secondary">Descarcă raportul</button>
+      <label class="file-btn">Fotografiază antena<input type="file" id="photo-file" accept="image/*" capture="environment" hidden></label>
+      <p id="report-msg" class="hint" hidden></p>
+      <img id="report-preview" alt="" hidden>
+    </div>
+    <button id="main-btn" class="primary big"></button>
+    <button id="alt-btn" class="secondary" hidden></button>
+    <p id="align-error" class="error" hidden></p>
+    <button id="restart-btn" class="danger">Renunță și ia-o de la capăt</button>
+  </section>
+
+  <!-- Receptoare -->
+  <section id="view-recv" class="view" hidden>
+    <div class="card">
+      <h2>Receptoare proprii văzute</h2>
+      <p id="recv-empty" class="hint">Încă nu există măsurători.</p>
+      <ul id="recv-list" class="rows"></ul>
+    </div>
+    <div id="backup-card" class="card" hidden>
+      <h2>Redundanță</h2>
+      <p id="backup-text"></p>
+    </div>
+  </section>
+
+  <!-- Hartă -->
+  <section id="view-map" class="view" hidden>
+    <div id="pick-bar" class="card" hidden>
+      <h2>Atinge harta în dreptul contorului</h2>
+      <input id="pick-coords" inputmode="text" autocomplete="off" placeholder="sau lipește coordonate: 56.1234, 10.1234">
+      <p id="pick-info" class="hint">Nicio poziție aleasă.</p>
+      <div class="two">
+        <button type="button" id="pick-cancel" class="secondary">Înapoi</button>
+        <button type="button" id="pick-ok" class="primary" disabled>Folosește poziția</button>
+      </div>
+    </div>
+    <div id="map"></div>
+    <p id="map-info" class="hint card">Harta explică doar geometria. Măsurătoarea radio rămâne decisivă.</p>
+  </section>
+</main>
+
+<div id="scanner" hidden>
+  <video id="scan-video" playsinline muted></video>
+  <div class="scan-frame"></div>
+  <div class="scan-top"><strong id="scan-title"></strong><p id="scan-error" class="error" hidden></p></div>
+  <div class="scan-bottom">
+    <button id="scan-photo-btn" class="primary">Fotografiază codul</button>
+    <button id="scan-close" class="secondary">Închide</button>
+    <input type="file" id="scan-photo" accept="image/*" capture="environment" hidden>
+  </div>
+</div>
+
+<nav id="tabs" hidden>
+  <button data-view="align" class="on">Aliniere</button>
+  <button data-view="recv">Receptoare</button>
+  <button data-view="map">Hartă</button>
+</nav>
+
+<script src="vendor/leaflet.js"></script>
+<script src="i18n.js"></script>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

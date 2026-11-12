@@ -1,0 +1,15 @@
+{
+  "routes": [
+    { "route": "/*", "allowedRoles": ["authenticated"] }
+  ],
+  "responseOverrides": {
+    "401": { "redirect": "/.auth/login/aad", "statusCode": 302 }
+  },
+  "globalHeaders": {
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org; connect-src 'self' https://check.kamstrup.com; media-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+    "Permissions-Policy": "camera=(self), geolocation=(self), microphone=()",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "Cache-Control": "no-cache"
+  }
+}
