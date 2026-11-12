@@ -1,0 +1,8 @@
+__pycache__/
+.pytest_cache/
+*.sqlite3*
+.env
+# Never commit real registry data or pairing codes
+backend/data/*.csv
+!backend/data/*.sample.csv
+pair-*.svg
