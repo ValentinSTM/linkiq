@@ -1,5 +1,5 @@
 /* App-shell cache. Live RF data (/api) is never cached: it always needs the network. */
-const VERSION = 'linkiq-shell-v8';
+const VERSION = 'linkiq-shell-v9';
 const SHELL = ['./', 'index.html', 'styles.css', 'i18n.js', 'engine.js', 'app.js', 'manifest.webmanifest',
   'vendor/leaflet.js', 'vendor/leaflet.css', 'vendor/jsQR.js', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 

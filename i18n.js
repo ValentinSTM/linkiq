@@ -203,5 +203,11 @@ window.LINKIQ_DA = {
  "1 concentrator a auzit contorul": "1 koncentrator hørte måleren",
  "{0} concentratoare au auzit contorul": "{0} koncentratorer hørte måleren",
  "felii: {0} · cel mai bun pe felia {1}": "felter: {0} · bedst i felt {1}",
- "Registrul nu este încărcat: sunt afișate toate receptoarele auzite, nu doar ale noastre.": "Registret er ikke indlæst: alle hørte modtagere vises, ikke kun vores egne."
+ "Registrul nu este încărcat: sunt afișate toate receptoarele auzite, nu doar ale noastre.": "Registret er ikke indlæst: alle hørte modtagere vises, ikke kun vores egne.",
+ "{0} site-uri au auzit contorul. Linia groasă este receptorul principal; verde = semnal bun, galben = la limită, roșu = slab.": "{0} sites hørte måleren. Den tykke linje er den primære modtager; grøn = godt signal, gul = marginalt, rød = svagt.",
+ "Alege poziția contorului la început ca să apară liniile și distanțele.": "Vælg målerens position ved start for at se linjer og afstande.",
+ "bun": "godt",
+ "la limită": "marginalt",
+ "slab": "svagt",
+ "receptor principal": "primær modtager"
 };
