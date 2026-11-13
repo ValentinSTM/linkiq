@@ -465,6 +465,68 @@
       return this.summary(sid);
     }
 
+    /**
+     * Status of a meter without a session and without CALL: one read of the
+     * Kamstrup snapshot, showing which of our receivers hear it and when.
+     * Nothing is stored on the device.
+     */
+    async check(meterSerial, gps = null, technician = '') {
+      meterSerial = String(meterSerial || '').trim();
+      if (!METER_RE.test(meterSerial)) throw new EngineError(422, 'BAD_METER_SERIAL', 'Seria contorului trebuie să aibă 4–20 litere sau cifre');
+      const now = this.clock(), key = (this.db.demo ? 'sim:' : '') + 'check:' + meterSerial;
+      let hit = this.cache[key];
+      if (!hit || now - hit.atMs >= this.cfg.pollMinIntervalS * 1000) {
+        this.upstreamCalls++;
+        let payload;
+        try {
+          payload = this.db.demo ? this.sim.fetch(meterSerial) : await this.fetchJson(`${this.cfg.kamstrupBaseUrl}/${encodeURIComponent(meterSerial)}`);
+        } catch (e) { throw new EngineError(502, 'UPSTREAM_ERROR', 'Serviciul Kamstrup nu răspunde. Încearcă din nou.'); }
+        hit = this.cache[key] = { payload, atMs: now };
+      }
+      const payload = hit.payload || {}, links = normalise(payload, this.cfg.serialFields);
+      const registryEmpty = Object.keys(this.db.concentrators).length === 0;
+      const g = { lat: gps ? gps.lat : null, lon: gps ? gps.lon : null, accuracyM: gps && gps.accuracyM !== undefined ? gps.accuracyM : null };
+      const rows = links.filter((l) => registryEmpty || this.db.concentrators[l.serial]).map((l) => {
+        const c = this.db.concentrators[l.serial], site = c ? this.db.sites[c.siteCode] : null;
+        const d = { serial: l.serial, siteCode: c ? c.siteCode : null, siteName: site ? site.name || null : null,
+          address: site ? site.address || null : null, latitude: site ? site.latitude : null, longitude: site ? site.longitude : null,
+          registryStatus: c ? c.status : null, bestRssi: l.rssi, lastRssi: l.rssi, bestPhase: 'check', bestStep: null, sectors: [],
+          observedUtc: iso(l.observedMs), stale: l.observedMs !== null && now - l.observedMs > 26 * 3600e3,   // not heard for over a day
+          relation: 'UNKNOWN_SITE', distanceM: null, bearingDeg: null, compass: null };
+        if (g.lat !== null && d.latitude !== null && d.latitude !== undefined) {
+          d.distanceM = Math.round(distanceM(g.lat, g.lon, d.latitude, d.longitude));
+          const b = bearingDeg(g.lat, g.lon, d.latitude, d.longitude);
+          d.bearingDeg = Math.round(b); d.compass = compassRo(b);
+        }
+        if (d.latitude === undefined) d.latitude = d.longitude = null;
+        return d;
+      }).sort((a, b) => (a.stale - b.stale) || b.bestRssi - a.bestRssi);
+      const p1 = rows[0] || null;
+      rows.forEach((r, i) => {
+        r.relation = i === 0 ? 'PRIMARY' : (r.siteCode === null || p1.siteCode === null) ? 'UNKNOWN_SITE' : r.siteCode === p1.siteCode ? 'SAME_SITE' : 'DISTINCT_SITE';
+      });
+      const others = rows.slice(1).filter((r) => !r.stale);
+      const pick = others.find((r) => r.relation === 'DISTINCT_SITE') || others[0] || null;
+      const lastSeenMs = parseTs(payload.LastSeenTimestampUtc);
+      const warnings = [];
+      if (registryEmpty) warnings.push('REGISTRY_EMPTY');
+      if (g.lat === null) warnings.push('NO_GPS');
+      return {
+        session: { id: null, meterSerial, technician: String(technician || '').trim(), gps: g, status: 'CHECK', state: 'CHECK',
+          startedUtc: iso(now), finishedUtc: iso(now), initialCallUtc: null, finalCallUtc: null, outcome: null, note: null, demo: this.db.demo },
+        current: null, coarse: [], fine: [], final: null, coarseWinner: null, fineWinner: null,
+        best: p1 ? { phase: 'check', step: null, rssi: p1.bestRssi, serial: p1.serial } : null,
+        primary: p1 ? { serial: p1.serial, siteCode: p1.siteCode, siteName: p1.siteName, address: p1.address, rssi: p1.bestRssi } : null,
+        backup: pick ? { serial: pick.serial, siteCode: pick.siteCode, siteName: pick.siteName, redundancy: pick.relation, bestRssi: pick.bestRssi,
+          bestPhase: 'check', bestStep: null, usable: pick.bestRssi >= this.cfg.rssiMarginalDbm, primaryRssiThere: null,
+          primaryDegradationDb: null, positionRecommendable: false } : null,
+        receivers: rows, finalCheck: null, live: null, quickConfirmEligible: false,
+        check: { lastSeenUtc: iso(lastSeenMs), hoursSinceLastSeen: typeof payload.HoursSinceLastSeen === 'number' ? payload.HoursSinceLastSeen : null,
+          linksTotal: links.length, linksOwned: rows.length, fetchedUtc: iso(hit.atMs) },
+        suggestedOutcome: 'INCONCLUSIVE', outcomes: OUTCOMES, warnings,
+      };
+    }
+
     /** Flat rows for Network Intelligence / coverage analysis. */
     exportCsv() {
       const cols = ['session_id', 'meter_serial', 'technician', 'gps_lat', 'gps_lon', 'outcome', 'phase', 'step',
@@ -642,6 +704,7 @@
       }
       if (route === '/api/me') return { technician: null };
       if (route === '/api/sites') return this.sites(q.lat !== undefined ? Number(q.lat) : null, q.lon !== undefined ? Number(q.lon) : null);
+      if (route === '/api/check' && method === 'POST') return this.check(body.meterSerial, body.gps || null, body.technician || '');
       if (route === '/api/sessions' && method === 'POST') return this.createSession(body.meterSerial, body.technician, body.gps || null);
       if (m && !m[2]) return this.summary(m[1]);
       if (m && m[2] === 'call-confirmed') return this.callConfirmed(m[1], body.phase || 'initial');
