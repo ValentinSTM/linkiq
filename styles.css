@@ -136,3 +136,10 @@ button.lang { width: auto; min-height: 34px; padding: 4px 12px; border-radius: 9
 #report-box[hidden] { display: none; }
 #report-preview { width: 100%; border: 1px solid var(--line); border-radius: 8px; }
 #report-preview[hidden] { display: none; }
+
+ul.rows li.site { font-weight: 700; border-top: 2px solid var(--gray); padding-bottom: 4px; }
+ul.rows li.site:first-child { border-top: 0; }
+ul.rows li.site .sub { font-weight: 500; }
+ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
+.hint.warn { color: #7a4b00; background: #fff4d6; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; }
+.hint.warn[hidden] { display: none; }

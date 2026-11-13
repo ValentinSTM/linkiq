@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.5';
+  const VERSION = '0.6';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -352,24 +352,44 @@
     const list = $('recv-list');
     list.replaceChildren();
     $('recv-empty').hidden = s.receivers.length > 0;
+    // Only receivers from the loaded registry reach this list. They are shown per
+    // site, because one site (mast, chimney) usually carries up to three of them.
+    $('recv-warn').hidden = !s.warnings.includes('REGISTRY_EMPTY') || !s.receivers.length;
+    const sitesSeen = new Map();
     for (const r of s.receivers) {
-      const li = document.createElement('li');
-      li.setAttribute('role', 'button'); li.tabIndex = 0;
-      const name = document.createElement('span');
-      name.textContent = r.serial + ' ';
-      const tag = document.createElement('span');
-      tag.className = 'tag ' + r.relation; tag.textContent = T(RELATION_RO[r.relation]);
-      name.appendChild(tag);
-      const val = document.createElement('span');
-      val.className = 'val'; val.textContent = dbm(r.bestRssi);
-      const sub = document.createElement('span');
-      sub.className = 'sub';
-      const where = [r.siteName, r.address].filter(Boolean).join(', ') || T('site necunoscut în registru');
-      const geo = r.distanceM !== null ? T(' · {0} spre {1}', dist(r.distanceM), T(r.compass)) : '';
-      sub.textContent = T('{0}{1} · felii: {2} · cel mai bun pe felia {3}', where, geo, r.sectors.join(', ') || '–', r.bestPhase === 'coarse' ? r.bestStep : (s.coarseWinner ? s.coarseWinner.step : '–'));
-      li.append(name, val, sub);
-      li.onclick = () => { selectedSerial = r.serial; showView('map'); };
-      list.appendChild(li);
+      const key = r.siteCode || '?' + r.serial;
+      if (!sitesSeen.has(key)) sitesSeen.set(key, []);
+      sitesSeen.get(key).push(r);
+    }
+    for (const group of sitesSeen.values()) {
+      const first = group[0], head = document.createElement('li');
+      head.className = 'site';
+      const title = document.createElement('span');
+      title.textContent = [first.siteName, first.address].filter(Boolean).join(', ') || T('site necunoscut în registru');
+      const hsub = document.createElement('span');
+      hsub.className = 'sub';
+      hsub.textContent = (group.length === 1 ? T('1 concentrator a auzit contorul') : T('{0} concentratoare au auzit contorul', group.length))
+        + (first.distanceM !== null ? T(' · {0} spre {1}', dist(first.distanceM), T(first.compass)) : '');
+      head.append(title, document.createElement('span'), hsub);
+      list.appendChild(head);
+      for (const r of group) {
+        const li = document.createElement('li');
+        li.className = 'child';
+        li.setAttribute('role', 'button'); li.tabIndex = 0;
+        const name = document.createElement('span');
+        name.textContent = r.serial + ' ';
+        const tag = document.createElement('span');
+        tag.className = 'tag ' + r.relation; tag.textContent = T(RELATION_RO[r.relation]);
+        name.appendChild(tag);
+        const val = document.createElement('span');
+        val.className = 'val'; val.textContent = dbm(r.bestRssi);
+        const sub = document.createElement('span');
+        sub.className = 'sub';
+        sub.textContent = T('felii: {0} · cel mai bun pe felia {1}', r.sectors.join(', ') || '–', r.bestPhase === 'coarse' ? r.bestStep : (s.coarseWinner ? s.coarseWinner.step : '–'));
+        li.append(name, val, sub);
+        li.onclick = () => { selectedSerial = r.serial; showView('map'); };
+        list.appendChild(li);
+      }
     }
     const b = s.backup;
     $('backup-card').hidden = !b;
