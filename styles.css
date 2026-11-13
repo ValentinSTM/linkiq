@@ -143,3 +143,7 @@ ul.rows li.site .sub { font-weight: 500; }
 ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
 .hint.warn { color: #7a4b00; background: #fff4d6; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; }
 .hint.warn[hidden] { display: none; }
+
+.leaflet-tooltip.link-label { background: #fff; border: 2px solid var(--gray); border-radius: 6px; padding: 1px 6px; font: 700 13px system-ui, sans-serif; color: var(--ink); box-shadow: none; white-space: nowrap; }
+.leaflet-tooltip.link-label.primary { border-color: var(--green); font-size: 15px; }
+.leaflet-tooltip.link-label::before { display: none; }

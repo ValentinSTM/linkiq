@@ -637,7 +637,8 @@
       if (route === '/api/config') {
         return { authMode: 'none', kamstrupMode: this.db.demo ? 'sim' : 'live', standalone: true,
           pollIntervalS: this.cfg.pollMinIntervalS, warnAfterS: this.cfg.warnAfterS,
-          coarseSteps: this.cfg.coarseSteps, fineSteps: this.cfg.fineSteps };
+          coarseSteps: this.cfg.coarseSteps, fineSteps: this.cfg.fineSteps,
+          thresholds: { quickConfirmDbm: this.cfg.rssiQuickConfirmDbm, goodDbm: this.cfg.rssiGoodDbm, marginalDbm: this.cfg.rssiMarginalDbm, provisional: true } };
       }
       if (route === '/api/me') return { technician: null };
       if (route === '/api/sites') return this.sites(q.lat !== undefined ? Number(q.lat) : null, q.lon !== undefined ? Number(q.lon) : null);
