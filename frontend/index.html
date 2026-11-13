@@ -55,6 +55,7 @@
       </div>
       <p id="gps-info" class="hint">Măsurarea funcționează și fără GPS. Poziția doar propune site-ul probabil și apare pe hartă.</p>
       <button type="submit" class="primary">Începe</button>
+      <button type="button" id="check-btn" class="secondary">Verifică contorul, fără CALL</button>
       <p id="start-error" class="error" hidden></p>
     </form>
     <div id="data-card" class="card" hidden>
@@ -102,9 +103,10 @@
     </div>
     <div id="report-box" class="card" hidden>
       <h2>Raport</h2>
-      <p class="hint">La final poți salva un raport cu rezultatele și o fotografie a antenei cu datele măsurătorii.</p>
-      <button type="button" id="report-btn" class="secondary">Descarcă raportul</button>
-      <label class="file-btn">Fotografiază antena<input type="file" id="photo-file" accept="image/*" capture="environment" hidden></label>
+      <p class="hint">Fotografiază întâi antena, apoi descarcă raportul: PDF-ul include și fotografia.</p>
+      <label class="file-btn" id="photo-label">Fotografiază antena<input type="file" id="photo-file" accept="image/*" capture="environment" hidden></label>
+      <button type="button" id="report-pdf-btn" class="secondary">Descarcă raportul (PDF)</button>
+      <button type="button" id="report-btn" class="secondary">Descarcă raportul (imagine)</button>
       <p id="report-msg" class="hint" hidden></p>
       <img id="report-preview" alt="" hidden>
     </div>

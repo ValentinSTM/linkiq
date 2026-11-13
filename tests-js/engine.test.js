@@ -231,3 +231,24 @@ test('four quadrants by default', async () => {
   assert.equal(eng.summary(sid).coarseWinner.step, 3);
   await assert.rejects(eng.positionMarked(sid, 'coarse', 5), EngineError);
 });
+
+test('status check without CALL: only our receivers, grouped relations, nothing stored', async () => {
+  const now = Date.UTC(2026, 10, 12, 9, 0, 0);
+  const at = (minAgo) => new Date(now - minAgo * 60000).toISOString();
+  const live = () => ({ SerialNumber: METER, LastSeenTimestampUtc: at(3), HoursSinceLastSeen: 0, Links: [
+    { SerialNumber: '70000002', TimestampUtcToDevice: at(5), RssiToDevice: -95 },
+    { SerialNumber: '70000001', TimestampUtcToDevice: at(3), RssiToDevice: -70 },
+    { SerialNumber: '70000003', TimestampUtcToDevice: at(60 * 40), RssiToDevice: -60 },     // strong but not heard for 40 h
+    { SerialNumber: '79999999', TimestampUtcToDevice: at(1), RssiToDevice: -50 }] });        // not ours
+  const { eng, mem } = make({ live });
+  const s = await eng.handle('/api/check', 'POST', { meterSerial: METER, gps: { lat: 55.677, lon: 12.567 } });
+  assert.equal(s.session.status, 'CHECK');
+  assert.deepEqual(s.receivers.map((r) => r.serial), ['70000001', '70000002', '70000003']);
+  assert.deepEqual(s.receivers.map((r) => r.relation), ['PRIMARY', 'SAME_SITE', 'DISTINCT_SITE']);
+  assert.equal(s.receivers[2].stale, true);
+  assert.equal(s.backup.serial, '70000002');                 // the stale one is not offered as backup
+  assert.ok(s.receivers[0].distanceM > 50);
+  assert.equal(s.check.linksTotal, 4);
+  assert.equal(Object.keys(JSON.parse(mem.db).sessions).length, 0);
+  await assert.rejects(eng.check('../x'), EngineError);
+});

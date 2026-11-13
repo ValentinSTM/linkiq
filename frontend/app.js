@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.7';
+  const VERSION = '0.8';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -34,6 +34,13 @@
     return args.length ? String(tpl).replace(/\{(\d+)\}/g, (m, i) => (args[i] === undefined ? m : args[i])) : tpl;
   }
   const outcomeLabel = (o) => T(OUTCOME_RO[o] || o);
+  function ago(utc) {
+    const sec = Math.max(0, Math.round((Date.now() - new Date(utc).getTime()) / 1000));
+    if (sec < 90) return T('acum {0} s', sec);
+    if (sec < 5400) return T('acum {0} min', Math.round(sec / 60));
+    if (sec < 172800) return T('acum {0} ore', Math.round(sec / 3600));
+    return T('acum {0} zile', Math.round(sec / 86400));
+  }
   /** Translate the text that is written in index.html (labels, buttons, placeholders). */
   function translatePage() {
     document.documentElement.lang = lang;
@@ -97,6 +104,7 @@
 
   // ---------------------------------------------------------------- next instruction
   function nextAction(s) {
+    if (s.session.status === 'CHECK') return { kind: 'check' };
     if (s.session.status !== 'ACTIVE') return { kind: 'done' };
     const st = s.session.state, cur = s.current;
     if (st === 'READY') return { kind: 'initialCall' };
@@ -159,7 +167,8 @@
     const act = (path, body) => async () => { apply(await api(`/api/sessions/${s.session.id}/${path}`, 'POST', body)); };
     const choose = (patch) => async () => { ui = { ...ui, ...patch }; store.set('ui', ui); };
     $('finish-box').hidden = true;
-    $('report-box').hidden = a.kind !== 'done';
+    $('report-box').hidden = a.kind !== 'done' && a.kind !== 'check';
+    $('photo-label').hidden = a.kind === 'check';
 
     switch (a.kind) {
       case 'initialCall':
@@ -237,6 +246,18 @@
         } });
         break;
       }
+      case 'check': {
+        // Status without CALL: who hears this meter right now.
+        const c = s.check, n = s.receivers.length, top = s.receivers[0];
+        const seen = c.lastSeenUtc ? T('Auzit ultima dată {0} ({1}).', fmtTime(c.lastSeenUtc), ago(c.lastSeenUtc)) : T('Nu se știe când a fost auzit ultima dată.');
+        const who = s.warnings.includes('REGISTRY_EMPTY') ? T('{0} receptoare îl aud; registrul nu este încărcat, deci nu se știe care sunt ale noastre.', n)
+          : n === 1 ? T('1 receptor de-al nostru îl aude.') : T('{0} receptoare de-ale noastre îl aud.', n);
+        setInstruction(!n ? 'red' : top.stale ? 'yellow' : 'green', T('Contor {0}', s.session.meterSerial), seen + ' ' + who);
+        setButtons({ label: T('Actualizează'), run: async () => {
+          apply(await api('/api/check', 'POST', { meterSerial: s.session.meterSerial, technician: s.session.technician, gps: s.session.gps.lat !== null ? s.session.gps : null }));
+        } }, { label: T('Înapoi'), run: async () => { leaveSession(); } });
+        break;
+      }
       case 'done':
         setInstruction(s.session.outcome === 'ABORTED' ? 'red' : 'green', T('Sesiune salvată'),
           T('Contor {0}: {1}.', s.session.meterSerial, outcomeLabel(s.session.outcome)));
@@ -247,11 +268,13 @@
     $('st-now').textContent = a.kind === 'live' && s.live && s.live.lastRssi !== null ? dbm(s.live.lastRssi)
       : cur && cur.measured ? dbm(cur.bestRssi) : '–';
     $('st-best').textContent = s.best ? dbm(s.best.rssi) : '–';
+    if (a.kind === 'check' && s.best) $('st-now').textContent = dbm(s.best.rssi);
     $('st-recv').textContent = s.primary ? s.primary.serial : '–';
-    $('restart-btn').hidden = a.kind === 'done';
+    $('restart-btn').hidden = a.kind === 'done' || a.kind === 'check';
     drawPizza(s, a);
     drawFine(s, a);
     drawLive(s, a);
+    if (a.kind === 'check') document.querySelector('.pizza-wrap').hidden = true;
     drawReceivers(s);
     if (!$('view-map').hidden) drawMap();
     syncTimers();
@@ -355,6 +378,7 @@
     // Only receivers from the loaded registry reach this list. They are shown per
     // site, because one site (mast, chimney) usually carries up to three of them.
     $('recv-warn').hidden = !s.warnings.includes('REGISTRY_EMPTY') || !s.receivers.length;
+    const flat = s.warnings.includes('REGISTRY_EMPTY');   // no registry: no sites to group by
     const sitesSeen = new Map();
     for (const r of s.receivers) {
       const key = r.siteCode || '?' + r.serial;
@@ -371,10 +395,10 @@
       hsub.textContent = (group.length === 1 ? T('1 concentrator a auzit contorul') : T('{0} concentratoare au auzit contorul', group.length))
         + (first.distanceM !== null ? T(' · {0} spre {1}', dist(first.distanceM), T(first.compass)) : '');
       head.append(title, document.createElement('span'), hsub);
-      list.appendChild(head);
+      if (!flat) list.appendChild(head);
       for (const r of group) {
         const li = document.createElement('li');
-        li.className = 'child';
+        li.className = flat ? '' : 'child';
         li.setAttribute('role', 'button'); li.tabIndex = 0;
         const name = document.createElement('span');
         name.textContent = r.serial + ' ';
@@ -385,7 +409,8 @@
         val.className = 'val'; val.textContent = dbm(r.bestRssi);
         const sub = document.createElement('span');
         sub.className = 'sub';
-        sub.textContent = T('felii: {0} · cel mai bun pe felia {1}', r.sectors.join(', ') || '–', r.bestPhase === 'coarse' ? r.bestStep : (s.coarseWinner ? s.coarseWinner.step : '–'));
+        sub.textContent = r.bestPhase === 'check' ? (r.observedUtc ? T('auzit {0}', ago(r.observedUtc)) + (r.stale ? ' · ' + T('nu a mai fost auzit de peste o zi') : '') : T('fără oră de la sursă'))
+          : T('felii: {0} · cel mai bun pe felia {1}', r.sectors.join(', ') || '–', r.bestPhase === 'coarse' ? r.bestStep : (s.coarseWinner ? s.coarseWinner.step : '–'));
         li.append(name, val, sub);
         li.onclick = () => { selectedSerial = r.serial; showView('map'); };
         list.appendChild(li);
@@ -459,7 +484,8 @@
     if (links.length) {
       info = T('{0} site-uri au auzit contorul. Linia groasă este receptorul principal; verde = semnal bun, galben = la limită, roșu = slab.', links.length)
         + (g ? '' : ' ' + T('Alege poziția contorului la început ca să apară liniile și distanțele.'));
-    } else if (!pts.length) info = T('Fără poziție GPS și fără receptoare cu coordonate. ') + info;
+    } else if (S && S.warnings.includes('REGISTRY_EMPTY')) info = T('Încarcă registrul (site-uri și concentratoare) pe ecranul de start ca să apară concentratoarele pe hartă.');
+    else if (!pts.length) info = T('Fără poziție GPS și fără receptoare cu coordonate. ') + info;
     $('map-info').textContent = info;
     const fit = pts.map((q) => q.join(',')).join(';');
     setTimeout(() => {
@@ -475,7 +501,7 @@
   function apply(summary) {
     const was = S ? S.session.state : null;
     S = summary; lastSummaryAt = Date.now();
-    store.set('session', S.session.id);
+    if (S.session.id) store.set('session', S.session.id);   // a status check is not a stored session
     if (was === 'WAIT_RF' && S.session.state === 'MEASURED' && navigator.vibrate) navigator.vibrate(200);
   }
 
@@ -530,7 +556,7 @@
     if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
     $('meter').value = '';
     $('scan-info').hidden = true; $('scan-chips').hidden = true;
-    $('report-msg').hidden = true; $('report-preview').hidden = true;
+    $('report-msg').hidden = true; $('report-preview').hidden = true; lastPhoto = null;
     refreshData();
     showView('start');
   }
@@ -638,6 +664,14 @@
     try {
       enterSession(await api('/api/sessions', 'POST', { meterSerial: $('meter').value.trim(), technician: $('tech').value.trim(), gps }));
     } catch (e) { showError('start-error', e.message); }
+  };
+
+  $('check-btn').onclick = async () => {
+    $('start-error').hidden = true;
+    const meter = $('meter').value.trim();
+    if (!meter) { showError('start-error', 'Introdu sau scanează seria contorului.'); return; }
+    try { enterSession(await api('/api/check', 'POST', { meterSerial: meter, technician: $('tech').value.trim(), gps })); }
+    catch (e) { showError('start-error', e.status === 404 ? 'Verificarea fără CALL există doar în varianta fără server.' : e.message); }
   };
 
   // ---------------------------------------------------------------- camera scanning
@@ -1085,7 +1119,8 @@
     x.fillStyle = '#fff'; x.fillRect(0, 0, W, big.height);
     x.fillStyle = INK.navy; x.fillRect(0, 0, W, 150);
     font(700, 40); text('LinkIQ Field Assistant', P, 68, '#fff');
-    font(500, 28); text(T('Raport de punere în funcțiune'), P, 114, '#cfe0ea');
+    const isCheck = s.session.status === 'CHECK';
+    font(500, 28); text(T(isCheck ? 'Raport de stare, fără CALL' : 'Raport de punere în funcțiune'), P, 114, '#cfe0ea');
     y = 150;
     if (s.session.demo) {
       x.fillStyle = INK.yellow; x.fillRect(0, y, W, 56);
@@ -1094,17 +1129,20 @@
     }
     y += 56; font(500, 25); text(T('Contor'), P, y, INK.gray);
     y += 68; font(800, 68); text(s.session.meterSerial, P, y);
-    const label = outcomeLabel(s.session.outcome || s.suggestedOutcome);
-    font(700, 28);
-    const pw = x.measureText(label).width + 44;
-    x.fillStyle = outcomeColor(s.session.outcome || s.suggestedOutcome);
-    x.beginPath(); x.roundRect(W - P - pw, y - 50, pw, 58, 29); x.fill();
-    text(label, W - P - pw / 2, y - 11, '#fff', 'center');
+    if (!isCheck) {
+      const label = outcomeLabel(s.session.outcome || s.suggestedOutcome);
+      font(700, 28);
+      const pw = x.measureText(label).width + 44;
+      x.fillStyle = outcomeColor(s.session.outcome || s.suggestedOutcome);
+      x.beginPath(); x.roundRect(W - P - pw, y - 50, pw, 58, 29); x.fill();
+      text(label, W - P - pw / 2, y - 11, '#fff', 'center');
+    }
     y += 10;
     row(T('Data'), fmtTime(s.session.finishedUtc || s.session.startedUtc));
     row(T('Instalator'), s.session.technician);
     const g = s.session.gps;
     row(T('Poziție'), g && g.lat !== null ? `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}` + (g.accuracyM ? ` (±${g.accuracyM} m)` : '') : T('neînregistrată'));
+    if (isCheck) row(T('Auzit ultima dată'), s.check.lastSeenUtc ? `${fmtTime(s.check.lastSeenUtc)} (${ago(s.check.lastSeenUtc)})` : '–');
 
     const mapCanvas = await reportMap(s, W - 2 * P, 620);
     if (mapCanvas) {
@@ -1113,8 +1151,12 @@
       x.drawImage(mapCanvas, P, y);
       x.strokeStyle = INK.light; x.lineWidth = 2; x.strokeRect(P, y, W - 2 * P, 620);
       y += 620;
+    } else {
+      section(T('Hartă'));
+      row('', T(g && g.lat !== null ? 'Harta lipsește: registrul cu site-uri nu este încărcat pe acest dispozitiv.' : 'Harta lipsește: sesiunea nu are poziția contorului.'), INK.gray);
     }
 
+    if (!isCheck) {
     section(T('Baleiaj'));
     const top = y + 24, r = 170;
     pizzaOnCanvas(x, s, P + r + 10, top + r, r);
@@ -1152,6 +1194,8 @@
     if (f && f.rssi !== null) row(f.ok ? 'OK' : '!', T('{0} · {1} dB față de cea mai bună măsurătoare ({2})', dbm(f.rssi), (f.deltaDb >= 0 ? '+' : '') + f.deltaDb, dbm(f.winnerRssi)), f.ok ? INK.green : INK.red);
     else row('', f ? T('Receptorul principal nu a răspuns') : T('Fără confirmare finală'), INK.red);
 
+    }
+
     section(T('Receptoare'));
     const where = (q) => [q.siteName, q.address].filter(Boolean).join(', ');
     const p1 = s.receivers.find((q) => q.relation === 'PRIMARY');
@@ -1162,7 +1206,7 @@
     for (const q of s.receivers.slice(0, 8)) {
       y += 36; font(500, 23);
       text(q.serial, P, y); text(dbm(q.bestRssi), P + 300, y, INK.ink, 'right');
-      text(T(RELATION_RO[q.relation]), P + 330, y, INK.gray);
+      text(q.bestPhase === 'check' && q.observedUtc ? ago(q.observedUtc) : T(RELATION_RO[q.relation]), P + 330, y, INK.gray);
       text((wrap(where(q) + (q.distanceM !== null ? ' · ' + meters(q.distanceM) : ''), W - 2 * P - 540)[0] || ''), P + 540, y, INK.gray);
     }
     if (s.session.note) {
@@ -1209,30 +1253,74 @@
     return c;
   }
 
-  function saveCanvas(canvas, name, type, doneKey) {
-    canvas.toBlob((blob) => {
-      const msg = $('report-msg'), img = $('report-preview');
-      if (!blob) { msg.textContent = T('Nu am putut crea fișierul: {0}', name); msg.hidden = false; return; }
-      const url = URL.createObjectURL(blob), a = document.createElement('a');
-      a.href = url; a.download = name;
-      document.body.appendChild(a); a.click(); a.remove();
-      img.src = url; img.alt = name; img.hidden = false;      // also shown, so it can be saved by long-press
-      msg.textContent = T(doneKey, name) + ' ' + T('Dacă descărcarea nu pornește, ține apăsat pe imagine și alege „Salvează”.');
-      msg.hidden = false;
-    }, type, 0.9);
+  let lastPhoto = null;        // stamped antenna photo of this session, for the PDF
+
+  function saveBlob(blob, name, doneKey, previewUrl) {
+    const msg = $('report-msg'), img = $('report-preview');
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    if (previewUrl !== null) { img.src = previewUrl || url; img.alt = name; img.hidden = false; }   // also shown, so it can be saved by long-press
+    msg.textContent = T(doneKey, name) + (previewUrl !== null ? ' ' + T('Dacă descărcarea nu pornește, ține apăsat pe imagine și alege „Salvează”.') : '');
+    msg.hidden = false;
   }
+  const canvasBlob = (canvas, type) => new Promise((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail(new Error('canvas'))), type, 0.9));
+
+  /** Minimal PDF: one page per canvas, each page a JPEG of that canvas. No library needed. */
+  function pdfFromCanvases(canvases) {
+    const enc = new TextEncoder(), parts = [], offsets = [];
+    let len = 0;
+    const push = (d) => { const b = typeof d === 'string' ? enc.encode(d) : d; parts.push(b); len += b.length; };
+    const obj = (n, body, stream) => {
+      offsets[n] = len;
+      push(`${n} 0 obj\n${body}\n`);
+      if (stream) { push('stream\n'); push(stream); push('\nendstream\n'); }
+      push('endobj\n');
+    };
+    push('%PDF-1.4\n'); push(new Uint8Array([0x25, 0xE2, 0xE3, 0xCF, 0xD3, 0x0A]));
+    const kids = [];
+    canvases.forEach((c, i) => {
+      const page = 3 + i * 3, content = page + 1, image = page + 2;
+      const bin = atob(c.toDataURL('image/jpeg', 0.9).split(',')[1]), jpeg = new Uint8Array(bin.length);
+      for (let k = 0; k < bin.length; k++) jpeg[k] = bin.charCodeAt(k);
+      const W = 595, H = Math.round(595 * c.height / c.width * 100) / 100;      // A4 width, height follows the picture
+      const draw = `q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
+      kids.push(`${page} 0 R`);
+      obj(page, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${image} 0 R >> >> /Contents ${content} 0 R >>`);
+      obj(content, `<< /Length ${draw.length} >>`, enc.encode(draw));
+      obj(image, `<< /Type /XObject /Subtype /Image /Width ${c.width} /Height ${c.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>`, jpeg);
+    });
+    obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    obj(2, `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${canvases.length} >>`);
+    const total = 2 + canvases.length * 3, start = len;
+    let xref = `xref\n0 ${total + 1}\n0000000000 65535 f \n`;
+    for (let n = 1; n <= total; n++) xref += String(offsets[n]).padStart(10, '0') + ' 00000 n \n';
+    push(xref + `trailer\n<< /Size ${total + 1} /Root 1 0 R >>\nstartxref\n${start}\n%%EOF\n`);
+    return new Blob(parts, { type: 'application/pdf' });
+  }
+  const reportName = (s) => safeName(s.session.meterSerial) + (s.session.status === 'CHECK' ? '_status' : '');
 
   $('report-btn').onclick = async () => {
     if (!S) return;
-    try { saveCanvas(await buildReport(S), safeName(S.session.meterSerial) + '.png', 'image/png', 'Raportul a fost salvat ca {0}.'); }
+    try { saveBlob(await canvasBlob(await buildReport(S), 'image/png'), reportName(S) + '.png', 'Raportul a fost salvat ca {0}.'); }
     catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
+  };
+  $('report-pdf-btn').onclick = async () => {
+    if (!S) return;
+    try {
+      const pages = [await buildReport(S)];
+      if (lastPhoto && S.session.status !== 'CHECK') pages.push(lastPhoto);
+      saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', pages.length > 1 ? 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.' : 'Raportul PDF a fost salvat ca {0}.', null);
+    } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   };
   $('photo-file').onchange = async (ev) => {
     const file = ev.target.files[0];
     ev.target.value = '';
     if (!file || !S) return;
-    try { saveCanvas(await stampPhoto(file, S), safeName(S.session.meterSerial) + '_antenne.jpg', 'image/jpeg', 'Fotografia cu datele măsurătorii a fost salvată ca {0}.'); }
-    catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
+    try {
+      lastPhoto = await stampPhoto(file, S);
+      saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + '_antenne.jpg', 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
+    } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   };
 
   // ---------------------------------------------------------------- boot
