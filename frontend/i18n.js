@@ -159,7 +159,7 @@ window.LINKIQ_DA = {
  "Receptor": "Modtager",
  "Rezultat": "Resultat",
  "Observații (opțional)": "Bemærkninger (valgfrit)",
- "Receptoare proprii văzute": "Egne modtagere, der hørte måleren",
+ "Receptoare proprii văzute": "Vores modtagere, der hørte måleren",
  "Încă nu există măsurători.": "Ingen målinger endnu.",
  "Redundanță": "Redundans",
  "Atinge harta în dreptul contorului": "Tryk på kortet, hvor måleren sidder",
@@ -199,5 +199,9 @@ window.LINKIQ_DA = {
  "Raportul a fost salvat ca {0}.": "Rapporten er gemt som {0}.",
  "Fotografia cu datele măsurătorii a fost salvată ca {0}.": "Billedet med måledata er gemt som {0}.",
  "Dacă descărcarea nu pornește, ține apăsat pe imagine și alege „Salvează”.": "Starter overførslen ikke, så tryk længe på billedet, og vælg „Gem”.",
- "Nu am putut crea fișierul: {0}": "Filen kunne ikke oprettes: {0}"
+ "Nu am putut crea fișierul: {0}": "Filen kunne ikke oprettes: {0}",
+ "1 concentrator a auzit contorul": "1 koncentrator hørte måleren",
+ "{0} concentratoare au auzit contorul": "{0} koncentratorer hørte måleren",
+ "felii: {0} · cel mai bun pe felia {1}": "felter: {0} · bedst i felt {1}",
+ "Registrul nu este încărcat: sunt afișate toate receptoarele auzite, nu doar ale noastre.": "Registret er ikke indlæst: alle hørte modtagere vises, ikke kun vores egne."
 };

@@ -807,6 +807,13 @@ button.lang { width: auto; min-height: 34px; padding: 4px 12px; border-radius: 9
 #report-preview { width: 100%; border: 1px solid var(--line); border-radius: 8px; }
 #report-preview[hidden] { display: none; }
 
+ul.rows li.site { font-weight: 700; border-top: 2px solid var(--gray); padding-bottom: 4px; }
+ul.rows li.site:first-child { border-top: 0; }
+ul.rows li.site .sub { font-weight: 500; }
+ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
+.hint.warn { color: #7a4b00; background: #fff4d6; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; }
+.hint.warn[hidden] { display: none; }
+
 </style>
 </head>
 <body>
@@ -917,6 +924,7 @@ button.lang { width: auto; min-height: 34px; padding: 4px 12px; border-radius: 9
     <div class="card">
       <h2>Receptoare proprii văzute</h2>
       <p id="recv-empty" class="hint">Încă nu există măsurători.</p>
+      <p id="recv-warn" class="hint warn" hidden>Registrul nu este încărcat: sunt afișate toate receptoarele auzite, nu doar ale noastre.</p>
       <ul id="recv-list" class="rows"></ul>
     </div>
     <div id="backup-card" class="card" hidden>
@@ -1128,7 +1136,7 @@ window.LINKIQ_DA = {
  "Receptor": "Modtager",
  "Rezultat": "Resultat",
  "Observații (opțional)": "Bemærkninger (valgfrit)",
- "Receptoare proprii văzute": "Egne modtagere, der hørte måleren",
+ "Receptoare proprii văzute": "Vores modtagere, der hørte måleren",
  "Încă nu există măsurători.": "Ingen målinger endnu.",
  "Redundanță": "Redundans",
  "Atinge harta în dreptul contorului": "Tryk på kortet, hvor måleren sidder",
@@ -1168,7 +1176,11 @@ window.LINKIQ_DA = {
  "Raportul a fost salvat ca {0}.": "Rapporten er gemt som {0}.",
  "Fotografia cu datele măsurătorii a fost salvată ca {0}.": "Billedet med måledata er gemt som {0}.",
  "Dacă descărcarea nu pornește, ține apăsat pe imagine și alege „Salvează”.": "Starter overførslen ikke, så tryk længe på billedet, og vælg „Gem”.",
- "Nu am putut crea fișierul: {0}": "Filen kunne ikke oprettes: {0}"
+ "Nu am putut crea fișierul: {0}": "Filen kunne ikke oprettes: {0}",
+ "1 concentrator a auzit contorul": "1 koncentrator hørte måleren",
+ "{0} concentratoare au auzit contorul": "{0} koncentratorer hørte måleren",
+ "felii: {0} · cel mai bun pe felia {1}": "felter: {0} · bedst i felt {1}",
+ "Registrul nu este încărcat: sunt afișate toate receptoarele auzite, nu doar ale noastre.": "Registret er ikke indlæst: alle hørte modtagere vises, ikke kun vores egne."
 };
 
 </script>
@@ -11942,7 +11954,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.5';
+  const VERSION = '0.6';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -12290,24 +12302,44 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     const list = $('recv-list');
     list.replaceChildren();
     $('recv-empty').hidden = s.receivers.length > 0;
+    // Only receivers from the loaded registry reach this list. They are shown per
+    // site, because one site (mast, chimney) usually carries up to three of them.
+    $('recv-warn').hidden = !s.warnings.includes('REGISTRY_EMPTY') || !s.receivers.length;
+    const sitesSeen = new Map();
     for (const r of s.receivers) {
-      const li = document.createElement('li');
-      li.setAttribute('role', 'button'); li.tabIndex = 0;
-      const name = document.createElement('span');
-      name.textContent = r.serial + ' ';
-      const tag = document.createElement('span');
-      tag.className = 'tag ' + r.relation; tag.textContent = T(RELATION_RO[r.relation]);
-      name.appendChild(tag);
-      const val = document.createElement('span');
-      val.className = 'val'; val.textContent = dbm(r.bestRssi);
-      const sub = document.createElement('span');
-      sub.className = 'sub';
-      const where = [r.siteName, r.address].filter(Boolean).join(', ') || T('site necunoscut în registru');
-      const geo = r.distanceM !== null ? T(' · {0} spre {1}', dist(r.distanceM), T(r.compass)) : '';
-      sub.textContent = T('{0}{1} · felii: {2} · cel mai bun pe felia {3}', where, geo, r.sectors.join(', ') || '–', r.bestPhase === 'coarse' ? r.bestStep : (s.coarseWinner ? s.coarseWinner.step : '–'));
-      li.append(name, val, sub);
-      li.onclick = () => { selectedSerial = r.serial; showView('map'); };
-      list.appendChild(li);
+      const key = r.siteCode || '?' + r.serial;
+      if (!sitesSeen.has(key)) sitesSeen.set(key, []);
+      sitesSeen.get(key).push(r);
+    }
+    for (const group of sitesSeen.values()) {
+      const first = group[0], head = document.createElement('li');
+      head.className = 'site';
+      const title = document.createElement('span');
+      title.textContent = [first.siteName, first.address].filter(Boolean).join(', ') || T('site necunoscut în registru');
+      const hsub = document.createElement('span');
+      hsub.className = 'sub';
+      hsub.textContent = (group.length === 1 ? T('1 concentrator a auzit contorul') : T('{0} concentratoare au auzit contorul', group.length))
+        + (first.distanceM !== null ? T(' · {0} spre {1}', dist(first.distanceM), T(first.compass)) : '');
+      head.append(title, document.createElement('span'), hsub);
+      list.appendChild(head);
+      for (const r of group) {
+        const li = document.createElement('li');
+        li.className = 'child';
+        li.setAttribute('role', 'button'); li.tabIndex = 0;
+        const name = document.createElement('span');
+        name.textContent = r.serial + ' ';
+        const tag = document.createElement('span');
+        tag.className = 'tag ' + r.relation; tag.textContent = T(RELATION_RO[r.relation]);
+        name.appendChild(tag);
+        const val = document.createElement('span');
+        val.className = 'val'; val.textContent = dbm(r.bestRssi);
+        const sub = document.createElement('span');
+        sub.className = 'sub';
+        sub.textContent = T('felii: {0} · cel mai bun pe felia {1}', r.sectors.join(', ') || '–', r.bestPhase === 'coarse' ? r.bestStep : (s.coarseWinner ? s.coarseWinner.step : '–'));
+        li.append(name, val, sub);
+        li.onclick = () => { selectedSerial = r.serial; showView('map'); };
+        list.appendChild(li);
+      }
     }
     const b = s.backup;
     $('backup-card').hidden = !b;
