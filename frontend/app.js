@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.6';
+  const VERSION = '0.7';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -408,40 +408,65 @@
   }
 
   // ---------------------------------------------------------------- map
+  /** One entry per site that heard the meter: its best concentrator, signal and distance. */
+  function siteLinks(s) {
+    const by = new Map();
+    for (const r of s.receivers) {
+      if (r.latitude === null) continue;
+      const key = r.siteCode || r.serial, cur = by.get(key);
+      if (!cur) {
+        by.set(key, { key, lat: r.latitude, lon: r.longitude, name: r.siteName, address: r.address, distanceM: r.distanceM,
+          best: r.bestRssi, serial: r.serial, count: 1, primary: r.relation === 'PRIMARY' });
+      } else {
+        cur.count++;
+        if (r.relation === 'PRIMARY') cur.primary = true;
+        if (r.bestRssi > cur.best) { cur.best = r.bestRssi; cur.serial = r.serial; }
+      }
+    }
+    return [...by.values()].sort((x, y) => y.best - x.best);
+  }
+  // Colours follow the PROVISIONAL thresholds: good / marginal / weak.
+  const linkColor = (rssi) => {
+    const th = cfg.thresholds || { goodDbm: -95, marginalDbm: -110 };
+    return rssi >= th.goodDbm ? '#1b8a3a' : rssi >= th.marginalDbm ? '#b26a00' : '#c62828';
+  };
+  const meters = (m) => Math.round(m).toLocaleString(lang === 'da' ? 'da-DK' : 'ro-RO') + ' m';
+  const linkText = (l) => `${Math.round(l.best)} dBm` + (l.distanceM !== null ? ` · ${meters(l.distanceM)}` : '');
+  let lastFit = '';
+
   function drawMap() {
     if (!ensureMap()) { $('map-info').textContent = T('Harta nu este disponibilă.'); return; }
     mapLayer.clearLayers();
-    const g = S ? S.session.gps : null;
-    const recv = S ? S.receivers.filter((r) => r.latitude !== null) : [];
-    const sel = recv.find((r) => r.serial === selectedSerial) || recv.find((r) => r.relation === 'PRIMARY') || recv[0];
+    const g = S && S.session.gps.lat !== null ? S.session.gps : null;
+    const links = S ? siteLinks(S) : [];
     const pts = [];
-    if (g && g.lat !== null) {
-      L.circleMarker([g.lat, g.lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#1565c0', fillOpacity: 1 })
-        .bindTooltip(T('Contor / telefon')).addTo(mapLayer);
+    links.forEach((l, i) => {
+      const color = linkColor(l.best);
+      if (g) {
+        // meter -> site: signal and distance written on the line
+        const line = L.polyline([[g.lat, g.lon], [l.lat, l.lon]], { color, weight: l.primary ? 6 : 3, dashArray: l.primary ? null : '8 8', opacity: 0.9 }).addTo(mapLayer);
+        line.bindTooltip(linkText(l), { permanent: i < 6 || l.primary, direction: 'center', className: 'link-label' + (l.primary ? ' primary' : '') });
+      }
+      L.circleMarker([l.lat, l.lon], { radius: l.primary ? 10 : 7, color: '#fff', weight: 3, fillColor: color, fillOpacity: 1 })
+        .bindTooltip(`${[l.name, l.address].filter(Boolean).join(', ') || l.serial} · ${linkText(l)}`).addTo(mapLayer);
+      pts.push([l.lat, l.lon]);
+    });
+    if (g) {
+      L.circleMarker([g.lat, g.lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#1565c0', fillOpacity: 1 }).bindTooltip(T('Contor / telefon')).addTo(mapLayer);
       pts.push([g.lat, g.lon]);
     }
-    const seen = new Set();
-    for (const r of recv) {
-      const key = r.latitude + ',' + r.longitude;
-      if (seen.has(key) && r !== sel) continue;
-      seen.add(key);
-      const on = sel && r.siteCode === sel.siteCode;
-      L.circleMarker([r.latitude, r.longitude], { radius: on ? 10 : 7, color: '#fff', weight: 3, fillColor: on ? '#1b8a3a' : '#55626b', fillOpacity: 1 })
-        .bindTooltip(r.siteName || r.serial).addTo(mapLayer);
-      pts.push([r.latitude, r.longitude]);
-    }
     let info = T('Harta explică doar geometria. Măsurătoarea radio rămâne decisivă.');
-    if (sel) {
-      if (g && g.lat !== null) L.polyline([[g.lat, g.lon], [sel.latitude, sel.longitude]], { color: '#1b8a3a', weight: 3, dashArray: '6 6' }).addTo(mapLayer);
-      info = `${sel.siteName || sel.serial}${sel.address ? ', ' + sel.address : ''}` +
-        (sel.distanceM !== null ? T(' · {0}, direcția {1}° ({2})', dist(sel.distanceM), sel.bearingDeg, T(sel.compass)) : '') + '. ' + info;
-    } else if (!pts.length) {
-      info = T('Fără poziție GPS și fără receptoare cu coordonate. ') + info;
-    }
+    if (links.length) {
+      info = T('{0} site-uri au auzit contorul. Linia groasă este receptorul principal; verde = semnal bun, galben = la limită, roșu = slab.', links.length)
+        + (g ? '' : ' ' + T('Alege poziția contorului la început ca să apară liniile și distanțele.'));
+    } else if (!pts.length) info = T('Fără poziție GPS și fără receptoare cu coordonate. ') + info;
     $('map-info').textContent = info;
+    const fit = pts.map((q) => q.join(',')).join(';');
     setTimeout(() => {
       map.invalidateSize();
-      if (pts.length > 1) map.fitBounds(pts, { padding: [40, 40] });
+      if (fit === lastFit) return;              // keep the installer's own pan and zoom
+      lastFit = fit;
+      if (pts.length > 1) map.fitBounds(pts, { padding: [50, 50] });
       else map.setView(pts[0] || [56, 10.5], pts.length ? 16 : 6);
     }, 0);
   }
@@ -942,9 +967,101 @@
     }
   }
 
-  function buildReport(s) {
+  /** Map for the report: OpenStreetMap background when it loads, plain grid otherwise. */
+  async function reportMap(s, W, H, useTiles = true) {
+    const g = s.session.gps, links = siteLinks(s);
+    if (!g || g.lat === null || !links.length) return null;
+    const merc = (lat, lon, z) => {
+      const n = 256 * 2 ** z, sl = Math.sin(lat * Math.PI / 180);
+      return [(lon + 180) / 360 * n, (0.5 - Math.log((1 + sl) / (1 - sl)) / (4 * Math.PI)) * n];
+    };
+    const pts = [[g.lat, g.lon], ...links.map((l) => [l.lat, l.lon])];
+    let z = 17, box;
+    for (; z >= 4; z--) {
+      const q = pts.map((p) => merc(p[0], p[1], z));
+      box = [Math.min(...q.map((v) => v[0])), Math.min(...q.map((v) => v[1])), Math.max(...q.map((v) => v[0])), Math.max(...q.map((v) => v[1]))];
+      if (box[2] - box[0] <= W - 260 && box[3] - box[1] <= H - 170) break;
+    }
+    const ox = (box[0] + box[2]) / 2 - W / 2, oy = (box[1] + box[3]) / 2 - H / 2;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    x.fillStyle = '#eef2f4'; x.fillRect(0, 0, W, H);
+    let tiles = false;
+    if (useTiles) {
+      try {
+        const jobs = [];
+        for (let tx = Math.floor(ox / 256); tx <= Math.floor((ox + W) / 256); tx++) {
+          for (let ty = Math.floor(oy / 256); ty <= Math.floor((oy + H) / 256); ty++) {
+            jobs.push(new Promise((ok, fail) => {
+              const img = new Image();
+              img.crossOrigin = 'anonymous';
+              img.onload = () => ok({ img, tx, ty }); img.onerror = () => fail(new Error('tile'));
+              img.src = `https://tile.openstreetmap.org/${z}/${tx}/${ty}.png`;
+            }));
+          }
+        }
+        const got = await Promise.race([Promise.all(jobs), new Promise((_, fail) => setTimeout(() => fail(new Error('timeout')), 6000))]);
+        for (const t of got) x.drawImage(t.img, Math.round(t.tx * 256 - ox), Math.round(t.ty * 256 - oy));
+        x.fillStyle = 'rgba(255,255,255,0.45)'; x.fillRect(0, 0, W, H);
+        x.getImageData(0, 0, 1, 1);               // throws if the tiles may not be exported
+        tiles = true;
+      } catch { return reportMap(s, W, H, false); }
+    }
+    if (!tiles) {
+      x.strokeStyle = '#d5dde2'; x.lineWidth = 1;
+      for (let v = 0; v < W; v += 80) { x.beginPath(); x.moveTo(v, 0); x.lineTo(v, H); x.stroke(); }
+      for (let v = 0; v < H; v += 80) { x.beginPath(); x.moveTo(0, v); x.lineTo(W, v); x.stroke(); }
+    }
+    const P = (lat, lon) => { const m = merc(lat, lon, z); return [m[0] - ox, m[1] - oy]; };
+    const [mx, my] = P(g.lat, g.lon);
+    const boxed = (str, bx, by, color, bold) => {
+      x.font = `${bold ? 700 : 600} 21px ${SANS}`;
+      const w = x.measureText(str).width + 16;
+      const lx = Math.max(4, Math.min(W - w - 4, bx - w / 2)), ly = Math.max(4, Math.min(H - 34, by - 15));
+      x.fillStyle = '#fff'; x.strokeStyle = color; x.lineWidth = 2;
+      x.beginPath(); x.roundRect(lx, ly, w, 30, 6); x.fill(); x.stroke();
+      x.fillStyle = INK.ink; x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillText(str, lx + 8, ly + 16);
+    };
+    [...links].reverse().forEach((l) => {          // weakest first, so the strong links stay on top
+      const [sx, sy] = P(l.lat, l.lon), color = linkColor(l.best);
+      x.strokeStyle = color; x.lineWidth = l.primary ? 7 : 3; x.setLineDash(l.primary ? [] : [12, 9]);
+      x.beginPath(); x.moveTo(mx, my); x.lineTo(sx, sy); x.stroke(); x.setLineDash([]);
+      x.fillStyle = color; x.strokeStyle = '#fff'; x.lineWidth = 3;
+      x.beginPath(); x.arc(sx, sy, l.primary ? 12 : 9, 0, 2 * Math.PI); x.fill(); x.stroke();
+    });
+    links.forEach((l, i) => {
+      if (i >= 8 && !l.primary) return;
+      const [sx, sy] = P(l.lat, l.lon);
+      boxed(linkText(l), mx + (sx - mx) * 0.62, my + (sy - my) * 0.62, linkColor(l.best), l.primary);
+      x.font = `600 18px ${SANS}`; x.fillStyle = INK.ink; x.textAlign = 'center'; x.textBaseline = 'top';
+      x.lineWidth = 4; x.strokeStyle = 'rgba(255,255,255,0.9)';
+      const nm = (l.name || (l.address || '').split(',')[0] || l.serial).slice(0, 26);
+      x.strokeText(nm, sx, sy + 15); x.fillText(nm, sx, sy + 15);
+    });
+    x.fillStyle = INK.blue; x.strokeStyle = '#fff'; x.lineWidth = 4;
+    x.beginPath(); x.arc(mx, my, 12, 0, 2 * Math.PI); x.fill(); x.stroke();
+    x.font = `700 19px ${SANS}`; x.textAlign = 'center'; x.textBaseline = 'bottom'; x.lineWidth = 4; x.strokeStyle = 'rgba(255,255,255,0.9)';
+    x.strokeText(T('Contor'), mx, my - 15); x.fillStyle = INK.ink; x.fillText(T('Contor'), mx, my - 15);
+    // legend, scale, north, attribution
+    const legend = [[linkColor(-50), T('bun')], [linkColor(-100), T('la limită')], [linkColor(-130), T('slab')]];
+    x.font = `600 17px ${SANS}`; x.textBaseline = 'middle'; x.textAlign = 'left';
+    let lx = 14;
+    x.fillStyle = 'rgba(255,255,255,0.88)'; x.fillRect(6, H - 38, 470, 32);
+    for (const [col, name] of legend) { x.fillStyle = col; x.fillRect(lx, H - 27, 26, 9); x.fillStyle = INK.ink; x.fillText(name, lx + 32, H - 22); lx += 44 + x.measureText(name).width; }
+    x.fillStyle = INK.ink; x.fillRect(lx, H - 29, 26, 13); x.fillText('= ' + T('receptor principal'), lx + 32, H - 22);
+    const mpp = 156543.03392 * Math.cos(g.lat * Math.PI / 180) / 2 ** z;
+    const nice = [50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000].find((v) => v / mpp >= 90) || 50000;
+    x.fillStyle = 'rgba(255,255,255,0.88)'; x.fillRect(W - nice / mpp - 30, 8, nice / mpp + 22, 38);
+    x.fillStyle = INK.ink; x.fillRect(W - nice / mpp - 18, 34, nice / mpp, 4);
+    x.textAlign = 'right'; x.fillText(meters(nice) + '   N ↑', W - 18, 22);
+    if (tiles) { x.font = `400 14px ${SANS}`; x.fillStyle = 'rgba(255,255,255,0.85)'; x.fillRect(W - 150, H - 22, 150, 22); x.fillStyle = INK.ink; x.fillText('© OpenStreetMap', W - 6, H - 11); }
+    return c;
+  }
+
+  async function buildReport(s) {
     const W = 1080, P = 56, big = document.createElement('canvas');
-    big.width = W; big.height = 3200;
+    big.width = W; big.height = 4400;
     const x = big.getContext('2d');
     let y = 0;
     const font = (weight, px) => { x.font = `${weight} ${px}px ${SANS}`; };
@@ -988,6 +1105,15 @@
     row(T('Instalator'), s.session.technician);
     const g = s.session.gps;
     row(T('Poziție'), g && g.lat !== null ? `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}` + (g.accuracyM ? ` (±${g.accuracyM} m)` : '') : T('neînregistrată'));
+
+    const mapCanvas = await reportMap(s, W - 2 * P, 620);
+    if (mapCanvas) {
+      section(T('Hartă'));
+      y += 14;
+      x.drawImage(mapCanvas, P, y);
+      x.strokeStyle = INK.light; x.lineWidth = 2; x.strokeRect(P, y, W - 2 * P, 620);
+      y += 620;
+    }
 
     section(T('Baleiaj'));
     const top = y + 24, r = 170;
@@ -1037,7 +1163,7 @@
       y += 36; font(500, 23);
       text(q.serial, P, y); text(dbm(q.bestRssi), P + 300, y, INK.ink, 'right');
       text(T(RELATION_RO[q.relation]), P + 330, y, INK.gray);
-      text((wrap(where(q), W - 2 * P - 540)[0] || ''), P + 540, y, INK.gray);
+      text((wrap(where(q) + (q.distanceM !== null ? ' · ' + meters(q.distanceM) : ''), W - 2 * P - 540)[0] || ''), P + 540, y, INK.gray);
     }
     if (s.session.note) {
       section(T('Observații'));
@@ -1096,9 +1222,9 @@
     }, type, 0.9);
   }
 
-  $('report-btn').onclick = () => {
+  $('report-btn').onclick = async () => {
     if (!S) return;
-    try { saveCanvas(buildReport(S), safeName(S.session.meterSerial) + '.png', 'image/png', 'Raportul a fost salvat ca {0}.'); }
+    try { saveCanvas(await buildReport(S), safeName(S.session.meterSerial) + '.png', 'image/png', 'Raportul a fost salvat ca {0}.'); }
     catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   };
   $('photo-file').onchange = async (ev) => {
