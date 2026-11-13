@@ -93,6 +93,9 @@ Teste: `pip install -r requirements-dev.txt && pytest`. Cu Docker: `docker compo
 | Interfață în daneză (implicit) și română, comutabilă din antet | da |
 | Raport la finalul sesiunii: imagine `<seria>.png` cu baleiajul, reglajul fin, confirmarea finală și receptoarele | da |
 | Fotografie a antenei cu rezultatul scris pe ea: `<seria>_antenne.jpg` | da |
+| Hartă cu linii contor–site, semnal și distanță; aceeași hartă în raport | da |
+| Raport și ca PDF (`<seria>.pdf`), cu fotografia antenei pe pagina a doua | da |
+| Verificarea unui contor fără sesiune și fără CALL: cine îl aude acum și de când (`<seria>_status.pdf`) | da, doar în varianta fără server |
 | Citirea seriei tipărite cu camera (OCR) | **nu** |
 | Autentificare Microsoft Entra ID | **nu** – cuplare prin cod personal |
 | Coadă offline pentru acțiuni | **nu** – sesiunea se reia după pierderea conexiunii, dar acțiunile nu se pun în coadă |
@@ -174,7 +177,7 @@ frontend/engine.js        toată logica de măsurare, pe dispozitiv (modul făr�
 frontend/app.js           interfața; aceeași în ambele moduri
 frontend/i18n.js          textele în daneză (sursa este în română)
 frontend/                 PWA (HTML + CSS + JavaScript simplu, fără pas de build)
-tests-js/                 14 teste pentru engine.js
+tests-js/                 15 teste pentru engine.js
 backend/app/              server central opțional: aceleași reguli, în Python
 backend/scripts/          import registru, coduri de cuplare, verificare Kamstrup
 backend/tests/            18 teste
