@@ -40,6 +40,21 @@ ecranul principal și păstrarea datelor. Vezi `docs/ANDROID.md`.
 exemplu GitHub Pages, Cloudflare Pages, Azure Static Web Apps). Nu rulează nimic pe server.
 Instalatorul deschide adresa și alege „Adaugă pe ecranul principal”.
 
+### Registrul fără import pe fiecare telefon
+
+Aplicația caută registrul în această ordine:
+
+1. **Inclus în fișierul aplicației.** `python tools/build_single.py --sites linkiq_sites.csv --concentrators linkiq_koncentratorer.csv --out ../linkiq-med-register.html`
+   produce un singur fișier cu aplicația și registrul vostru. Montorii nu importă nimic, iar fișierul
+   funcționează și deschis direct din memoria telefonului. Conține locațiile reale: **nu se publică**.
+2. **Lângă aplicație, pe server.** Dacă `linkiq_sites.csv` și `linkiq_koncentratorer.csv` stau în același
+   dosar cu `index.html`, se încarcă singure la pornire. Potrivit pentru găzduire internă, cu acces
+   restricționat; nu pentru o adresă publică.
+3. **Importat manual**, o singură dată, din cardul de mai jos. Rămâne pe dispozitiv până la un nou import.
+
+Un registru mai nou (inclus sau din dosar) îl înlocuiește pe cel vechi o singură dată; un import
+manual ulterior nu este suprascris.
+
 În cardul „Date pe acest dispozitiv”:
 
 - **Încarcă site-uri / concentratoare (CSV)** – registrul rămâne doar pe telefon. Se acceptă
@@ -181,7 +196,7 @@ frontend/engine.js        toată logica de măsurare, pe dispozitiv (modul făr�
 frontend/app.js           interfața; aceeași în ambele moduri
 frontend/i18n.js          textele în daneză (sursa este în română)
 frontend/                 PWA (HTML + CSS + JavaScript simplu, fără pas de build)
-tests-js/                 17 teste pentru engine.js
+tests-js/                 18 teste pentru engine.js
 backend/app/              server central opțional: aceleași reguli, în Python
 backend/scripts/          import registru, coduri de cuplare, verificare Kamstrup
 backend/tests/            18 teste
