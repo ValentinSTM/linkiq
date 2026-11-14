@@ -283,5 +283,18 @@ window.LINKIQ_DA = {
  "Scoate site-urile și concentratoarele din aplicație": "Fjern sites og koncentratorer fra appen",
  "Apasă din nou ca să scoți registrul; va trebui importat iar": "Tryk igen for at fjerne registret; det skal så importeres igen",
  "Șterge măsurătorile salvate": "Slet gemte målinger",
- "Apasă din nou ca să ștergi măsurătorile": "Tryk igen for at slette målingerne"
+ "Apasă din nou ca să ștergi măsurătorile": "Tryk igen for at slette målingerne",
+ "Feedback și propuneri": "Feedback og forslag",
+ "Spune-ne ce nu merge sau ce ar trebui îmbunătățit. Mesajul se trimite prin Teams sau se copiază; aplicația nu trimite nimic singură.": "Fortæl os, hvad der ikke virker, eller hvad der kan blive bedre. Beskeden deles via Teams eller kopieres; appen sender ikke noget selv.",
+ "Trimite feedback": "Giv feedback",
+ "Eroare": "Fejl",
+ "Propunere": "Forslag",
+ "Întrebare": "Spørgsmål",
+ "Ce s-a întâmplat? Ce ai fi vrut să se întâmple?": "Hvad skete der? Hvad havde du forventet?",
+ "Adaugă date tehnice (versiune, telefon); fără serii de contoare și fără poziții": "Tilføj tekniske oplysninger (version, telefon); ingen målernumre og ingen positioner",
+ "Trimite (Teams, e-mail…)": "Del (Teams, mail …)",
+ "Copiază textul": "Kopiér teksten",
+ "Text copiat. Lipește-l în grupul de Teams.": "Teksten er kopieret. Indsæt den i Teams-gruppen.",
+ "Alege tipul și scrie câteva cuvinte.": "Vælg type, og skriv et par ord.",
+ "Nu am putut deschide trimiterea. Folosește „Copiază textul”.": "Delingen kunne ikke åbnes. Brug „Kopiér teksten”."
 };

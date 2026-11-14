@@ -839,6 +839,12 @@ ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
 button.link.armed { color: var(--red); font-weight: 800; }
 button.link[hidden] { display: none; }
 
+#feedback { position: fixed; inset: 0; background: rgba(11, 31, 42, .6); z-index: 900; display: flex; align-items: flex-end; justify-content: center; }
+#feedback[hidden] { display: none; }
+#feedback .sheet { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+#fb-card { display: flex; flex-direction: column; gap: 8px; }
+.hint.center { text-align: center; }
+
 </style>
 </head>
 <body>
@@ -908,6 +914,11 @@ button.link[hidden] { display: none; }
       <button type="button" id="dir-open" class="secondary" hidden>Deschide dosarul</button>
       <ul id="dir-list" class="rows"></ul>
     </div>
+    <div id="fb-card" class="card">
+      <h2>Feedback și propuneri</h2>
+      <p class="hint">Spune-ne ce nu merge sau ce ar trebui îmbunătățit. Mesajul se trimite prin Teams sau se copiază; aplicația nu trimite nimic singură.</p>
+      <button type="button" id="fb-open" class="secondary">Trimite feedback</button>
+    </div>
     <div id="candidates" class="card" hidden>
       <h2>Site-uri apropiate</h2>
       <ul id="candidate-list" class="rows"></ul>
@@ -969,6 +980,7 @@ button.link[hidden] { display: none; }
       <button type="button" id="pos-btn" class="secondary"></button>
     </div>
     <button id="restart-btn" class="danger">Renunță și ia-o de la capăt</button>
+    <p class="hint center"><button type="button" id="fb-open2" class="link">Trimite feedback</button></p>
   </section>
 
   <!-- Receptoare -->
@@ -1009,6 +1021,19 @@ button.link[hidden] { display: none; }
     <button id="scan-photo-btn" class="primary">Fotografiază codul</button>
     <button id="scan-close" class="secondary">Închide</button>
     <input type="file" id="scan-photo" accept="image/*" capture="environment" hidden>
+  </div>
+</div>
+
+<div id="feedback" hidden>
+  <div class="card sheet">
+    <h2>Feedback și propuneri</h2>
+    <div class="chips" id="fb-type"></div>
+    <textarea id="fb-text" rows="5" maxlength="2000" placeholder="Ce s-a întâmplat? Ce ai fi vrut să se întâmple?"></textarea>
+    <label class="check"><input type="checkbox" id="fb-tech" checked> Adaugă date tehnice (versiune, telefon); fără serii de contoare și fără poziții</label>
+    <p id="fb-msg" class="hint" hidden></p>
+    <button type="button" id="fb-share" class="primary">Trimite (Teams, e-mail…)</button>
+    <button type="button" id="fb-copy" class="secondary">Copiază textul</button>
+    <button type="button" id="fb-close" class="secondary">Închide</button>
   </div>
 </div>
 
@@ -1312,7 +1337,20 @@ window.LINKIQ_DA = {
  "Scoate site-urile și concentratoarele din aplicație": "Fjern sites og koncentratorer fra appen",
  "Apasă din nou ca să scoți registrul; va trebui importat iar": "Tryk igen for at fjerne registret; det skal så importeres igen",
  "Șterge măsurătorile salvate": "Slet gemte målinger",
- "Apasă din nou ca să ștergi măsurătorile": "Tryk igen for at slette målingerne"
+ "Apasă din nou ca să ștergi măsurătorile": "Tryk igen for at slette målingerne",
+ "Feedback și propuneri": "Feedback og forslag",
+ "Spune-ne ce nu merge sau ce ar trebui îmbunătățit. Mesajul se trimite prin Teams sau se copiază; aplicația nu trimite nimic singură.": "Fortæl os, hvad der ikke virker, eller hvad der kan blive bedre. Beskeden deles via Teams eller kopieres; appen sender ikke noget selv.",
+ "Trimite feedback": "Giv feedback",
+ "Eroare": "Fejl",
+ "Propunere": "Forslag",
+ "Întrebare": "Spørgsmål",
+ "Ce s-a întâmplat? Ce ai fi vrut să se întâmple?": "Hvad skete der? Hvad havde du forventet?",
+ "Adaugă date tehnice (versiune, telefon); fără serii de contoare și fără poziții": "Tilføj tekniske oplysninger (version, telefon); ingen målernumre og ingen positioner",
+ "Trimite (Teams, e-mail…)": "Del (Teams, mail …)",
+ "Copiază textul": "Kopiér teksten",
+ "Text copiat. Lipește-l în grupul de Teams.": "Teksten er kopieret. Indsæt den i Teams-gruppen.",
+ "Alege tipul și scrie câteva cuvinte.": "Vælg type, og skriv et par ord.",
+ "Nu am putut deschide trimiterea. Folosește „Copiază textul”.": "Delingen kunne ikke åbnes. Brug „Kopiér teksten”."
 };
 
 </script>
@@ -12218,7 +12256,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.12';
+  const VERSION = '0.13';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -13798,6 +13836,65 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
       lastPhoto = await stampPhoto(file, S);
       await saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + '_antenne.jpg', 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
+  };
+
+  // ---------------------------------------------------------------- feedback
+  // The app has no server of its own, so feedback leaves through the phone's share
+  // sheet (Teams, mail) or the clipboard. Technical context is added automatically;
+  // meter serials and positions are never included.
+  let fbType = null;
+  function techLine() {
+    const ua = navigator.userAgent;
+    const device = (ua.match(/Android [\d.]+/) || ua.match(/iPhone OS [\d_]+/) || ua.match(/Windows NT [\d.]+/) || ['?'])[0].replace(/_/g, '.');
+    const browser = (ua.match(/(?:Chrome|CriOS|Firefox|Version)\/\d+/) || ['?'])[0];
+    const reg = engine ? engine.registryInfo() : null;
+    const parts = [`LinkIQ v${VERSION}`, device, browser, `${screen.width}×${screen.height}`,
+      location.protocol === 'file:' || location.protocol === 'content:' ? 'fil' : location.host,
+      engine ? 'uden server' : 'med server', 'sprog ' + lang,
+      reg ? `register ${reg.sites}/${reg.concentrators}` + (reg.concentrators ? ' (' + ((engine.db.registrySource || {}).origin || '?') + ')' : '') : null,
+      typeof reportDir !== 'undefined' && reportDir ? 'rapportmappe valgt' : 'ingen rapportmappe',
+      storageWorks ? null : 'kan ikke gemme data',
+      S ? `skærm: ${S.session.status}/${S.session.state}` + (S.session.outcome ? '/' + S.session.outcome : '') : 'skærm: start'];
+    return parts.filter(Boolean).join(' · ');
+  }
+  function feedbackText() {
+    const who = ($('tech').value || '').trim();
+    return `[LinkIQ feedback · ${T(fbType)}]\n${$('fb-text').value.trim()}\n` + (who ? `\n${T('Instalator')}: ${who}` : '')
+      + ($('fb-tech').checked ? `\n— ${techLine()}` : '');
+  }
+  function drawFeedbackTypes() {
+    chipRow($('fb-type'), ['Eroare', 'Propunere', 'Întrebare'].map((k) => [k, T(k)]), fbType, (k) => { fbType = k; drawFeedbackTypes(); });
+  }
+  function openFeedback() {
+    $('fb-msg').hidden = true;
+    $('fb-share').hidden = !navigator.share;
+    drawFeedbackTypes();
+    $('feedback').hidden = false;
+  }
+  const fbReady = () => {
+    if (fbType && $('fb-text').value.trim().length >= 3) return true;
+    $('fb-msg').textContent = T('Alege tipul și scrie câteva cuvinte.'); $('fb-msg').hidden = false;
+    return false;
+  };
+  $('fb-open').onclick = openFeedback;
+  $('fb-open2').onclick = openFeedback;
+  $('fb-close').onclick = () => { $('feedback').hidden = true; };
+  $('fb-share').onclick = async () => {
+    if (!fbReady()) return;
+    try { await navigator.share({ title: 'LinkIQ feedback', text: feedbackText() }); $('fb-text').value = ''; $('feedback').hidden = true; }
+    catch (e) { if (e.name !== 'AbortError') { $('fb-msg').textContent = T('Nu am putut deschide trimiterea. Folosește „Copiază textul”.'); $('fb-msg').hidden = false; } }
+  };
+  $('fb-copy').onclick = async () => {
+    if (!fbReady()) return;
+    const text = feedbackText();
+    try { await navigator.clipboard.writeText(text); }
+    catch {                                   // older browsers, or the page opened as a file
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch { /* nothing more to try */ }
+      ta.remove();
+    }
+    $('fb-msg').textContent = T('Text copiat. Lipește-l în grupul de Teams.'); $('fb-msg').hidden = false;
   };
 
   // ---------------------------------------------------------------- boot
