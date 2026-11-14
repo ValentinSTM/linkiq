@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.9';
+  const VERSION = '0.10';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -102,6 +102,60 @@
   const dbm = (v) => (v === null || v === undefined ? '–' : Math.round(v) + ' dBm');
   const dist = (m) => (m === null || m === undefined ? '' : m >= 1000 ? (m / 1000).toFixed(1) + ' km' : m + ' m');
 
+  // ---------------------------------------------------------------- installation details
+  // Big chips, nothing preselected, at most five taps. The card is on screen during
+  // the whole session, so it can be filled in while waiting for a measurement.
+  const INSTALL = {
+    meter: [['basement', 'Subsol'], ['ground', 'Parter'], ['floor', 'Etaj']],
+    type: [['internal', 'Internă'], ['external', 'Externă']],
+    place: [['meter', 'Lângă contor'], ['basement', 'Subsol'], ['ground', 'Parter'], ['floor', 'Etaj'], ['facade', 'Fațadă, afară'], ['roof', 'Acoperiș']],
+  };
+  const levelDone = (l) => !!l && ((l.kind !== 'basement' && l.kind !== 'floor') || !!l.n);
+  const installDone = (i) => !!i && levelDone(i.meterLevel) && !!i.antennaType && levelDone(i.antennaPlace);
+  function levelText(l) {
+    if (!l) return '–';
+    return { basement: T('Subsol −{0}', l.n), ground: T('Parter'), floor: T('Etaj {0}', l.n), meter: T('lângă contor'), facade: T('fațadă, afară'), roof: T('acoperiș') }[l.kind];
+  }
+  const typeText = (t) => (t === 'internal' ? T('Internă') : t === 'external' ? T('Externă') : '–');
+  const installShort = (i) => (i ? [T('Contor') + ': ' + levelText(i.meterLevel), T('Antenă') + ' ' + typeText(i.antennaType).toLowerCase() + ', ' + levelText(i.antennaPlace)].join(' · ') : '');
+
+  function chipRow(el, options, current, onPick) {
+    el.replaceChildren();
+    for (const [value, label] of options) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = label;
+      b.className = current === value ? 'on' : '';
+      b.setAttribute('aria-pressed', String(current === value));
+      b.onclick = () => onPick(value);
+      el.appendChild(b);
+    }
+  }
+  function levelRow(el, level, changed) {
+    const need = level && (level.kind === 'basement' || level.kind === 'floor');
+    el.hidden = !need;
+    if (!need) return;
+    const options = level.kind === 'basement' ? [1, 2, 3].map((n) => [n, '−' + n]) : [1, 2, 3, 4, 5, 6, 7, 8].map((n) => [n, String(n)]);
+    chipRow(el, options, level.n, (n) => { level.n = n; changed(); });
+    if (level.kind === 'floor') {                       // rare: higher than the eighth floor
+      const more = document.createElement('input');
+      more.type = 'number'; more.min = 9; more.max = 60; more.placeholder = '9+'; more.inputMode = 'numeric';
+      if (level.n > 8) more.value = level.n;
+      more.onchange = () => { const n = Math.round(Number(more.value)); if (n >= 9 && n <= 60) { level.n = n; changed(); } };
+      el.appendChild(more);
+    }
+  }
+  function drawInstall() {
+    const i = ui.install = ui.install || { meterLevel: null, antennaType: null, antennaPlace: null };
+    const changed = () => { store.set('ui', ui); drawInstall(); };
+    chipRow($('ch-meter'), INSTALL.meter.map(([v, l]) => [v, T(l)]), i.meterLevel && i.meterLevel.kind, (k) => { i.meterLevel = { kind: k, n: null }; changed(); });
+    levelRow($('ch-meter-n'), i.meterLevel, changed);
+    chipRow($('ch-type'), INSTALL.type.map(([v, l]) => [v, T(l)]), i.antennaType, (t) => { i.antennaType = t; changed(); });
+    chipRow($('ch-place'), INSTALL.place.map(([v, l]) => [v, T(l)]), i.antennaPlace && i.antennaPlace.kind, (k) => { i.antennaPlace = { kind: k, n: null }; changed(); });
+    levelRow($('ch-place-n'), i.antennaPlace, changed);
+    $('install-ok').textContent = installDone(i) ? '✓' : '';
+    $('install-card').classList.toggle('done', installDone(i));
+  }
+
   // ---------------------------------------------------------------- next instruction
   function nextAction(s) {
     if (s.session.status === 'CHECK') return { kind: 'check' };
@@ -169,6 +223,23 @@
     $('finish-box').hidden = true;
     $('report-box').hidden = a.kind !== 'done' && a.kind !== 'check';
     $('photo-label').hidden = a.kind === 'check';
+    // installation card: under the buttons while measuring, above "save" at the end
+    const card = $('install-card'), active = s.session.status === 'ACTIVE';
+    card.hidden = !active;
+    if (active) {
+      const ref = a.kind === 'finish' ? $('finish-box') : $('align-error');
+      if (card.nextElementSibling !== ref) ref.parentNode.insertBefore(card, ref);
+    }
+    // position: optional, can be set or corrected after the fact
+    const showPos = a.kind === 'check' || a.kind === 'done' || a.kind === 'finish';
+    $('pos-card').hidden = !showPos;
+    if (showPos) {
+      const g = s.session.gps;
+      $('pos-text').textContent = g.lat !== null
+        ? T('Poziția contorului: {0}, {1}', g.lat.toFixed(5), g.lon.toFixed(5)) + (g.source === 'saved' ? ' · ' + T('salvată la vizita din {0}', fmtTime(g.savedUtc)) : '') + '.'
+        : T('Fără poziția contorului nu apar harta și distanțele. O poți indica pe hartă, dacă vrei.');
+      $('pos-btn').textContent = T(g.lat !== null ? 'Corectează poziția pe hartă' : 'Indică poziția pe hartă');
+    }
 
     switch (a.kind) {
       case 'initialCall':
@@ -242,7 +313,11 @@
         }
         if (!sel.dataset.touched) sel.value = s.suggestedOutcome;
         setButtons({ label: T('Salvează rezultatul'), cls: 'go', run: async () => {   // values read at tap time
-          apply(await api(`/api/sessions/${s.session.id}/complete`, 'POST', { outcome: sel.value, note: $('note').value || null }));
+          if (!installDone(ui.install)) {
+            $('install-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            throw new Error(T('Completează montajul: nivelul contorului, tipul antenei și locul antenei.'));
+          }
+          apply(await api(`/api/sessions/${s.session.id}/complete`, 'POST', { outcome: sel.value, note: $('note').value || null, install: ui.install }));
         } });
         break;
       }
@@ -544,6 +619,7 @@
     apply(summary);
     ui = store.get('ui', {}) || {};
     if (ui.sid !== S.session.id) { ui = { sid: S.session.id }; store.set('ui', ui); }
+    drawInstall();
     $('outcome').replaceChildren(); delete $('outcome').dataset.touched; $('note').value = '';
     showView('align');
     render();
@@ -624,24 +700,38 @@
     }
     setTimeout(() => {
       map.invalidateSize();
-      const last = gps || store.get('lastPos');
+      const here = S && S.session.gps.lat !== null ? S.session.gps : gps;
+      const last = here || store.get('lastPos');
       if (last) map.setView([last.lat, last.lon], 17);
       else if (sites.length > 1) map.fitBounds(sites.map((x) => [x.latitude, x.longitude]), { padding: [40, 40] });
       else if (sites.length) map.setView([sites[0].latitude, sites[0].longitude], 14);
       else map.setView([56, 10.5], 7);
-      if (gps) setPick(gps.lat, gps.lon, false);
+      if (here) setPick(here.lat, here.lon, false);
     }, 0);
   }
   function endPick() {
     picking = false;
     if (pickMarker) { pickMarker.remove(); pickMarker = null; }
-    showView('start');
+    showView(S ? 'align' : 'start');
   }
   $('pick-btn').onclick = () => { picking = true; picked = null; $('pick-ok').disabled = true; $('pick-info').textContent = T('Nicio poziție aleasă.'); showView('map'); };
   $('pick-cancel').onclick = endPick;
-  $('pick-ok').onclick = () => {
-    gps = { lat: picked.lat, lon: picked.lon, accuracyM: null };
+  $('pos-btn').onclick = () => { picking = true; picked = null; $('pick-ok').disabled = true; $('pick-info').textContent = T('Nicio poziție aleasă.'); showView('map'); };
+  $('pick-ok').onclick = async () => {
     store.set('lastPos', picked);
+    if (S) {                                   // position for the session or status check on screen
+      const pos = { lat: picked.lat, lon: picked.lon, accuracyM: null };
+      try {
+        apply(S.session.status === 'CHECK'
+          ? await api('/api/check', 'POST', { meterSerial: S.session.meterSerial, technician: S.session.technician, gps: pos })
+          : await api(`/api/sessions/${S.session.id}/position`, 'POST', { gps: pos }));
+      } catch (e) { showError('align-error', e.status === 404 ? 'Poziția se poate schimba doar în varianta fără server.' : e.message); }
+      lastFit = '';
+      endPick();
+      render();
+      return;
+    }
+    gps = { lat: picked.lat, lon: picked.lon, accuracyM: null };
     $('gps-info').textContent = T('Poziție aleasă pe hartă: {0}, {1}.', picked.lat.toFixed(5), picked.lon.toFixed(5));
     endPick();
     showCandidates();
@@ -884,7 +974,7 @@
   $('lang-btn').onclick = () => {
     lang = lang === 'da' ? 'ro' : 'da';
     store.set('lang', lang);
-    translatePage(); refreshData(); refreshReportDir(); render();
+    translatePage(); refreshData(); refreshReportDir(); if (S) drawInstall(); render();
   };
   document.querySelectorAll('#tabs button').forEach((b) => { b.onclick = () => showView(b.dataset.view); });
   window.addEventListener('hashchange', () => { if (location.hash.startsWith('#pair=')) location.reload(); });
@@ -1150,6 +1240,14 @@
     row(T('Poziție'), g && g.lat !== null ? `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}` + (g.accuracyM ? ` (±${g.accuracyM} m)` : '') + (g.source === 'saved' ? ' · ' + T('salvată la vizita din {0}', fmtTime(g.savedUtc)) : '') : T('neînregistrată'));
     if (isCheck) row(T('Auzit ultima dată'), s.check.lastSeenUtc ? `${fmtTime(s.check.lastSeenUtc)} (${ago(s.check.lastSeenUtc)})` : '–');
 
+    const ins = s.session.install;
+    if (ins) {
+      section(T('Montaj'));
+      row(T('Contor'), levelText(ins.meterLevel));
+      row(T('Antenă'), typeText(ins.antennaType));
+      row(T('Locul antenei'), levelText(ins.antennaPlace));
+    }
+
     const mapCanvas = await reportMap(s, W - 2 * P, 620);
     if (mapCanvas) {
       section(T('Hartă'));
@@ -1249,7 +1347,7 @@
       [`600 ${Math.round(u * 1.15)}px ${SANS}`, signal + (s.primary ? ` · ${T('Receptor')} ${s.primary.serial}` : '')],
       [`500 ${u}px ${SANS}`, [w ? T('Felia {0}', w.step) + ' / ' + Math.max(cfg.coarseSteps, ...s.coarse.map((q) => q.step)) : null,
         fmtTime(s.session.finishedUtc || s.session.startedUtc), s.session.technician].filter(Boolean).join(' · ')],
-      [`400 ${Math.round(u * 0.8)}px ${SANS}`, (s.session.gps.lat !== null ? `${s.session.gps.lat.toFixed(5)}, ${s.session.gps.lon.toFixed(5)} · ` : '')
+      [`400 ${Math.round(u * 0.8)}px ${SANS}`, (s.session.install ? installShort(s.session.install) + ' · ' : '') + (s.session.gps.lat !== null ? `${s.session.gps.lat.toFixed(5)}, ${s.session.gps.lon.toFixed(5)} · ` : '')
         + `LinkIQ Field Assistant v${VERSION}` + (s.session.demo ? ' · DEMO' : '')],
     ];
     x.textAlign = 'left'; x.textBaseline = 'alphabetic'; x.fillStyle = '#fff';

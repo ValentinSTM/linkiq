@@ -824,6 +824,18 @@ ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
 #dir-card[hidden] { display: none; }
 #dir-list li span:first-child { word-break: break-all; }
 
+#install-card { display: flex; flex-direction: column; gap: 8px; }
+#install-card[hidden] { display: none; }
+#install-card.done { border-color: var(--green); }
+#install-ok { color: var(--green); }
+#install-card .q { margin: 6px 0 0; font-weight: 650; font-size: 15px; }
+.chips button.on { background: var(--blue); color: #fff; }
+.chips.sub { padding-left: 14px; border-left: 4px solid var(--blue); }
+.chips.sub button { min-width: 54px; }
+.chips input { width: 84px; min-height: 46px; padding: 6px 10px; }
+#pos-card { display: flex; flex-direction: column; gap: 8px; }
+#pos-card[hidden] { display: none; }
+
 </style>
 </head>
 <body>
@@ -935,7 +947,22 @@ ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
     </div>
     <button id="main-btn" class="primary big"></button>
     <button id="alt-btn" class="secondary" hidden></button>
+    <div id="install-card" class="card" hidden>
+      <h2>Montaj <span id="install-ok"></span></h2>
+      <p class="q">Contorul este la</p>
+      <div class="chips" id="ch-meter"></div>
+      <div class="chips sub" id="ch-meter-n" hidden></div>
+      <p class="q">Antenă</p>
+      <div class="chips" id="ch-type"></div>
+      <p class="q">Antena este montată</p>
+      <div class="chips" id="ch-place"></div>
+      <div class="chips sub" id="ch-place-n" hidden></div>
+    </div>
     <p id="align-error" class="error" hidden></p>
+    <div id="pos-card" class="card" hidden>
+      <p id="pos-text" class="hint"></p>
+      <button type="button" id="pos-btn" class="secondary"></button>
+    </div>
     <button id="restart-btn" class="danger">Renunță și ia-o de la capăt</button>
   </section>
 
@@ -1247,7 +1274,32 @@ window.LINKIQ_DA = {
  "Nu am putut folosi dosarul ales: {0}": "Den valgte mappe kunne ikke bruges: {0}",
  "Poziția este cea salvată la vizita din {0}.": "Positionen er den, der blev gemt ved besøget {0}.",
  "salvată la vizita din {0}": "gemt ved besøget {0}",
- "Pentru acest contor există o poziție salvată la vizita din {0}; se folosește dacă nu alegi alta.": "For denne måler er der gemt en position fra besøget {0}; den bruges, hvis du ikke vælger en anden."
+ "Pentru acest contor există o poziție salvată la vizita din {0}; se folosește dacă nu alegi alta.": "For denne måler er der gemt en position fra besøget {0}; den bruges, hvis du ikke vælger en anden.",
+ "Montaj": "Montage",
+ "Contorul este la": "Måleren sidder i",
+ "Antenă": "Antenne",
+ "Antena este montată": "Antennen sidder",
+ "Locul antenei": "Antennens placering",
+ "Subsol": "Kælder",
+ "Parter": "Stue",
+ "Etaj": "Etage",
+ "Internă": "Intern",
+ "Externă": "Ekstern",
+ "Lângă contor": "Ved måleren",
+ "Fațadă, afară": "Facade, ude",
+ "Acoperiș": "Tag",
+ "Subsol −{0}": "Kælder −{0}",
+ "Etaj {0}": "{0}. sal",
+ "lângă contor": "ved måleren",
+ "fațadă, afară": "facade, udendørs",
+ "acoperiș": "tag",
+ "Completează montajul: nivelul contorului, tipul antenei și locul antenei.": "Udfyld montagen: målerens etage, antennetype og antennens placering.",
+ "Poziția contorului: {0}, {1}": "Målerens position: {0}, {1}",
+ "Fără poziția contorului nu apar harta și distanțele. O poți indica pe hartă, dacă vrei.": "Uden målerens position vises kort og afstande ikke. Du kan angive den på kortet, hvis du vil.",
+ "Corectează poziția pe hartă": "Ret positionen på kortet",
+ "Indică poziția pe hartă": "Angiv positionen på kortet",
+ "Poziția se poate schimba doar în varianta fără server.": "Positionen kan kun ændres i versionen uden server.",
+ "Poziție necunoscută": "Ukendt position"
 };
 
 </script>
@@ -11399,6 +11451,25 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
   const METER_RE = /^[0-9A-Za-z]{4,20}$/;
   const COMPASS_RO = ['N', 'NE', 'E', 'SE', 'S', 'SV', 'V', 'NV'];
 
+  // Installation details recorded by the installer (nothing is guessed or defaulted).
+  const LEVEL_KINDS = ['basement', 'ground', 'floor'];
+  const PLACE_KINDS = ['meter', 'basement', 'ground', 'floor', 'facade', 'roof'];
+  function cleanLevel(l, kinds) {
+    if (!l || !kinds.includes(l.kind)) return null;
+    const needsN = l.kind === 'basement' || l.kind === 'floor';
+    const n = needsN ? Math.round(Number(l.n)) : null;
+    if (needsN && !(n >= 1 && n <= 60)) return null;
+    return { kind: l.kind, n };
+  }
+  function cleanInstall(i) {
+    if (!i || typeof i !== 'object') return null;
+    const out = { meterLevel: cleanLevel(i.meterLevel, LEVEL_KINDS),
+      antennaType: ['internal', 'external'].includes(i.antennaType) ? i.antennaType : null,
+      antennaPlace: cleanLevel(i.antennaPlace, PLACE_KINDS) };
+    return out.meterLevel || out.antennaType || out.antennaPlace ? out : null;
+  }
+  const levelCode = (l) => (l ? l.kind + (l.n ? (l.kind === 'basement' ? '-' : '') + l.n : '') : '');
+
   class EngineError extends Error {
     constructor(status, code, message) { super(message); this.status = status; this.code = code; }
   }
@@ -11665,6 +11736,14 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
       if (saved) return { lat: saved.lat, lon: saved.lon, accuracyM: saved.accuracyM, source: 'saved', savedUtc: iso(saved.atMs) };
       return { lat: null, lon: null, accuracyM: null };
     }
+    /** Set or correct the position of a session's meter, also after the session is closed. */
+    setPosition(sid, gps) {
+      const s = this._session(sid, false);
+      if (!gps || gps.lat === null || gps.lat === undefined) throw new EngineError(422, 'BAD_POSITION', 'Poziție necunoscută');
+      s.gps = this._position(s.meterSerial, gps);
+      this.save();
+      return this.summary(sid);
+    }
     savedPosition(meterSerial) {
       const p = this.db.demo ? null : this.db.positions[String(meterSerial || '').trim()];
       return p ? { lat: p.lat, lon: p.lon, savedUtc: iso(p.atMs) } : null;
@@ -11830,12 +11909,13 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
         snapshotCount: r.count, waitSeconds: wait, warning, summary: summ };
     }
 
-    complete(sid, outcome = null, note = null) {
+    complete(sid, outcome = null, note = null, install = null) {
       const summ = this.summary(sid), s = this._session(sid);
       outcome = outcome || summ.suggestedOutcome;
       if (!OUTCOMES.includes(outcome)) throw new EngineError(422, 'BAD_OUTCOME', 'Rezultat necunoscut');
       s.status = outcome === 'ABORTED' ? 'ABORTED' : 'COMPLETED';
       s.state = 'COMPLETE'; s.outcome = outcome; s.note = note; s.finishedMs = this.clock();
+      s.install = cleanInstall(install);
       s.decision = { best: summ.best, primary: summ.primary, backup: summ.backup, finalCheck: summ.finalCheck, suggestedOutcome: summ.suggestedOutcome };
       this.save();
       return this.summary(sid);
@@ -11905,7 +11985,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
 
     /** Flat rows for Network Intelligence / coverage analysis. */
     exportCsv() {
-      const cols = ['session_id', 'meter_serial', 'technician', 'gps_lat', 'gps_lon', 'outcome', 'phase', 'step',
+      const cols = ['session_id', 'meter_serial', 'technician', 'gps_lat', 'gps_lon', 'outcome', 'meter_level', 'antenna_type', 'antenna_place', 'phase', 'step',
         'heading_deg', 'kind', 'concentrator_serial', 'site_code', 'owned', 'rssi_dbm', 'lqi', 'observed_utc', 'received_utc'];
       const lines = [cols.join(';')];
       for (const s of Object.values(this.db.sessions)) {
@@ -11913,7 +11993,8 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
         const byId = Object.fromEntries(s.samples.map((x) => [x.id, x]));
         for (const o of s.obs) {
           const p = byId[o.sampleId] || {};
-          lines.push([s.id, s.meterSerial, s.technician, s.gps.lat, s.gps.lon, s.outcome, p.phase, p.step, p.headingDeg,
+          const ins = s.install || {};
+          lines.push([s.id, s.meterSerial, s.technician, s.gps.lat, s.gps.lon, s.outcome, levelCode(ins.meterLevel), ins.antennaType, levelCode(ins.antennaPlace), p.phase, p.step, p.headingDeg,
             o.kind, o.serial, o.siteCode, o.owned ? 1 : 0, o.rssi, o.lqi, iso(o.observedMs), iso(o.receivedMs)]
             .map((v) => (v === null || v === undefined ? '' : String(v).replace(/[;\r\n]/g, ' '))).join(';'));
         }
@@ -12058,7 +12139,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
       return {
         session: { id: s.id, meterSerial: s.meterSerial, technician: s.technician, gps: { ...s.gps }, status: s.status,
           state: s.state, startedUtc: iso(s.startedMs), finishedUtc: iso(s.finishedMs), initialCallUtc: iso(s.initialCallMs),
-          finalCallUtc: iso(s.finalCallMs), outcome: s.outcome, note: s.note, demo: s.demo },
+          finalCallUtc: iso(s.finalCallMs), outcome: s.outcome, note: s.note, demo: s.demo, install: s.install || null },
         current, coarse, fine, final, coarseWinner, fineWinner, best,
         primary: best ? { serial: primarySerial, siteCode: primarySite, siteName: pReg ? pReg.name : null,
           address: pReg ? pReg.address : null, rssi: best.rssi } : null,
@@ -12087,7 +12168,8 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
       if (m && m[2] === 'position-marked') return this.positionMarked(m[1], body.phase, body.step, body.headingDeg === undefined ? null : body.headingDeg);
       if (m && m[2] === 'skip') return this.skip(m[1]);
       if (m && m[2] === 'poll') return this.poll(m[1]);
-      if (m && m[2] === 'complete') return this.complete(m[1], body.outcome || null, body.note || null);
+      if (m && m[2] === 'complete') return this.complete(m[1], body.outcome || null, body.note || null, body.install || null);
+      if (m && m[2] === 'position') return this.setPosition(m[1], body.gps || null);
       throw new EngineError(404, 'NOT_FOUND', 'Rută necunoscută: ' + route);
     }
   }
@@ -12103,7 +12185,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.9';
+  const VERSION = '0.10';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -12201,6 +12283,60 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
   const dbm = (v) => (v === null || v === undefined ? '–' : Math.round(v) + ' dBm');
   const dist = (m) => (m === null || m === undefined ? '' : m >= 1000 ? (m / 1000).toFixed(1) + ' km' : m + ' m');
 
+  // ---------------------------------------------------------------- installation details
+  // Big chips, nothing preselected, at most five taps. The card is on screen during
+  // the whole session, so it can be filled in while waiting for a measurement.
+  const INSTALL = {
+    meter: [['basement', 'Subsol'], ['ground', 'Parter'], ['floor', 'Etaj']],
+    type: [['internal', 'Internă'], ['external', 'Externă']],
+    place: [['meter', 'Lângă contor'], ['basement', 'Subsol'], ['ground', 'Parter'], ['floor', 'Etaj'], ['facade', 'Fațadă, afară'], ['roof', 'Acoperiș']],
+  };
+  const levelDone = (l) => !!l && ((l.kind !== 'basement' && l.kind !== 'floor') || !!l.n);
+  const installDone = (i) => !!i && levelDone(i.meterLevel) && !!i.antennaType && levelDone(i.antennaPlace);
+  function levelText(l) {
+    if (!l) return '–';
+    return { basement: T('Subsol −{0}', l.n), ground: T('Parter'), floor: T('Etaj {0}', l.n), meter: T('lângă contor'), facade: T('fațadă, afară'), roof: T('acoperiș') }[l.kind];
+  }
+  const typeText = (t) => (t === 'internal' ? T('Internă') : t === 'external' ? T('Externă') : '–');
+  const installShort = (i) => (i ? [T('Contor') + ': ' + levelText(i.meterLevel), T('Antenă') + ' ' + typeText(i.antennaType).toLowerCase() + ', ' + levelText(i.antennaPlace)].join(' · ') : '');
+
+  function chipRow(el, options, current, onPick) {
+    el.replaceChildren();
+    for (const [value, label] of options) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = label;
+      b.className = current === value ? 'on' : '';
+      b.setAttribute('aria-pressed', String(current === value));
+      b.onclick = () => onPick(value);
+      el.appendChild(b);
+    }
+  }
+  function levelRow(el, level, changed) {
+    const need = level && (level.kind === 'basement' || level.kind === 'floor');
+    el.hidden = !need;
+    if (!need) return;
+    const options = level.kind === 'basement' ? [1, 2, 3].map((n) => [n, '−' + n]) : [1, 2, 3, 4, 5, 6, 7, 8].map((n) => [n, String(n)]);
+    chipRow(el, options, level.n, (n) => { level.n = n; changed(); });
+    if (level.kind === 'floor') {                       // rare: higher than the eighth floor
+      const more = document.createElement('input');
+      more.type = 'number'; more.min = 9; more.max = 60; more.placeholder = '9+'; more.inputMode = 'numeric';
+      if (level.n > 8) more.value = level.n;
+      more.onchange = () => { const n = Math.round(Number(more.value)); if (n >= 9 && n <= 60) { level.n = n; changed(); } };
+      el.appendChild(more);
+    }
+  }
+  function drawInstall() {
+    const i = ui.install = ui.install || { meterLevel: null, antennaType: null, antennaPlace: null };
+    const changed = () => { store.set('ui', ui); drawInstall(); };
+    chipRow($('ch-meter'), INSTALL.meter.map(([v, l]) => [v, T(l)]), i.meterLevel && i.meterLevel.kind, (k) => { i.meterLevel = { kind: k, n: null }; changed(); });
+    levelRow($('ch-meter-n'), i.meterLevel, changed);
+    chipRow($('ch-type'), INSTALL.type.map(([v, l]) => [v, T(l)]), i.antennaType, (t) => { i.antennaType = t; changed(); });
+    chipRow($('ch-place'), INSTALL.place.map(([v, l]) => [v, T(l)]), i.antennaPlace && i.antennaPlace.kind, (k) => { i.antennaPlace = { kind: k, n: null }; changed(); });
+    levelRow($('ch-place-n'), i.antennaPlace, changed);
+    $('install-ok').textContent = installDone(i) ? '✓' : '';
+    $('install-card').classList.toggle('done', installDone(i));
+  }
+
   // ---------------------------------------------------------------- next instruction
   function nextAction(s) {
     if (s.session.status === 'CHECK') return { kind: 'check' };
@@ -12268,6 +12404,23 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     $('finish-box').hidden = true;
     $('report-box').hidden = a.kind !== 'done' && a.kind !== 'check';
     $('photo-label').hidden = a.kind === 'check';
+    // installation card: under the buttons while measuring, above "save" at the end
+    const card = $('install-card'), active = s.session.status === 'ACTIVE';
+    card.hidden = !active;
+    if (active) {
+      const ref = a.kind === 'finish' ? $('finish-box') : $('align-error');
+      if (card.nextElementSibling !== ref) ref.parentNode.insertBefore(card, ref);
+    }
+    // position: optional, can be set or corrected after the fact
+    const showPos = a.kind === 'check' || a.kind === 'done' || a.kind === 'finish';
+    $('pos-card').hidden = !showPos;
+    if (showPos) {
+      const g = s.session.gps;
+      $('pos-text').textContent = g.lat !== null
+        ? T('Poziția contorului: {0}, {1}', g.lat.toFixed(5), g.lon.toFixed(5)) + (g.source === 'saved' ? ' · ' + T('salvată la vizita din {0}', fmtTime(g.savedUtc)) : '') + '.'
+        : T('Fără poziția contorului nu apar harta și distanțele. O poți indica pe hartă, dacă vrei.');
+      $('pos-btn').textContent = T(g.lat !== null ? 'Corectează poziția pe hartă' : 'Indică poziția pe hartă');
+    }
 
     switch (a.kind) {
       case 'initialCall':
@@ -12341,7 +12494,11 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
         }
         if (!sel.dataset.touched) sel.value = s.suggestedOutcome;
         setButtons({ label: T('Salvează rezultatul'), cls: 'go', run: async () => {   // values read at tap time
-          apply(await api(`/api/sessions/${s.session.id}/complete`, 'POST', { outcome: sel.value, note: $('note').value || null }));
+          if (!installDone(ui.install)) {
+            $('install-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            throw new Error(T('Completează montajul: nivelul contorului, tipul antenei și locul antenei.'));
+          }
+          apply(await api(`/api/sessions/${s.session.id}/complete`, 'POST', { outcome: sel.value, note: $('note').value || null, install: ui.install }));
         } });
         break;
       }
@@ -12643,6 +12800,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     apply(summary);
     ui = store.get('ui', {}) || {};
     if (ui.sid !== S.session.id) { ui = { sid: S.session.id }; store.set('ui', ui); }
+    drawInstall();
     $('outcome').replaceChildren(); delete $('outcome').dataset.touched; $('note').value = '';
     showView('align');
     render();
@@ -12723,24 +12881,38 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     }
     setTimeout(() => {
       map.invalidateSize();
-      const last = gps || store.get('lastPos');
+      const here = S && S.session.gps.lat !== null ? S.session.gps : gps;
+      const last = here || store.get('lastPos');
       if (last) map.setView([last.lat, last.lon], 17);
       else if (sites.length > 1) map.fitBounds(sites.map((x) => [x.latitude, x.longitude]), { padding: [40, 40] });
       else if (sites.length) map.setView([sites[0].latitude, sites[0].longitude], 14);
       else map.setView([56, 10.5], 7);
-      if (gps) setPick(gps.lat, gps.lon, false);
+      if (here) setPick(here.lat, here.lon, false);
     }, 0);
   }
   function endPick() {
     picking = false;
     if (pickMarker) { pickMarker.remove(); pickMarker = null; }
-    showView('start');
+    showView(S ? 'align' : 'start');
   }
   $('pick-btn').onclick = () => { picking = true; picked = null; $('pick-ok').disabled = true; $('pick-info').textContent = T('Nicio poziție aleasă.'); showView('map'); };
   $('pick-cancel').onclick = endPick;
-  $('pick-ok').onclick = () => {
-    gps = { lat: picked.lat, lon: picked.lon, accuracyM: null };
+  $('pos-btn').onclick = () => { picking = true; picked = null; $('pick-ok').disabled = true; $('pick-info').textContent = T('Nicio poziție aleasă.'); showView('map'); };
+  $('pick-ok').onclick = async () => {
     store.set('lastPos', picked);
+    if (S) {                                   // position for the session or status check on screen
+      const pos = { lat: picked.lat, lon: picked.lon, accuracyM: null };
+      try {
+        apply(S.session.status === 'CHECK'
+          ? await api('/api/check', 'POST', { meterSerial: S.session.meterSerial, technician: S.session.technician, gps: pos })
+          : await api(`/api/sessions/${S.session.id}/position`, 'POST', { gps: pos }));
+      } catch (e) { showError('align-error', e.status === 404 ? 'Poziția se poate schimba doar în varianta fără server.' : e.message); }
+      lastFit = '';
+      endPick();
+      render();
+      return;
+    }
+    gps = { lat: picked.lat, lon: picked.lon, accuracyM: null };
     $('gps-info').textContent = T('Poziție aleasă pe hartă: {0}, {1}.', picked.lat.toFixed(5), picked.lon.toFixed(5));
     endPick();
     showCandidates();
@@ -12983,7 +13155,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
   $('lang-btn').onclick = () => {
     lang = lang === 'da' ? 'ro' : 'da';
     store.set('lang', lang);
-    translatePage(); refreshData(); refreshReportDir(); render();
+    translatePage(); refreshData(); refreshReportDir(); if (S) drawInstall(); render();
   };
   document.querySelectorAll('#tabs button').forEach((b) => { b.onclick = () => showView(b.dataset.view); });
   window.addEventListener('hashchange', () => { if (location.hash.startsWith('#pair=')) location.reload(); });
@@ -13249,6 +13421,14 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     row(T('Poziție'), g && g.lat !== null ? `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}` + (g.accuracyM ? ` (±${g.accuracyM} m)` : '') + (g.source === 'saved' ? ' · ' + T('salvată la vizita din {0}', fmtTime(g.savedUtc)) : '') : T('neînregistrată'));
     if (isCheck) row(T('Auzit ultima dată'), s.check.lastSeenUtc ? `${fmtTime(s.check.lastSeenUtc)} (${ago(s.check.lastSeenUtc)})` : '–');
 
+    const ins = s.session.install;
+    if (ins) {
+      section(T('Montaj'));
+      row(T('Contor'), levelText(ins.meterLevel));
+      row(T('Antenă'), typeText(ins.antennaType));
+      row(T('Locul antenei'), levelText(ins.antennaPlace));
+    }
+
     const mapCanvas = await reportMap(s, W - 2 * P, 620);
     if (mapCanvas) {
       section(T('Hartă'));
@@ -13348,7 +13528,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
       [`600 ${Math.round(u * 1.15)}px ${SANS}`, signal + (s.primary ? ` · ${T('Receptor')} ${s.primary.serial}` : '')],
       [`500 ${u}px ${SANS}`, [w ? T('Felia {0}', w.step) + ' / ' + Math.max(cfg.coarseSteps, ...s.coarse.map((q) => q.step)) : null,
         fmtTime(s.session.finishedUtc || s.session.startedUtc), s.session.technician].filter(Boolean).join(' · ')],
-      [`400 ${Math.round(u * 0.8)}px ${SANS}`, (s.session.gps.lat !== null ? `${s.session.gps.lat.toFixed(5)}, ${s.session.gps.lon.toFixed(5)} · ` : '')
+      [`400 ${Math.round(u * 0.8)}px ${SANS}`, (s.session.install ? installShort(s.session.install) + ' · ' : '') + (s.session.gps.lat !== null ? `${s.session.gps.lat.toFixed(5)}, ${s.session.gps.lon.toFixed(5)} · ` : '')
         + `LinkIQ Field Assistant v${VERSION}` + (s.session.demo ? ' · DEMO' : '')],
     ];
     x.textAlign = 'left'; x.textBaseline = 'alphabetic'; x.fillStyle = '#fff';
