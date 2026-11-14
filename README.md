@@ -96,6 +96,8 @@ Teste: `pip install -r requirements-dev.txt && pytest`. Cu Docker: `docker compo
 | Hartă cu linii contor–site, semnal și distanță; aceeași hartă în raport | da |
 | Raport și ca PDF (`<seria>.pdf`), cu fotografia antenei pe pagina a doua | da |
 | Verificarea unui contor fără sesiune și fără CALL: cine îl aude acum și de când (`<seria>_status.pdf`) | da, doar în varianta fără server |
+| Dosar ales de montor pentru rapoarte (creat ca `LinkIQ-rapporter`), cu lista rapoartelor salvate; fără suport în browser, se folosește descărcarea obișnuită | da |
+| Poziția fiecărui contor se ține minte pe dispozitiv și se refolosește la verificarea fără CALL | da |
 | Citirea seriei tipărite cu camera (OCR) | **nu** |
 | Autentificare Microsoft Entra ID | **nu** – cuplare prin cod personal |
 | Coadă offline pentru acțiuni | **nu** – sesiunea se reia după pierderea conexiunii, dar acțiunile nu se pun în coadă |
@@ -177,7 +179,7 @@ frontend/engine.js        toată logica de măsurare, pe dispozitiv (modul făr�
 frontend/app.js           interfața; aceeași în ambele moduri
 frontend/i18n.js          textele în daneză (sursa este în română)
 frontend/                 PWA (HTML + CSS + JavaScript simplu, fără pas de build)
-tests-js/                 15 teste pentru engine.js
+tests-js/                 16 teste pentru engine.js
 backend/app/              server central opțional: aceleași reguli, în Python
 backend/scripts/          import registru, coduri de cuplare, verificare Kamstrup
 backend/tests/            18 teste

@@ -209,6 +209,7 @@
       this.db.sites = this.db.sites || {};
       this.db.concentrators = this.db.concentrators || {};
       this.db.sessions = this.db.sessions || {};
+      this.db.positions = this.db.positions || {};   // meter serial -> last known position (coordinates only)
       this.db.demo = !!this.db.demo;
       this.sim = new Simulator(clock, this.cfg.simSpeed, simSeed);
       this.cache = {};            // meter -> {links, atMs}: the 5 s limit per meter
@@ -294,6 +295,23 @@
       return out;
     }
 
+    // ---------------------------------------------------------------- meter positions
+    /** A given position is remembered for the meter; without one, the remembered position is used. */
+    _position(meterSerial, gps) {
+      if (gps && gps.lat !== null && gps.lat !== undefined) {
+        const pos = { lat: gps.lat, lon: gps.lon, accuracyM: gps.accuracyM !== undefined ? gps.accuracyM : null };
+        if (!this.db.demo) { this.db.positions[meterSerial] = { ...pos, atMs: this.clock() }; this.save(); }
+        return pos;
+      }
+      const saved = this.db.demo ? null : this.db.positions[meterSerial];
+      if (saved) return { lat: saved.lat, lon: saved.lon, accuracyM: saved.accuracyM, source: 'saved', savedUtc: iso(saved.atMs) };
+      return { lat: null, lon: null, accuracyM: null };
+    }
+    savedPosition(meterSerial) {
+      const p = this.db.demo ? null : this.db.positions[String(meterSerial || '').trim()];
+      return p ? { lat: p.lat, lon: p.lon, savedUtc: iso(p.atMs) } : null;
+    }
+
     // ---------------------------------------------------------------- sessions
     _session(sid, active = true) {
       const s = this.db.sessions[sid];
@@ -311,7 +329,7 @@
       if (!s) {
         const id = Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('') + now.toString(16);
         s = this.db.sessions[id] = { id, meterSerial, technician, demo: this.db.demo,
-          gps: { lat: gps ? gps.lat : null, lon: gps ? gps.lon : null, accuracyM: gps && gps.accuracyM !== undefined ? gps.accuracyM : null },
+          gps: this._position(meterSerial, gps),
           startedMs: now, finishedMs: null, status: 'ACTIVE', state: 'READY', initialCallMs: null, finalCallMs: null,
           outcome: null, note: null, decision: null, samples: [], obs: [], nextSampleId: 1 };
         this.save();
@@ -485,7 +503,7 @@
       }
       const payload = hit.payload || {}, links = normalise(payload, this.cfg.serialFields);
       const registryEmpty = Object.keys(this.db.concentrators).length === 0;
-      const g = { lat: gps ? gps.lat : null, lon: gps ? gps.lon : null, accuracyM: gps && gps.accuracyM !== undefined ? gps.accuracyM : null };
+      const g = this._position(meterSerial, gps);
       const rows = links.filter((l) => registryEmpty || this.db.concentrators[l.serial]).map((l) => {
         const c = this.db.concentrators[l.serial], site = c ? this.db.sites[c.siteCode] : null;
         const d = { serial: l.serial, siteCode: c ? c.siteCode : null, siteName: site ? site.name || null : null,

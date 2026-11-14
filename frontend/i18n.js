@@ -237,5 +237,18 @@ window.LINKIQ_DA = {
  "Descarcă raportul (imagine)": "Hent rapporten (billede)",
  "Fotografiază întâi antena, apoi descarcă raportul: PDF-ul include și fotografia.": "Fotografér først antennen, og hent derefter rapporten: PDF-filen indeholder også billedet.",
  "Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.": "PDF-rapporten med antennebilledet er gemt som {0}.",
- "Raportul PDF a fost salvat ca {0}.": "PDF-rapporten er gemt som {0}."
+ "Raportul PDF a fost salvat ca {0}.": "PDF-rapporten er gemt som {0}.",
+ "Dosarul pentru rapoarte": "Mappe til rapporter",
+ "Alege dosarul": "Vælg mappe",
+ "Schimbă dosarul": "Skift mappe",
+ "Deschide dosarul": "Åbn mappen",
+ "Rapoartele se salvează în dosarul „{0}”.": "Rapporterne gemmes i mappen „{0}”.",
+ "Alege o dată locul; aplicația creează acolo dosarul „LinkIQ-rapporter” și salvează în el toate rapoartele.": "Vælg stedet én gang; appen opretter mappen „LinkIQ-rapporter” dér og gemmer alle rapporter i den.",
+ "Acest browser salvează rapoartele în dosarul de descărcări.": "Denne browser gemmer rapporterne i mappen Overførsler.",
+ "{0} fișiere în dosar": "{0} filer i mappen",
+ "Salvat în dosarul „{0}” ca {1}.": "Gemt i mappen „{0}” som {1}.",
+ "Nu am putut folosi dosarul ales: {0}": "Den valgte mappe kunne ikke bruges: {0}",
+ "Poziția este cea salvată la vizita din {0}.": "Positionen er den, der blev gemt ved besøget {0}.",
+ "salvată la vizita din {0}": "gemt ved besøget {0}",
+ "Pentru acest contor există o poziție salvată la vizita din {0}; se folosește dacă nu alegi alta.": "For denne måler er der gemt en position fra besøget {0}; den bruges, hvis du ikke vælger en anden."
 };

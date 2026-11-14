@@ -149,3 +149,7 @@ ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
 .leaflet-tooltip.link-label::before { display: none; }
 
 .file-btn[hidden] { display: none; }
+
+#dir-card { display: flex; flex-direction: column; gap: 8px; }
+#dir-card[hidden] { display: none; }
+#dir-list li span:first-child { word-break: break-all; }
