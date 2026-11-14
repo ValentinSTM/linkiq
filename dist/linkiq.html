@@ -836,6 +836,9 @@ ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
 #pos-card { display: flex; flex-direction: column; gap: 8px; }
 #pos-card[hidden] { display: none; }
 
+button.link.armed { color: var(--red); font-weight: 800; }
+button.link[hidden] { display: none; }
+
 </style>
 </head>
 <body>
@@ -892,8 +895,9 @@ ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
       <label class="file-btn">Încarcă site-uri (CSV)<input type="file" id="sites-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
       <label class="file-btn">Încarcă concentratoare (CSV)<input type="file" id="conc-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
       <p id="reg-msg" class="hint" hidden></p>
-      <p class="hint"><button type="button" id="reg-clear" class="link">Șterge registrul de pe dispozitiv</button></p>
+      <p class="hint"><button type="button" id="reg-clear" class="link">Scoate site-urile și concentratoarele din aplicație</button></p>
       <p id="sess-info" class="hint"></p>
+      <p class="hint"><button type="button" id="sess-clear" class="link">Șterge măsurătorile salvate</button></p>
       <button type="button" id="export-btn" class="secondary">Exportă măsurătorile (CSV)</button>
       <label class="check"><input type="checkbox" id="demo-toggle"> Mod demonstrație, fără contor</label>
     </div>
@@ -1304,7 +1308,11 @@ window.LINKIQ_DA = {
  "Este inclus în aplicație; nu trebuie importat.": "Det er indbygget i appen og skal ikke importeres.",
  "Se încarcă singur din dosarul aplicației.": "Det indlæses automatisk fra appens mappe.",
  "Importat manual; rămâne pe acest dispozitiv până imporți altul.": "Importeret manuelt; det bliver på denne enhed, indtil du importerer et nyt.",
- "Aplicația este deschisă într-un mod care nu poate păstra date între deschideri. Folosește fișierul aplicației cu registrul inclus sau deschide aplicația de la o adresă web.": "Appen er åbnet på en måde, hvor data ikke kan gemmes mellem åbninger. Brug app-filen med indbygget register, eller åbn appen fra en webadresse."
+ "Aplicația este deschisă într-un mod care nu poate păstra date între deschideri. Folosește fișierul aplicației cu registrul inclus sau deschide aplicația de la o adresă web.": "Appen er åbnet på en måde, hvor data ikke kan gemmes mellem åbninger. Brug app-filen med indbygget register, eller åbn appen fra en webadresse.",
+ "Scoate site-urile și concentratoarele din aplicație": "Fjern sites og koncentratorer fra appen",
+ "Apasă din nou ca să scoți registrul; va trebui importat iar": "Tryk igen for at fjerne registret; det skal så importeres igen",
+ "Șterge măsurătorile salvate": "Slet gemte målinger",
+ "Apasă din nou ca să ștergi măsurătorile": "Tryk igen for at slette målingerne"
 };
 
 </script>
@@ -12024,6 +12032,8 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
       }
       return lines.join('\r\n');
     }
+    /** Remove stored measurements. The registry and the remembered meter positions stay. */
+    clearSessions() { const n = Object.keys(this.db.sessions).length; this.db.sessions = {}; this.save(); return n; }
     sessionCount() { return Object.values(this.db.sessions).filter((s) => !s.demo).length; }
 
     // ---------------------------------------------------------------- summary
@@ -12208,7 +12218,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.11';
+  const VERSION = '0.12';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -13282,6 +13292,8 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     $('store-warn').hidden = storageWorks || embedded;
     const n = engine.sessionCount();
     $('sess-info').textContent = T('{0} {1} pe acest dispozitiv. Datele nu pleacă nicăieri până nu le exporți.', n, n === 1 ? T('sesiune salvată') : T('sesiuni salvate'));
+    $('sess-clear').hidden = n === 0;
+    $('reg-clear').hidden = !r.concentrators;
     $('mode').hidden = !engine.demo;
     cfg.kamstrupMode = engine.demo ? 'sim' : 'live';
   }
@@ -13306,7 +13318,19 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
       refreshData();
     };
   }
-  $('reg-clear').onclick = () => { engine.clearRegistry(); keepRegistry(); $('reg-msg').hidden = true; refreshData(); };
+  // Destructive buttons need a second tap, and say exactly what they remove.
+  function twoTaps(btn, label, confirmLabel, action) {
+    let armed = false, timer = null;
+    const reset = () => { armed = false; btn.textContent = T(label); btn.classList.remove('armed'); };
+    btn.onclick = () => {
+      if (!armed) { armed = true; btn.textContent = T(confirmLabel); btn.classList.add('armed'); timer = setTimeout(reset, 4000); return; }
+      clearTimeout(timer); reset(); action();
+    };
+  }
+  twoTaps($('reg-clear'), 'Scoate site-urile și concentratoarele din aplicație', 'Apasă din nou ca să scoți registrul; va trebui importat iar',
+    () => { engine.clearRegistry(); keepRegistry(); $('reg-msg').hidden = true; refreshData(); });
+  twoTaps($('sess-clear'), 'Șterge măsurătorile salvate', 'Apasă din nou ca să ștergi măsurătorile',
+    () => { engine.clearSessions(); store.del('session'); refreshData(); });
   $('demo-toggle').onchange = (ev) => { engine.setDemo(ev.target.checked); refreshData(); };
   $('export-btn').onclick = () => {
     const blob = new Blob(['\uFEFF' + engine.exportCsv()], { type: 'text/csv;charset=utf-8' });

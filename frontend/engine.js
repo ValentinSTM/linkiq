@@ -609,6 +609,8 @@
       }
       return lines.join('\r\n');
     }
+    /** Remove stored measurements. The registry and the remembered meter positions stay. */
+    clearSessions() { const n = Object.keys(this.db.sessions).length; this.db.sessions = {}; this.save(); return n; }
     sessionCount() { return Object.values(this.db.sessions).filter((s) => !s.demo).length; }
 
     // ---------------------------------------------------------------- summary
