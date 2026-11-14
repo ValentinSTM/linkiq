@@ -78,6 +78,11 @@
       <button type="button" id="dir-open" class="secondary" hidden>Deschide dosarul</button>
       <ul id="dir-list" class="rows"></ul>
     </div>
+    <div id="fb-card" class="card">
+      <h2>Feedback și propuneri</h2>
+      <p class="hint">Spune-ne ce nu merge sau ce ar trebui îmbunătățit. Mesajul se trimite prin Teams sau se copiază; aplicația nu trimite nimic singură.</p>
+      <button type="button" id="fb-open" class="secondary">Trimite feedback</button>
+    </div>
     <div id="candidates" class="card" hidden>
       <h2>Site-uri apropiate</h2>
       <ul id="candidate-list" class="rows"></ul>
@@ -139,6 +144,7 @@
       <button type="button" id="pos-btn" class="secondary"></button>
     </div>
     <button id="restart-btn" class="danger">Renunță și ia-o de la capăt</button>
+    <p class="hint center"><button type="button" id="fb-open2" class="link">Trimite feedback</button></p>
   </section>
 
   <!-- Receptoare -->
@@ -179,6 +185,19 @@
     <button id="scan-photo-btn" class="primary">Fotografiază codul</button>
     <button id="scan-close" class="secondary">Închide</button>
     <input type="file" id="scan-photo" accept="image/*" capture="environment" hidden>
+  </div>
+</div>
+
+<div id="feedback" hidden>
+  <div class="card sheet">
+    <h2>Feedback și propuneri</h2>
+    <div class="chips" id="fb-type"></div>
+    <textarea id="fb-text" rows="5" maxlength="2000" placeholder="Ce s-a întâmplat? Ce ai fi vrut să se întâmple?"></textarea>
+    <label class="check"><input type="checkbox" id="fb-tech" checked> Adaugă date tehnice (versiune, telefon); fără serii de contoare și fără poziții</label>
+    <p id="fb-msg" class="hint" hidden></p>
+    <button type="button" id="fb-share" class="primary">Trimite (Teams, e-mail…)</button>
+    <button type="button" id="fb-copy" class="secondary">Copiază textul</button>
+    <button type="button" id="fb-close" class="secondary">Închide</button>
   </div>
 </div>
 
