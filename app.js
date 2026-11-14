@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.12';
+  const VERSION = '0.13';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -1584,6 +1584,65 @@
       lastPhoto = await stampPhoto(file, S);
       await saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + '_antenne.jpg', 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
+  };
+
+  // ---------------------------------------------------------------- feedback
+  // The app has no server of its own, so feedback leaves through the phone's share
+  // sheet (Teams, mail) or the clipboard. Technical context is added automatically;
+  // meter serials and positions are never included.
+  let fbType = null;
+  function techLine() {
+    const ua = navigator.userAgent;
+    const device = (ua.match(/Android [\d.]+/) || ua.match(/iPhone OS [\d_]+/) || ua.match(/Windows NT [\d.]+/) || ['?'])[0].replace(/_/g, '.');
+    const browser = (ua.match(/(?:Chrome|CriOS|Firefox|Version)\/\d+/) || ['?'])[0];
+    const reg = engine ? engine.registryInfo() : null;
+    const parts = [`LinkIQ v${VERSION}`, device, browser, `${screen.width}×${screen.height}`,
+      location.protocol === 'file:' || location.protocol === 'content:' ? 'fil' : location.host,
+      engine ? 'uden server' : 'med server', 'sprog ' + lang,
+      reg ? `register ${reg.sites}/${reg.concentrators}` + (reg.concentrators ? ' (' + ((engine.db.registrySource || {}).origin || '?') + ')' : '') : null,
+      typeof reportDir !== 'undefined' && reportDir ? 'rapportmappe valgt' : 'ingen rapportmappe',
+      storageWorks ? null : 'kan ikke gemme data',
+      S ? `skærm: ${S.session.status}/${S.session.state}` + (S.session.outcome ? '/' + S.session.outcome : '') : 'skærm: start'];
+    return parts.filter(Boolean).join(' · ');
+  }
+  function feedbackText() {
+    const who = ($('tech').value || '').trim();
+    return `[LinkIQ feedback · ${T(fbType)}]\n${$('fb-text').value.trim()}\n` + (who ? `\n${T('Instalator')}: ${who}` : '')
+      + ($('fb-tech').checked ? `\n— ${techLine()}` : '');
+  }
+  function drawFeedbackTypes() {
+    chipRow($('fb-type'), ['Eroare', 'Propunere', 'Întrebare'].map((k) => [k, T(k)]), fbType, (k) => { fbType = k; drawFeedbackTypes(); });
+  }
+  function openFeedback() {
+    $('fb-msg').hidden = true;
+    $('fb-share').hidden = !navigator.share;
+    drawFeedbackTypes();
+    $('feedback').hidden = false;
+  }
+  const fbReady = () => {
+    if (fbType && $('fb-text').value.trim().length >= 3) return true;
+    $('fb-msg').textContent = T('Alege tipul și scrie câteva cuvinte.'); $('fb-msg').hidden = false;
+    return false;
+  };
+  $('fb-open').onclick = openFeedback;
+  $('fb-open2').onclick = openFeedback;
+  $('fb-close').onclick = () => { $('feedback').hidden = true; };
+  $('fb-share').onclick = async () => {
+    if (!fbReady()) return;
+    try { await navigator.share({ title: 'LinkIQ feedback', text: feedbackText() }); $('fb-text').value = ''; $('feedback').hidden = true; }
+    catch (e) { if (e.name !== 'AbortError') { $('fb-msg').textContent = T('Nu am putut deschide trimiterea. Folosește „Copiază textul”.'); $('fb-msg').hidden = false; } }
+  };
+  $('fb-copy').onclick = async () => {
+    if (!fbReady()) return;
+    const text = feedbackText();
+    try { await navigator.clipboard.writeText(text); }
+    catch {                                   // older browsers, or the page opened as a file
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch { /* nothing more to try */ }
+      ta.remove();
+    }
+    $('fb-msg').textContent = T('Text copiat. Lipește-l în grupul de Teams.'); $('fb-msg').hidden = false;
   };
 
   // ---------------------------------------------------------------- boot
