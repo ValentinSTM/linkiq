@@ -153,3 +153,15 @@ ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
 #dir-card { display: flex; flex-direction: column; gap: 8px; }
 #dir-card[hidden] { display: none; }
 #dir-list li span:first-child { word-break: break-all; }
+
+#install-card { display: flex; flex-direction: column; gap: 8px; }
+#install-card[hidden] { display: none; }
+#install-card.done { border-color: var(--green); }
+#install-ok { color: var(--green); }
+#install-card .q { margin: 6px 0 0; font-weight: 650; font-size: 15px; }
+.chips button.on { background: var(--blue); color: #fff; }
+.chips.sub { padding-left: 14px; border-left: 4px solid var(--blue); }
+.chips.sub button { min-width: 54px; }
+.chips input { width: 84px; min-height: 46px; padding: 6px 10px; }
+#pos-card { display: flex; flex-direction: column; gap: 8px; }
+#pos-card[hidden] { display: none; }
