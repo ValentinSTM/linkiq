@@ -6,3 +6,7 @@ __pycache__/
 backend/data/*.csv
 !backend/data/*.sample.csv
 pair-*.svg
+# App files with a built-in registry contain real locations
+*med-register*.html
+linkiq_sites.csv
+linkiq_koncentratorer.csv

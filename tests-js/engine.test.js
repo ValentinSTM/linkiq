@@ -291,3 +291,18 @@ test('installation details are stored with the session; the position can be corr
   assert.equal(s.session.install.meterLevel, null);
   assert.deepEqual(s.session.install.antennaPlace, { kind: 'meter', n: null });
 });
+
+test('replaceRegistry swaps the whole registry, and refuses files that are not a registry', () => {
+  const { eng } = make();
+  eng.importConcentrators('serialNumber;siteCode\n70000009;S01\n');
+  assert.equal(eng.registryInfo().concentrators, 4);
+  assert.equal(eng.replaceRegistry('<html>not found</html>', '<html>not found</html>', { origin: 'folder' }), null);
+  assert.equal(eng.registryInfo().concentrators, 4);                       // untouched
+  const info = eng.replaceRegistry(SITES, CONC, { origin: 'embedded', version: 'abc' });
+  assert.deepEqual([info.sites, info.concentrators], [2, 3]);              // 70000009 is gone: a real replacement
+  assert.equal(eng.db.registrySource.origin, 'embedded');
+  const copy = JSON.parse(JSON.stringify(eng.registryCopy()));
+  eng.clearRegistry();
+  assert.equal(eng.restoreRegistry(copy), true);
+  assert.equal(eng.registryInfo().concentrators, 3);
+});

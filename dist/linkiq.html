@@ -888,6 +888,7 @@ ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
     <div id="data-card" class="card" hidden>
       <h2>Date pe acest dispozitiv</h2>
       <p id="reg-info" class="hint"></p>
+      <p id="store-warn" class="hint warn" hidden>Aplicația este deschisă într-un mod care nu poate păstra date între deschideri. Folosește fișierul aplicației cu registrul inclus sau deschide aplicația de la o adresă web.</p>
       <label class="file-btn">Încarcă site-uri (CSV)<input type="file" id="sites-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
       <label class="file-btn">Încarcă concentratoare (CSV)<input type="file" id="conc-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
       <p id="reg-msg" class="hint" hidden></p>
@@ -1299,7 +1300,11 @@ window.LINKIQ_DA = {
  "Corectează poziția pe hartă": "Ret positionen på kortet",
  "Indică poziția pe hartă": "Angiv positionen på kortet",
  "Poziția se poate schimba doar în varianta fără server.": "Positionen kan kun ændres i versionen uden server.",
- "Poziție necunoscută": "Ukendt position"
+ "Poziție necunoscută": "Ukendt position",
+ "Este inclus în aplicație; nu trebuie importat.": "Det er indbygget i appen og skal ikke importeres.",
+ "Se încarcă singur din dosarul aplicației.": "Det indlæses automatisk fra appens mappe.",
+ "Importat manual; rămâne pe acest dispozitiv până imporți altul.": "Importeret manuelt; det bliver på denne enhed, indtil du importerer et nyt.",
+ "Aplicația este deschisă într-un mod care nu poate păstra date între deschideri. Folosește fișierul aplicației cu registrul inclus sau deschide aplicația de la o adresă web.": "Appen er åbnet på en måde, hvor data ikke kan gemmes mellem åbninger. Brug app-filen med indbygget register, eller åbn appen fra en webadresse."
 };
 
 </script>
@@ -11660,7 +11665,25 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
       return { sites: Object.keys(this.db.sites).length, concentrators: conc.length,
         review: conc.filter((c) => c.status === 'REVIEW' || c.status === 'MISSING_LOCATION').length };
     }
-    clearRegistry() { this.db.sites = {}; this.db.concentrators = {}; this.save(); }
+    clearRegistry() { this.db.sites = {}; this.db.concentrators = {}; this.db.registrySource = null; this.save(); }
+    /** Replace the whole registry (built-in file, app folder). Nothing changes unless both lists hold rows. */
+    replaceRegistry(sitesCsv, concentratorsCsv, source) {
+      const probe = new Engine({ storage: { get: () => null, set: () => {} }, fetchJson: null, clock: this.clock });
+      const a = probe.importSites(sitesCsv), b = probe.importConcentrators(concentratorsCsv);
+      if (!a.imported || !b.imported) return null;
+      this.db.sites = probe.db.sites; this.db.concentrators = probe.db.concentrators;
+      this.db.registrySource = source || null;
+      this.save();
+      return this.registryInfo();
+    }
+    /** Put back a registry kept in a second place (used when the main store came back empty). */
+    restoreRegistry(copy) {
+      if (!copy || !copy.concentrators || !Object.keys(copy.concentrators).length) return false;
+      this.db.sites = copy.sites || {}; this.db.concentrators = copy.concentrators; this.db.registrySource = copy.source || null;
+      this.save();
+      return true;
+    }
+    registryCopy() { return { sites: this.db.sites, concentrators: this.db.concentrators, source: this.db.registrySource || null }; }
 
     importSites(csvText) {
       let n = 0, bad = 0;
@@ -12185,7 +12208,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.10';
+  const VERSION = '0.11';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -13207,7 +13230,44 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     });
     $('data-card').hidden = false;
     $('demo-toggle').checked = engine.demo;
+    await loadRegistry();
     refreshData();
+  }
+
+  // ---- registry without importing: built into the app file, or lying next to the app
+  // Order: 1) a registry built into this file (tools/build_single.py --sites --concentrators),
+  // 2) linkiq_sites.csv + linkiq_koncentratorer.csv in the app's own folder on the server,
+  // 3) what was imported by hand earlier. A hand import stays until a NEWER built-in or
+  // folder registry appears; the same one is never applied twice.
+  const hashText = (t) => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return String(h >>> 0); };
+  let storageWorks = true;
+  async function loadRegistry() {
+    let src = window.LINKIQ_REGISTRY || null, origin = 'embedded';
+    if (!src && /^https?:$/.test(location.protocol)) {
+      try {
+        const [a, b] = await Promise.all(['linkiq_sites.csv', 'linkiq_koncentratorer.csv'].map(async (f) => {
+          const r = await fetch(f, { cache: 'no-store' });
+          return r.ok ? decodeCsv(await r.arrayBuffer()) : null;
+        }));
+        // a server that answers every address with a web page must not wipe the registry
+        if (a && b && /site/i.test(a.split('\n', 1)[0]) && /seri/i.test(b.split('\n', 1)[0]) && !/<html/i.test(a + b)) { src = { sites: a, concentrators: b }; origin = 'folder'; }
+      } catch { /* no such files: fine */ }
+    }
+    if (src) {
+      const version = src.version || hashText(src.sites + src.concentrators);
+      if (engine.db.builtInApplied !== version || !engine.registryInfo().concentrators) {
+        if (engine.replaceRegistry(src.sites, src.concentrators, { origin, version })) { engine.db.builtInApplied = version; engine.save(); }
+      }
+    }
+    if (!engine.registryInfo().concentrators) engine.restoreRegistry(store.get('registry'));   // second copy, if the main store was emptied
+    keepRegistry();
+  }
+  function keepRegistry() {
+    if (engine.registryInfo().concentrators) store.set('registry', engine.registryCopy());
+    else store.del('registry');
+    // can this way of opening the app keep anything at all?
+    try { localStorage.setItem('linkiq.probe', '1'); storageWorks = localStorage.getItem('linkiq.probe') === '1'; } catch { storageWorks = false; }
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});   // ask the browser not to evict it
   }
 
   function refreshData() {
@@ -13215,24 +13275,29 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     const r = engine.registryInfo();
     $('reg-info').textContent = r.concentrators
       ? T('Registru: {0} site-uri, {1} concentratoare', r.sites, r.concentrators) + (r.review ? T(', {0} fără site sigur.', r.review) : '.')
+        + ' ' + T({ embedded: 'Este inclus în aplicație; nu trebuie importat.', folder: 'Se încarcă singur din dosarul aplicației.' }[(engine.db.registrySource || {}).origin]
+          || 'Importat manual; rămâne pe acest dispozitiv până imporți altul.')
       : T('Registrul nu este încărcat: toate receptoarele auzite sunt tratate ca proprii, iar harta nu are site-uri.');
+    const embedded = (engine.db.registrySource || {}).origin === 'embedded';
+    $('store-warn').hidden = storageWorks || embedded;
     const n = engine.sessionCount();
     $('sess-info').textContent = T('{0} {1} pe acest dispozitiv. Datele nu pleacă nicăieri până nu le exporți.', n, n === 1 ? T('sesiune salvată') : T('sesiuni salvate'));
     $('mode').hidden = !engine.demo;
     cfg.kamstrupMode = engine.demo ? 'sim' : 'live';
   }
 
-  async function readCsvFile(file) {
-    const buf = await file.arrayBuffer();
+  function decodeCsv(buf) {
     try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
     catch { return new TextDecoder('windows-1252').decode(buf); }   // CSV saved by Excel
   }
+  const readCsvFile = async (file) => decodeCsv(await file.arrayBuffer());
   for (const [id, fn] of [['sites-file', 'importSites'], ['conc-file', 'importConcentrators']]) {
     $(id).onchange = async (ev) => {
       const file = ev.target.files[0], msg = $('reg-msg');
       if (!file) return;
       try {
         const r = engine[fn](await readCsvFile(file));
+        if (r.imported) { engine.db.registrySource = { origin: 'manual' }; engine.save(); keepRegistry(); }
         msg.textContent = r.imported ? T('{0}: {1} rânduri încărcate', file.name, r.imported) + (r.review ? T(', {0} de verificat.', r.review) : '.')
           : T('{0}: nu am găsit rânduri valide. Verifică denumirile coloanelor.', file.name);
       } catch (e) { msg.textContent = `${file.name}: ${e.message}`; }
@@ -13241,7 +13306,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
       refreshData();
     };
   }
-  $('reg-clear').onclick = () => { engine.clearRegistry(); $('reg-msg').hidden = true; refreshData(); };
+  $('reg-clear').onclick = () => { engine.clearRegistry(); keepRegistry(); $('reg-msg').hidden = true; refreshData(); };
   $('demo-toggle').onchange = (ev) => { engine.setDemo(ev.target.checked); refreshData(); };
   $('export-btn').onclick = () => {
     const blob = new Blob(['\uFEFF' + engine.exportCsv()], { type: 'text/csv;charset=utf-8' });

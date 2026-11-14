@@ -250,7 +250,25 @@
       return { sites: Object.keys(this.db.sites).length, concentrators: conc.length,
         review: conc.filter((c) => c.status === 'REVIEW' || c.status === 'MISSING_LOCATION').length };
     }
-    clearRegistry() { this.db.sites = {}; this.db.concentrators = {}; this.save(); }
+    clearRegistry() { this.db.sites = {}; this.db.concentrators = {}; this.db.registrySource = null; this.save(); }
+    /** Replace the whole registry (built-in file, app folder). Nothing changes unless both lists hold rows. */
+    replaceRegistry(sitesCsv, concentratorsCsv, source) {
+      const probe = new Engine({ storage: { get: () => null, set: () => {} }, fetchJson: null, clock: this.clock });
+      const a = probe.importSites(sitesCsv), b = probe.importConcentrators(concentratorsCsv);
+      if (!a.imported || !b.imported) return null;
+      this.db.sites = probe.db.sites; this.db.concentrators = probe.db.concentrators;
+      this.db.registrySource = source || null;
+      this.save();
+      return this.registryInfo();
+    }
+    /** Put back a registry kept in a second place (used when the main store came back empty). */
+    restoreRegistry(copy) {
+      if (!copy || !copy.concentrators || !Object.keys(copy.concentrators).length) return false;
+      this.db.sites = copy.sites || {}; this.db.concentrators = copy.concentrators; this.db.registrySource = copy.source || null;
+      this.save();
+      return true;
+    }
+    registryCopy() { return { sites: this.db.sites, concentrators: this.db.concentrators, source: this.db.registrySource || null }; }
 
     importSites(csvText) {
       let n = 0, bad = 0;

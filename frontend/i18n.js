@@ -275,5 +275,9 @@ window.LINKIQ_DA = {
  "Corectează poziția pe hartă": "Ret positionen på kortet",
  "Indică poziția pe hartă": "Angiv positionen på kortet",
  "Poziția se poate schimba doar în varianta fără server.": "Positionen kan kun ændres i versionen uden server.",
- "Poziție necunoscută": "Ukendt position"
+ "Poziție necunoscută": "Ukendt position",
+ "Este inclus în aplicație; nu trebuie importat.": "Det er indbygget i appen og skal ikke importeres.",
+ "Se încarcă singur din dosarul aplicației.": "Det indlæses automatisk fra appens mappe.",
+ "Importat manual; rămâne pe acest dispozitiv până imporți altul.": "Importeret manuelt; det bliver på denne enhed, indtil du importerer et nyt.",
+ "Aplicația este deschisă într-un mod care nu poate păstra date între deschideri. Folosește fișierul aplicației cu registrul inclus sau deschide aplicația de la o adresă web.": "Appen er åbnet på en måde, hvor data ikke kan gemmes mellem åbninger. Brug app-filen med indbygget register, eller åbn appen fra en webadresse."
 };
