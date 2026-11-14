@@ -270,3 +270,24 @@ test('the position of a meter is remembered and reused for a status check', asyn
   assert.equal(s.session.gps.source, undefined);
   assert.equal(eng.savedPosition(METER).lat, 55.7);
 });
+
+test('installation details are stored with the session; the position can be corrected afterwards', async () => {
+  const { eng, clock } = make();
+  eng.setDemo(false); eng.setDemo(true);
+  const sid = start(eng, null);
+  await eng.callConfirmed(sid, 'initial');
+  await waitMeasured(eng, clock, sid);
+  const install = { meterLevel: { kind: 'basement', n: 2 }, antennaType: 'external', antennaPlace: { kind: 'facade', n: null }, junk: 1 };
+  let s = await eng.handle(`/api/sessions/${sid}/complete`, 'POST', { outcome: 'MARGINAL', install });
+  assert.deepEqual(s.session.install, { meterLevel: { kind: 'basement', n: 2 }, antennaType: 'external', antennaPlace: { kind: 'facade', n: null } });
+  assert.equal(s.session.gps.lat, null);
+  s = await eng.handle(`/api/sessions/${sid}/position`, 'POST', { gps: { lat: 55.68, lon: 12.57 } });   // closed session
+  assert.equal(s.session.gps.lat, 55.68);
+  assert.ok(s.receivers.some((r) => r.distanceM !== null));
+  // a floor without its number is not accepted as a level
+  const sid2 = eng.createSession('87654321', 'Ana').session.id;
+  await eng.callConfirmed(sid2, 'initial'); await waitMeasured(eng, clock, sid2);
+  s = eng.complete(sid2, 'MARGINAL', null, { meterLevel: { kind: 'floor' }, antennaType: 'internal', antennaPlace: { kind: 'meter' } });
+  assert.equal(s.session.install.meterLevel, null);
+  assert.deepEqual(s.session.install.antennaPlace, { kind: 'meter', n: null });
+});
