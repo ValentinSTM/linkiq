@@ -41,6 +41,25 @@
   const METER_RE = /^[0-9A-Za-z]{4,20}$/;
   const COMPASS_RO = ['N', 'NE', 'E', 'SE', 'S', 'SV', 'V', 'NV'];
 
+  // Installation details recorded by the installer (nothing is guessed or defaulted).
+  const LEVEL_KINDS = ['basement', 'ground', 'floor'];
+  const PLACE_KINDS = ['meter', 'basement', 'ground', 'floor', 'facade', 'roof'];
+  function cleanLevel(l, kinds) {
+    if (!l || !kinds.includes(l.kind)) return null;
+    const needsN = l.kind === 'basement' || l.kind === 'floor';
+    const n = needsN ? Math.round(Number(l.n)) : null;
+    if (needsN && !(n >= 1 && n <= 60)) return null;
+    return { kind: l.kind, n };
+  }
+  function cleanInstall(i) {
+    if (!i || typeof i !== 'object') return null;
+    const out = { meterLevel: cleanLevel(i.meterLevel, LEVEL_KINDS),
+      antennaType: ['internal', 'external'].includes(i.antennaType) ? i.antennaType : null,
+      antennaPlace: cleanLevel(i.antennaPlace, PLACE_KINDS) };
+    return out.meterLevel || out.antennaType || out.antennaPlace ? out : null;
+  }
+  const levelCode = (l) => (l ? l.kind + (l.n ? (l.kind === 'basement' ? '-' : '') + l.n : '') : '');
+
   class EngineError extends Error {
     constructor(status, code, message) { super(message); this.status = status; this.code = code; }
   }
@@ -307,6 +326,14 @@
       if (saved) return { lat: saved.lat, lon: saved.lon, accuracyM: saved.accuracyM, source: 'saved', savedUtc: iso(saved.atMs) };
       return { lat: null, lon: null, accuracyM: null };
     }
+    /** Set or correct the position of a session's meter, also after the session is closed. */
+    setPosition(sid, gps) {
+      const s = this._session(sid, false);
+      if (!gps || gps.lat === null || gps.lat === undefined) throw new EngineError(422, 'BAD_POSITION', 'Poziție necunoscută');
+      s.gps = this._position(s.meterSerial, gps);
+      this.save();
+      return this.summary(sid);
+    }
     savedPosition(meterSerial) {
       const p = this.db.demo ? null : this.db.positions[String(meterSerial || '').trim()];
       return p ? { lat: p.lat, lon: p.lon, savedUtc: iso(p.atMs) } : null;
@@ -472,12 +499,13 @@
         snapshotCount: r.count, waitSeconds: wait, warning, summary: summ };
     }
 
-    complete(sid, outcome = null, note = null) {
+    complete(sid, outcome = null, note = null, install = null) {
       const summ = this.summary(sid), s = this._session(sid);
       outcome = outcome || summ.suggestedOutcome;
       if (!OUTCOMES.includes(outcome)) throw new EngineError(422, 'BAD_OUTCOME', 'Rezultat necunoscut');
       s.status = outcome === 'ABORTED' ? 'ABORTED' : 'COMPLETED';
       s.state = 'COMPLETE'; s.outcome = outcome; s.note = note; s.finishedMs = this.clock();
+      s.install = cleanInstall(install);
       s.decision = { best: summ.best, primary: summ.primary, backup: summ.backup, finalCheck: summ.finalCheck, suggestedOutcome: summ.suggestedOutcome };
       this.save();
       return this.summary(sid);
@@ -547,7 +575,7 @@
 
     /** Flat rows for Network Intelligence / coverage analysis. */
     exportCsv() {
-      const cols = ['session_id', 'meter_serial', 'technician', 'gps_lat', 'gps_lon', 'outcome', 'phase', 'step',
+      const cols = ['session_id', 'meter_serial', 'technician', 'gps_lat', 'gps_lon', 'outcome', 'meter_level', 'antenna_type', 'antenna_place', 'phase', 'step',
         'heading_deg', 'kind', 'concentrator_serial', 'site_code', 'owned', 'rssi_dbm', 'lqi', 'observed_utc', 'received_utc'];
       const lines = [cols.join(';')];
       for (const s of Object.values(this.db.sessions)) {
@@ -555,7 +583,8 @@
         const byId = Object.fromEntries(s.samples.map((x) => [x.id, x]));
         for (const o of s.obs) {
           const p = byId[o.sampleId] || {};
-          lines.push([s.id, s.meterSerial, s.technician, s.gps.lat, s.gps.lon, s.outcome, p.phase, p.step, p.headingDeg,
+          const ins = s.install || {};
+          lines.push([s.id, s.meterSerial, s.technician, s.gps.lat, s.gps.lon, s.outcome, levelCode(ins.meterLevel), ins.antennaType, levelCode(ins.antennaPlace), p.phase, p.step, p.headingDeg,
             o.kind, o.serial, o.siteCode, o.owned ? 1 : 0, o.rssi, o.lqi, iso(o.observedMs), iso(o.receivedMs)]
             .map((v) => (v === null || v === undefined ? '' : String(v).replace(/[;\r\n]/g, ' '))).join(';'));
         }
@@ -700,7 +729,7 @@
       return {
         session: { id: s.id, meterSerial: s.meterSerial, technician: s.technician, gps: { ...s.gps }, status: s.status,
           state: s.state, startedUtc: iso(s.startedMs), finishedUtc: iso(s.finishedMs), initialCallUtc: iso(s.initialCallMs),
-          finalCallUtc: iso(s.finalCallMs), outcome: s.outcome, note: s.note, demo: s.demo },
+          finalCallUtc: iso(s.finalCallMs), outcome: s.outcome, note: s.note, demo: s.demo, install: s.install || null },
         current, coarse, fine, final, coarseWinner, fineWinner, best,
         primary: best ? { serial: primarySerial, siteCode: primarySite, siteName: pReg ? pReg.name : null,
           address: pReg ? pReg.address : null, rssi: best.rssi } : null,
@@ -729,7 +758,8 @@
       if (m && m[2] === 'position-marked') return this.positionMarked(m[1], body.phase, body.step, body.headingDeg === undefined ? null : body.headingDeg);
       if (m && m[2] === 'skip') return this.skip(m[1]);
       if (m && m[2] === 'poll') return this.poll(m[1]);
-      if (m && m[2] === 'complete') return this.complete(m[1], body.outcome || null, body.note || null);
+      if (m && m[2] === 'complete') return this.complete(m[1], body.outcome || null, body.note || null, body.install || null);
+      if (m && m[2] === 'position') return this.setPosition(m[1], body.gps || null);
       throw new EngineError(404, 'NOT_FOUND', 'Rută necunoscută: ' + route);
     }
   }
