@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.8';
+  const VERSION = '0.9';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -252,7 +252,8 @@
         const seen = c.lastSeenUtc ? T('Auzit ultima dată {0} ({1}).', fmtTime(c.lastSeenUtc), ago(c.lastSeenUtc)) : T('Nu se știe când a fost auzit ultima dată.');
         const who = s.warnings.includes('REGISTRY_EMPTY') ? T('{0} receptoare îl aud; registrul nu este încărcat, deci nu se știe care sunt ale noastre.', n)
           : n === 1 ? T('1 receptor de-al nostru îl aude.') : T('{0} receptoare de-ale noastre îl aud.', n);
-        setInstruction(!n ? 'red' : top.stale ? 'yellow' : 'green', T('Contor {0}', s.session.meterSerial), seen + ' ' + who);
+        const pos = s.session.gps.source === 'saved' ? ' ' + T('Poziția este cea salvată la vizita din {0}.', fmtTime(s.session.gps.savedUtc)) : '';
+        setInstruction(!n ? 'red' : top.stale ? 'yellow' : 'green', T('Contor {0}', s.session.meterSerial), seen + ' ' + who + pos);
         setButtons({ label: T('Actualizează'), run: async () => {
           apply(await api('/api/check', 'POST', { meterSerial: s.session.meterSerial, technician: s.session.technician, gps: s.session.gps.lat !== null ? s.session.gps : null }));
         } }, { label: T('Înapoi'), run: async () => { leaveSession(); } });
@@ -666,6 +667,11 @@
     } catch (e) { showError('start-error', e.message); }
   };
 
+  $('meter').addEventListener('change', () => {
+    const p = engine && !gps ? engine.savedPosition($('meter').value) : null;
+    if (p) $('gps-info').textContent = T('Pentru acest contor există o poziție salvată la vizita din {0}; se folosește dacă nu alegi alta.', fmtTime(p.savedUtc));
+  });
+
   $('check-btn').onclick = async () => {
     $('start-error').hidden = true;
     const meter = $('meter').value.trim();
@@ -878,7 +884,7 @@
   $('lang-btn').onclick = () => {
     lang = lang === 'da' ? 'ro' : 'da';
     store.set('lang', lang);
-    translatePage(); refreshData(); render();
+    translatePage(); refreshData(); refreshReportDir(); render();
   };
   document.querySelectorAll('#tabs button').forEach((b) => { b.onclick = () => showView(b.dataset.view); });
   window.addEventListener('hashchange', () => { if (location.hash.startsWith('#pair=')) location.reload(); });
@@ -1141,7 +1147,7 @@
     row(T('Data'), fmtTime(s.session.finishedUtc || s.session.startedUtc));
     row(T('Instalator'), s.session.technician);
     const g = s.session.gps;
-    row(T('Poziție'), g && g.lat !== null ? `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}` + (g.accuracyM ? ` (±${g.accuracyM} m)` : '') : T('neînregistrată'));
+    row(T('Poziție'), g && g.lat !== null ? `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}` + (g.accuracyM ? ` (±${g.accuracyM} m)` : '') + (g.source === 'saved' ? ' · ' + T('salvată la vizita din {0}', fmtTime(g.savedUtc)) : '') : T('neînregistrată'));
     if (isCheck) row(T('Auzit ultima dată'), s.check.lastSeenUtc ? `${fmtTime(s.check.lastSeenUtc)} (${ago(s.check.lastSeenUtc)})` : '–');
 
     const mapCanvas = await reportMap(s, W - 2 * P, 620);
@@ -1255,14 +1261,114 @@
 
   let lastPhoto = null;        // stamped antenna photo of this session, for the PDF
 
-  function saveBlob(blob, name, doneKey, previewUrl) {
+  // ---- report folder: the installer picks a place once, every report lands there.
+  // Uses the File System Access API where the browser has it; otherwise normal downloads.
+  const canPickDir = 'showDirectoryPicker' in window && window.isSecureContext;
+  let reportDir = null;
+  const kv = (() => {
+    let opening = null;
+    const open = () => opening || (opening = new Promise((ok, fail) => {
+      const r = indexedDB.open('linkiq', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('kv');
+      r.onsuccess = () => ok(r.result); r.onerror = () => fail(r.error);
+    }));
+    return {
+      get: async (k) => { const db = await open(); return new Promise((ok, fail) => { const r = db.transaction('kv').objectStore('kv').get(k); r.onsuccess = () => ok(r.result); r.onerror = () => fail(r.error); }); },
+      set: async (k, v) => { const db = await open(); return new Promise((ok, fail) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = () => ok(); t.onerror = () => fail(t.error); }); },
+    };
+  })();
+
+  /** True when the chosen folder may be written. `ask` may show the browser's permission prompt (needs a tap). */
+  async function dirReady(ask) {
+    if (!reportDir) return false;
+    try {
+      let perm = await reportDir.queryPermission({ mode: 'readwrite' });
+      if (perm !== 'granted' && ask) perm = await reportDir.requestPermission({ mode: 'readwrite' });
+      return perm === 'granted';
+    } catch { return false; }
+  }
+
+  async function writeToDir(blob, name) {
+    let final = name;
+    try {                                   // keep an earlier report of the same meter: add date and time
+      await reportDir.getFileHandle(name);
+      const d = new Date(), two = (v) => String(v).padStart(2, '0');
+      final = name.replace(/(\.[a-z0-9]+)$/i, `_${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}-${two(d.getHours())}${two(d.getMinutes())}$1`);
+    } catch { /* no such file yet */ }
+    const handle = await reportDir.getFileHandle(final, { create: true });
+    const w = await handle.createWritable();
+    await w.write(blob); await w.close();
+    return final;
+  }
+
+  async function refreshReportDir() {
+    const info = $('dir-info'), list = $('dir-list'), btn = $('dir-btn'), open = $('dir-open');
+    $('dir-card').hidden = false;
+    list.replaceChildren();
+    open.hidden = true;
+    if (!canPickDir) {
+      btn.hidden = true;
+      info.textContent = T('Acest browser salvează rapoartele în dosarul de descărcări.');
+      $('dir-info2').textContent = info.textContent;
+      return;
+    }
+    btn.hidden = false;
+    btn.textContent = T(reportDir ? 'Schimbă dosarul' : 'Alege dosarul');
+    if (!reportDir) {
+      info.textContent = T('Alege o dată locul; aplicația creează acolo dosarul „LinkIQ-rapporter” și salvează în el toate rapoartele.');
+      $('dir-info2').textContent = T('Acest browser salvează rapoartele în dosarul de descărcări.');
+      return;
+    }
+    info.textContent = T('Rapoartele se salvează în dosarul „{0}”.', reportDir.name);
+    $('dir-info2').textContent = info.textContent;
+    if (!(await dirReady(false))) { open.hidden = false; return; }     // the browser wants a tap before it shows the folder again
+    const files = [];
+    try {
+      for await (const [name, h] of reportDir.entries()) {
+        if (h.kind !== 'file' || files.length >= 300) continue;
+        const f = await h.getFile();
+        files.push({ name, h, at: f.lastModified });
+      }
+    } catch { return; }
+    files.sort((x, y) => y.at - x.at);
+    info.textContent += ' ' + T('{0} fișiere în dosar', files.length) + '.';
+    for (const f of files.slice(0, 12)) {
+      const li = document.createElement('li');
+      li.setAttribute('role', 'button'); li.tabIndex = 0;
+      const n = document.createElement('span'); n.textContent = f.name;
+      const d = document.createElement('span'); d.className = 'sub'; d.textContent = fmtTime(new Date(f.at).toISOString());
+      li.append(n, document.createElement('span'), d);
+      li.onclick = async () => { try { window.open(URL.createObjectURL(await f.h.getFile()), '_blank'); } catch { /* removed meanwhile */ } };
+      list.appendChild(li);
+    }
+  }
+
+  $('dir-btn').onclick = async () => {
+    try {
+      const picked = await window.showDirectoryPicker({ id: 'linkiq-reports', mode: 'readwrite', startIn: 'documents' });
+      // one tidy folder of our own, unless the installer already picked it
+      reportDir = /linkiq/i.test(picked.name) ? picked : await picked.getDirectoryHandle('LinkIQ-rapporter', { create: true });
+      try { await kv.set('reportDir', reportDir); } catch { /* remembered for this visit only */ }
+    } catch (e) { if (e.name !== 'AbortError') showError('start-error', T('Nu am putut folosi dosarul ales: {0}', e.message)); }
+    refreshReportDir();
+  };
+  $('dir-open').onclick = async () => { await dirReady(true); refreshReportDir(); };
+
+  async function saveBlob(blob, name, doneKey, previewUrl) {
     const msg = $('report-msg'), img = $('report-preview');
-    const url = URL.createObjectURL(blob), a = document.createElement('a');
-    a.href = url; a.download = name;
-    document.body.appendChild(a); a.click(); a.remove();
+    const url = URL.createObjectURL(blob);
+    let saved = null;
+    if (await dirReady(false)) { try { saved = await writeToDir(blob, name); } catch { saved = null; } }
+    if (!saved) {                           // no folder chosen, or the browser cannot write there: normal download
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
     if (previewUrl !== null) { img.src = previewUrl || url; img.alt = name; img.hidden = false; }   // also shown, so it can be saved by long-press
-    msg.textContent = T(doneKey, name) + (previewUrl !== null ? ' ' + T('Dacă descărcarea nu pornește, ține apăsat pe imagine și alege „Salvează”.') : '');
+    msg.textContent = saved ? T('Salvat în dosarul „{0}” ca {1}.', reportDir.name, saved)
+      : T(doneKey, name) + (previewUrl !== null ? ' ' + T('Dacă descărcarea nu pornește, ține apăsat pe imagine și alege „Salvează”.') : '');
     msg.hidden = false;
+    if (saved) refreshReportDir();
   }
   const canvasBlob = (canvas, type) => new Promise((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail(new Error('canvas'))), type, 0.9));
 
@@ -1302,15 +1408,17 @@
 
   $('report-btn').onclick = async () => {
     if (!S) return;
-    try { saveBlob(await canvasBlob(await buildReport(S), 'image/png'), reportName(S) + '.png', 'Raportul a fost salvat ca {0}.'); }
+    await dirReady(true);          // while the tap still counts as a user action
+    try { await saveBlob(await canvasBlob(await buildReport(S), 'image/png'), reportName(S) + '.png', 'Raportul a fost salvat ca {0}.'); }
     catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   };
   $('report-pdf-btn').onclick = async () => {
     if (!S) return;
+    await dirReady(true);
     try {
       const pages = [await buildReport(S)];
       if (lastPhoto && S.session.status !== 'CHECK') pages.push(lastPhoto);
-      saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', pages.length > 1 ? 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.' : 'Raportul PDF a fost salvat ca {0}.', null);
+      await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', pages.length > 1 ? 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.' : 'Raportul PDF a fost salvat ca {0}.', null);
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   };
   $('photo-file').onchange = async (ev) => {
@@ -1318,8 +1426,9 @@
     ev.target.value = '';
     if (!file || !S) return;
     try {
+      await dirReady(true);
       lastPhoto = await stampPhoto(file, S);
-      saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + '_antenne.jpg', 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
+      await saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + '_antenne.jpg', 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   };
 
@@ -1327,6 +1436,8 @@
   (async function boot() {
     $('ver').textContent = 'v' + VERSION;
     translatePage();
+    try { reportDir = (await kv.get('reportDir')) || null; } catch { /* no storage: ask again when needed */ }
+    refreshReportDir();
     $('tech').value = store.get('tech', '') || '';
     if (!(await serverAnswers())) await startStandalone();
     // Pairing link: https://host/#pair=CODE. The fragment never reaches the server.

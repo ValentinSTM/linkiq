@@ -252,3 +252,21 @@ test('status check without CALL: only our receivers, grouped relations, nothing 
   assert.equal(Object.keys(JSON.parse(mem.db).sessions).length, 0);
   await assert.rejects(eng.check('../x'), EngineError);
 });
+
+test('the position of a meter is remembered and reused for a status check', async () => {
+  const live = () => ({ Links: [{ SerialNumber: '70000001', TimestampUtcToDevice: new Date(Date.UTC(2026, 10, 12, 8, 59)).toISOString(), RssiToDevice: -70 }] });
+  const { eng, clock } = make({ live });
+  let s = await eng.check(METER);                                   // never visited: no position, no distance
+  assert.equal(s.session.gps.lat, null);
+  assert.equal(s.receivers[0].distanceM, null);
+  start(eng);                                                       // commissioning visit with a position
+  clock.tick(86400);
+  s = await eng.check(METER);                                       // later, from the office, without GPS
+  assert.equal(s.session.gps.source, 'saved');
+  assert.equal(s.session.gps.lat, 55.677);
+  assert.ok(s.receivers[0].distanceM > 50);
+  assert.ok(eng.savedPosition(METER).savedUtc.startsWith('2026-11-12'));
+  s = await eng.check(METER, { lat: 55.7, lon: 12.6 });             // a new position replaces the old one
+  assert.equal(s.session.gps.source, undefined);
+  assert.equal(eng.savedPosition(METER).lat, 55.7);
+});
