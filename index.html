@@ -69,6 +69,13 @@
       <button type="button" id="export-btn" class="secondary">Exportă măsurătorile (CSV)</button>
       <label class="check"><input type="checkbox" id="demo-toggle"> Mod demonstrație, fără contor</label>
     </div>
+    <div id="dir-card" class="card" hidden>
+      <h2>Dosarul pentru rapoarte</h2>
+      <p id="dir-info" class="hint"></p>
+      <button type="button" id="dir-btn" class="secondary">Alege dosarul</button>
+      <button type="button" id="dir-open" class="secondary" hidden>Deschide dosarul</button>
+      <ul id="dir-list" class="rows"></ul>
+    </div>
     <div id="candidates" class="card" hidden>
       <h2>Site-uri apropiate</h2>
       <ul id="candidate-list" class="rows"></ul>
@@ -107,6 +114,7 @@
       <label class="file-btn" id="photo-label">Fotografiază antena<input type="file" id="photo-file" accept="image/*" capture="environment" hidden></label>
       <button type="button" id="report-pdf-btn" class="secondary">Descarcă raportul (PDF)</button>
       <button type="button" id="report-btn" class="secondary">Descarcă raportul (imagine)</button>
+      <p id="dir-info2" class="hint"></p>
       <p id="report-msg" class="hint" hidden></p>
       <img id="report-preview" alt="" hidden>
     </div>
