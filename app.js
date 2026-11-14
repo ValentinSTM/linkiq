@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.11';
+  const VERSION = '0.12';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -1078,6 +1078,8 @@
     $('store-warn').hidden = storageWorks || embedded;
     const n = engine.sessionCount();
     $('sess-info').textContent = T('{0} {1} pe acest dispozitiv. Datele nu pleacă nicăieri până nu le exporți.', n, n === 1 ? T('sesiune salvată') : T('sesiuni salvate'));
+    $('sess-clear').hidden = n === 0;
+    $('reg-clear').hidden = !r.concentrators;
     $('mode').hidden = !engine.demo;
     cfg.kamstrupMode = engine.demo ? 'sim' : 'live';
   }
@@ -1102,7 +1104,19 @@
       refreshData();
     };
   }
-  $('reg-clear').onclick = () => { engine.clearRegistry(); keepRegistry(); $('reg-msg').hidden = true; refreshData(); };
+  // Destructive buttons need a second tap, and say exactly what they remove.
+  function twoTaps(btn, label, confirmLabel, action) {
+    let armed = false, timer = null;
+    const reset = () => { armed = false; btn.textContent = T(label); btn.classList.remove('armed'); };
+    btn.onclick = () => {
+      if (!armed) { armed = true; btn.textContent = T(confirmLabel); btn.classList.add('armed'); timer = setTimeout(reset, 4000); return; }
+      clearTimeout(timer); reset(); action();
+    };
+  }
+  twoTaps($('reg-clear'), 'Scoate site-urile și concentratoarele din aplicație', 'Apasă din nou ca să scoți registrul; va trebui importat iar',
+    () => { engine.clearRegistry(); keepRegistry(); $('reg-msg').hidden = true; refreshData(); });
+  twoTaps($('sess-clear'), 'Șterge măsurătorile salvate', 'Apasă din nou ca să ștergi măsurătorile',
+    () => { engine.clearSessions(); store.del('session'); refreshData(); });
   $('demo-toggle').onchange = (ev) => { engine.setDemo(ev.target.checked); refreshData(); };
   $('export-btn').onclick = () => {
     const blob = new Blob(['\uFEFF' + engine.exportCsv()], { type: 'text/csv;charset=utf-8' });

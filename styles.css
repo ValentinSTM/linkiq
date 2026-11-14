@@ -165,3 +165,6 @@ ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
 .chips input { width: 84px; min-height: 46px; padding: 6px 10px; }
 #pos-card { display: flex; flex-direction: column; gap: 8px; }
 #pos-card[hidden] { display: none; }
+
+button.link.armed { color: var(--red); font-weight: 800; }
+button.link[hidden] { display: none; }

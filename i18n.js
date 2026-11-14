@@ -279,5 +279,9 @@ window.LINKIQ_DA = {
  "Este inclus în aplicație; nu trebuie importat.": "Det er indbygget i appen og skal ikke importeres.",
  "Se încarcă singur din dosarul aplicației.": "Det indlæses automatisk fra appens mappe.",
  "Importat manual; rămâne pe acest dispozitiv până imporți altul.": "Importeret manuelt; det bliver på denne enhed, indtil du importerer et nyt.",
- "Aplicația este deschisă într-un mod care nu poate păstra date între deschideri. Folosește fișierul aplicației cu registrul inclus sau deschide aplicația de la o adresă web.": "Appen er åbnet på en måde, hvor data ikke kan gemmes mellem åbninger. Brug app-filen med indbygget register, eller åbn appen fra en webadresse."
+ "Aplicația este deschisă într-un mod care nu poate păstra date între deschideri. Folosește fișierul aplicației cu registrul inclus sau deschide aplicația de la o adresă web.": "Appen er åbnet på en måde, hvor data ikke kan gemmes mellem åbninger. Brug app-filen med indbygget register, eller åbn appen fra en webadresse.",
+ "Scoate site-urile și concentratoarele din aplicație": "Fjern sites og koncentratorer fra appen",
+ "Apasă din nou ca să scoți registrul; va trebui importat iar": "Tryk igen for at fjerne registret; det skal så importeres igen",
+ "Șterge măsurătorile salvate": "Slet gemte målinger",
+ "Apasă din nou ca să ștergi măsurătorile": "Tryk igen for at slette målingerne"
 };
