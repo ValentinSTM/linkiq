@@ -165,6 +165,21 @@ după o scanare reală, regula se poate fixa ca seria să fie aleasă automat.
 
 Citirea seriei tipărite (OCR) nu este implementată.
 
+## Deschiderea cazului în VVS-dialog (KMD)
+
+Rapoartele se încarcă manual în VVS-dialog. LinkIQ nu poate acționa acolo (alt site, login-ul
+instalatorului), așa că doar scurtează drumul:
+
+- butonul „Deschide VVS-dialog” de lângă raport copiază seria contorului și deschide VVS-dialog,
+  cu seria în adresă (`#linkiq=…`) și ca nume al filei;
+- bookmark-ul `li`, creat o singură dată în Chrome din aplicație, este pornit de instalator din
+  bara de adrese a paginii VVS-dialog. Caută contorul, alege cazul care nu este „Afsluttet” sau
+  „Lukket” (dacă sunt mai multe, le arată) și îl deschide. Nu încarcă, nu modifică și nu șterge.
+
+Codul bookmark-ului: `tools/vvs/bookmark.src.js`; `python tools/build_vvs.py` îl împachetează în
+`frontend/vvs.js`. Pe Android bookmark-ul pornește doar din bara de adrese, iar aplicația instalată
+deschide de obicei VVS-dialog într-o fereastră fără bară de adrese („⋮ → Deschide în Chrome”).
+
 ## Server central: găzduire
 
 | Variantă | Potrivită? | Observații |

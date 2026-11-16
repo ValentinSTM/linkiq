@@ -10,5 +10,18 @@
 8. Udfyld **Montage** (kan gøres, mens appen måler): hvor måleren sidder, intern eller ekstern antenne, og hvor antennen sidder. Vælg kælder eller etage først, derefter niveauet.
 9. Vælg resultat, skriv eventuelle bemærkninger, og tryk **Gem resultatet**.
 10. Tryk **Hent rapporten** (gemmes som `<målernummer>.png`) og **Fotografér antennen** (gemmes som `<målernummer>_antenne.jpg` med måledata på billedet).
+11. Tryk **Åbn VVS-dialog**. Appen kopierer målernummeret og åbner VVS-dialog. Log ind, hvis du bliver bedt om det.
+12. Skriv **li** i adresselinjen i VVS-dialog, og vælg linjen med stjernen. Målerens åbne sag åbner. Tryk **+** ved **Dokumenter**, og vælg rapporten.
+
+Åbner VVS-dialog uden adresselinje? Tryk **⋮**, og vælg **Åbn i Chrome**.
+
+## Bogmærket li (oprettes én gang)
+
+1. I appen: tryk **Opret bogmærket li** på startskærmen, og tryk **Kopiér koden**.
+2. I Chrome: åbn en vilkårlig side, tryk **⋮** og stjernen.
+3. Tryk **Rediger**. Navn: `li`. Slet adressen, og indsæt koden.
+4. Tjek, at adressen begynder med `javascript:` – ellers skriv det foran.
+
+Bogmærket virker kun fra adresselinjen, ikke fra bogmærkelisten. Det søger på målernummeret og åbner den sag, der ikke er *Afsluttet* eller *Lukket*. Er der flere åbne sager, vælger du selv. Det uploader, ændrer og sletter ikke noget.
 
 Sprog skiftes med knappen **RO/DA** øverst.

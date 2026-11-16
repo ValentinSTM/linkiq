@@ -78,6 +78,11 @@
       <button type="button" id="dir-open" class="secondary" hidden>Deschide dosarul</button>
       <ul id="dir-list" class="rows"></ul>
     </div>
+    <div id="vvs-card" class="card">
+      <h2>VVS-dialog</h2>
+      <p class="hint">După raport, aplicația deschide VVS-dialog, iar bookmark-ul li găsește cazul deschis al contorului. Bookmark-ul se creează o singură dată în Chrome.</p>
+      <button type="button" id="vvs-setup-open" class="secondary">Creează bookmark-ul li</button>
+    </div>
     <div id="fb-card" class="card">
       <h2>Feedback și propuneri</h2>
       <p class="hint">Spune-ne ce nu merge sau ce ar trebui îmbunătățit. Mesajul se trimite prin Teams sau se copiază; aplicația nu trimite nimic singură.</p>
@@ -124,6 +129,10 @@
       <p id="dir-info2" class="hint"></p>
       <p id="report-msg" class="hint" hidden></p>
       <img id="report-preview" alt="" hidden>
+      <button type="button" id="vvs-btn" class="secondary">Deschide VVS-dialog</button>
+      <p id="vvs-msg" class="hint">Copiază seria contorului și deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță.</p>
+      <p class="hint">Se deschide fără bară de adrese? Apasă ⋮ și alege „Deschide în Chrome”.</p>
+      <p class="hint"><button type="button" id="vvs-setup-open2" class="link">Prima dată: creează bookmark-ul li</button></p>
     </div>
     <button id="main-btn" class="primary big"></button>
     <button id="alt-btn" class="secondary" hidden></button>
@@ -201,6 +210,25 @@
   </div>
 </div>
 
+<div id="vvs-setup" hidden>
+  <div class="card sheet">
+    <h2>Bookmark-ul li pentru VVS-dialog</h2>
+    <ol class="steps">
+      <li>Apasă „Copiază codul”.</li>
+      <li>În Chrome: deschide o pagină oarecare, apasă ⋮ și steluța.</li>
+      <li>Apasă „Editează”. Nume: li. Șterge adresa și lipește codul.</li>
+      <li>Verifică dacă adresa începe cu javascript: – dacă nu, scrie-l în față.</li>
+      <li>Folosire: în VVS-dialog scrie li în bara de adrese și alege rândul cu steluță. Din lista de bookmark-uri nu pornește.</li>
+    </ol>
+    <button type="button" id="vvs-copy" class="primary">Copiază codul</button>
+    <p id="vvs-setup-msg" class="hint" hidden></p>
+    <textarea id="vvs-code" rows="3" readonly></textarea>
+    <p class="hint">Pe PC: trage butonul de mai jos pe bara de bookmark-uri.</p>
+    <a id="vvs-drag" class="drag" href="#">li</a>
+    <button type="button" id="vvs-setup-close" class="secondary">Închide</button>
+  </div>
+</div>
+
 <nav id="tabs" hidden>
   <button data-view="align" class="on">Aliniere</button>
   <button data-view="recv">Receptoare</button>
@@ -209,6 +237,7 @@
 
 <script src="vendor/leaflet.js"></script>
 <script src="i18n.js"></script>
+<script src="vvs.js"></script>
 <script src="engine.js"></script>
 <script src="app.js"></script>
 </body>

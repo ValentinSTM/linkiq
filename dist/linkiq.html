@@ -839,11 +839,15 @@ ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
 button.link.armed { color: var(--red); font-weight: 800; }
 button.link[hidden] { display: none; }
 
-#feedback { position: fixed; inset: 0; background: rgba(11, 31, 42, .6); z-index: 900; display: flex; align-items: flex-end; justify-content: center; }
-#feedback[hidden] { display: none; }
-#feedback .sheet { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+#feedback, #vvs-setup { position: fixed; inset: 0; background: rgba(11, 31, 42, .6); z-index: 900; display: flex; align-items: flex-end; justify-content: center; }
+#feedback[hidden], #vvs-setup[hidden] { display: none; }
+#feedback .sheet, #vvs-setup .sheet { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
 #fb-card { display: flex; flex-direction: column; gap: 8px; }
 .hint.center { text-align: center; }
+ol.steps { margin: 0; padding-left: 22px; }
+ol.steps li { margin: 6px 0; }
+#vvs-code { font: 11px/1.3 ui-monospace, monospace; }
+a.drag { display: block; text-align: center; padding: 12px; border-radius: 10px; border: 2px dashed var(--gray); color: inherit; font-weight: 700; text-decoration: none; }
 
 </style>
 </head>
@@ -914,6 +918,11 @@ button.link[hidden] { display: none; }
       <button type="button" id="dir-open" class="secondary" hidden>Deschide dosarul</button>
       <ul id="dir-list" class="rows"></ul>
     </div>
+    <div id="vvs-card" class="card">
+      <h2>VVS-dialog</h2>
+      <p class="hint">După raport, aplicația deschide VVS-dialog, iar bookmark-ul li găsește cazul deschis al contorului. Bookmark-ul se creează o singură dată în Chrome.</p>
+      <button type="button" id="vvs-setup-open" class="secondary">Creează bookmark-ul li</button>
+    </div>
     <div id="fb-card" class="card">
       <h2>Feedback și propuneri</h2>
       <p class="hint">Spune-ne ce nu merge sau ce ar trebui îmbunătățit. Mesajul se trimite prin Teams sau se copiază; aplicația nu trimite nimic singură.</p>
@@ -960,6 +969,10 @@ button.link[hidden] { display: none; }
       <p id="dir-info2" class="hint"></p>
       <p id="report-msg" class="hint" hidden></p>
       <img id="report-preview" alt="" hidden>
+      <button type="button" id="vvs-btn" class="secondary">Deschide VVS-dialog</button>
+      <p id="vvs-msg" class="hint">Copiază seria contorului și deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță.</p>
+      <p class="hint">Se deschide fără bară de adrese? Apasă ⋮ și alege „Deschide în Chrome”.</p>
+      <p class="hint"><button type="button" id="vvs-setup-open2" class="link">Prima dată: creează bookmark-ul li</button></p>
     </div>
     <button id="main-btn" class="primary big"></button>
     <button id="alt-btn" class="secondary" hidden></button>
@@ -1034,6 +1047,25 @@ button.link[hidden] { display: none; }
     <button type="button" id="fb-share" class="primary">Trimite (Teams, e-mail…)</button>
     <button type="button" id="fb-copy" class="secondary">Copiază textul</button>
     <button type="button" id="fb-close" class="secondary">Închide</button>
+  </div>
+</div>
+
+<div id="vvs-setup" hidden>
+  <div class="card sheet">
+    <h2>Bookmark-ul li pentru VVS-dialog</h2>
+    <ol class="steps">
+      <li>Apasă „Copiază codul”.</li>
+      <li>În Chrome: deschide o pagină oarecare, apasă ⋮ și steluța.</li>
+      <li>Apasă „Editează”. Nume: li. Șterge adresa și lipește codul.</li>
+      <li>Verifică dacă adresa începe cu javascript: – dacă nu, scrie-l în față.</li>
+      <li>Folosire: în VVS-dialog scrie li în bara de adrese și alege rândul cu steluță. Din lista de bookmark-uri nu pornește.</li>
+    </ol>
+    <button type="button" id="vvs-copy" class="primary">Copiază codul</button>
+    <p id="vvs-setup-msg" class="hint" hidden></p>
+    <textarea id="vvs-code" rows="3" readonly></textarea>
+    <p class="hint">Pe PC: trage butonul de mai jos pe bara de bookmark-uri.</p>
+    <a id="vvs-drag" class="drag" href="#">li</a>
+    <button type="button" id="vvs-setup-close" class="secondary">Închide</button>
   </div>
 </div>
 
@@ -1350,8 +1382,31 @@ window.LINKIQ_DA = {
  "Copiază textul": "Kopiér teksten",
  "Text copiat. Lipește-l în grupul de Teams.": "Teksten er kopieret. Indsæt den i Teams-gruppen.",
  "Alege tipul și scrie câteva cuvinte.": "Vælg type, og skriv et par ord.",
- "Nu am putut deschide trimiterea. Folosește „Copiază textul”.": "Delingen kunne ikke åbnes. Brug „Kopiér teksten”."
+ "Nu am putut deschide trimiterea. Folosește „Copiază textul”.": "Delingen kunne ikke åbnes. Brug „Kopiér teksten”.",
+ "Deschide VVS-dialog": "Åbn VVS-dialog",
+ "Copiază seria contorului și deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță.": "Kopierer målernummeret og åbner VVS-dialog. Skriv li i adresselinjen dér, og vælg bogmærket med stjernen.",
+ "Se deschide fără bară de adrese? Apasă ⋮ și alege „Deschide în Chrome”.": "Åbner siden uden adresselinje? Tryk ⋮, og vælg Åbn i Chrome.",
+ "Prima dată: creează bookmark-ul li": "Første gang: opret bogmærket li",
+ "După raport, aplicația deschide VVS-dialog, iar bookmark-ul li găsește cazul deschis al contorului. Bookmark-ul se creează o singură dată în Chrome.": "Efter rapporten åbner appen VVS-dialog, og bogmærket li finder målerens åbne sag. Bogmærket oprettes én gang i Chrome.",
+ "Creează bookmark-ul li": "Opret bogmærket li",
+ "Bookmark-ul li pentru VVS-dialog": "Bogmærket li til VVS-dialog",
+ "Apasă „Copiază codul”.": "Tryk Kopiér koden.",
+ "În Chrome: deschide o pagină oarecare, apasă ⋮ și steluța.": "I Chrome: åbn en vilkårlig side, tryk ⋮ og stjernen.",
+ "Apasă „Editează”. Nume: li. Șterge adresa și lipește codul.": "Tryk Rediger. Navn: li. Slet adressen, og indsæt koden.",
+ "Verifică dacă adresa începe cu javascript: – dacă nu, scrie-l în față.": "Tjek, at adressen begynder med javascript: – ellers skriv det foran.",
+ "Folosire: în VVS-dialog scrie li în bara de adrese și alege rândul cu steluță. Din lista de bookmark-uri nu pornește.": "Brug: skriv li i adresselinjen i VVS-dialog, og vælg linjen med stjernen. Det virker ikke fra bogmærkelisten.",
+ "Copiază codul": "Kopiér koden",
+ "Pe PC: trage butonul de mai jos pe bara de bookmark-uri.": "På pc: træk knappen herunder op på bogmærkelinjen.",
+ "Seria {0} este copiată. În VVS-dialog scrie li în bara de adrese și alege bookmark-ul cu steluță.": "Målernummer {0} er kopieret. Skriv li i adresselinjen i VVS-dialog, og vælg bogmærket med stjernen.",
+ "În VVS-dialog scrie li în bara de adrese și alege bookmark-ul cu steluță. Seria contorului: {0}.": "Skriv li i adresselinjen i VVS-dialog, og vælg bogmærket med stjernen. Målernummer: {0}.",
+ "Cod copiat. Continuă cu pasul 2.": "Koden er kopieret. Fortsæt med trin 2.",
+ "Nu am putut copia. Selectează textul din câmp și copiază-l.": "Kunne ikke kopiere. Markér teksten i feltet, og kopiér den selv.",
 };
+
+</script>
+<script>
+/* Generated by tools/build_vvs.py from tools/vvs/bookmark.src.js. Do not edit. */
+window.LINKIQ_VVS_BOOKMARK = "javascript:!async%20function()%7Bvar%20e=%5B%22afsluttet%22,%22lukket%22%5D;if(%22vvsdialog.kmd.dk%22===location.hostname)%7Bvar%20t=(location.hash.match(/linkiq=(%5Cd+)/)%7C%7C%5B%5D)%5B1%5D%7C%7C(String(window.name%7C%7C%22%22).match(/%5Elinkiq_(%5Cd+)$/)%7C%7C%5B%5D)%5B1%5D;if(!t)%7Bvar%20n=%22%22;try%7Bnavigator.clipboard&&navigator.clipboard.readText&&(n=await%20Promise.race(%5Bnavigator.clipboard.readText(),new%20Promise(function(e)%7BsetTimeout(function()%7Be(%22%22)%7D,4e3)%7D)%5D))%7Dcatch(w)%7Bn=%22%22%7Dn=String(n%7C%7C%22%22).trim(),t=prompt(%22LinkIQ:%20M%C3%A5lernummer?%22,/%5E%5Cd%7B6,12%7D$/.test(n)?n:%22%22)%7Dif(t=(t%7C%7C%22%22).replace(/%5CD/g,%22%22))%7Bvar%20r=document.getElementById(%22linkiq-box%22);r&&r.remove();var%20i=document.createElement(%22div%22);i.id=%22linkiq-box%22,i.style.cssText=%22position:fixed;left:0;right:0;top:0;z-index:99999;background:%231f5e4f;color:%23fff;font:17px/1.4%20Arial,sans-serif;padding:14px;max-height:100%25;overflow:auto;box-shadow:0%202px%2010px%20rgba(0,0,0,.5)%22,document.body.appendChild(i);try%7Bk(%22LinkIQ:%20s%C3%B8ger%20m%C3%A5ler%20%22+t+%22%20%E2%80%A6%22);var%20o=new%20DOMParser,a=await%20fetch(%22/Home.aspx%22,%7Bcredentials:%22same-origin%22%7D),c=o.parseFromString(await%20a.text(),%22text/html%22),l=c.querySelector(%22form%22),d=l?Array.prototype.slice.call(l.querySelectorAll(%22input%22)):%5B%5D,s=d.find(function(e)%7Breturn/meternumber/i.test(e.name%7C%7C%22%22)%7D),u=d.find(function(e)%7Breturn%22submit%22===(e.type%7C%7C%22%22).toLowerCase()&&%22S%C3%B8g%22===(e.value%7C%7C%22%22).trim()%7D);if(!s%7C%7C!u)return%20k(%22LinkIQ:%20Log%20ind%20i%20VVS-dialog%20f%C3%B8rst,%20og%20tryk%20derefter%20p%C3%A5%20li%20igen.%22),void%20y();var%20f=new%20URLSearchParams;Array.prototype.forEach.call(l.querySelectorAll(%22input,select,textarea%22),function(e)%7Bif(e.name&&!e.disabled)%7Bvar%20n=(e.type%7C%7C%22%22).toLowerCase();%22submit%22!==n&&%22button%22!==n&&%22image%22!==n&&%22file%22!==n&&%22reset%22!==n&&(%22checkbox%22!==n&&%22radio%22!==n%7C%7Ce.checked)&&f.append(e.name,e===s?t:e.value%7C%7C%22%22)%7D%7D),f.append(u.name,u.value);var%20m=new%20URL(l.getAttribute(%22action%22)%7C%7C%22Home.aspx%22,location.origin+%22/Home.aspx%22),p=(a=await%20fetch(m.href,%7Bmethod:%22POST%22,credentials:%22same-origin%22,headers:%7B%22Content-Type%22:%22application/x-www-form-urlencoded%22%7D,body:f.toString()%7D)).url,g=await%20a.text();if(!/ShowCustomer%5C.aspx/i.test(p))return%20k(%22LinkIQ:%20M%C3%A5ler%20%22+t+%22%20blev%20ikke%20fundet%20entydigt.%20S%C3%B8g%20manuelt%20p%C3%A5%20forsiden.%22),void%20y();c=o.parseFromString(g,%22text/html%22);var%20x=%7B%7D,h=%5B%5D;function%20v(e)%7Bk(%22LinkIQ:%20%C3%A5bner%20sagen%20%E2%80%A6%22),location.href=%22/Cases/ShowCase.aspx?cc=%22+e%7Dif(Array.prototype.forEach.call(c.querySelectorAll('%5Bonclick*=%22ShowCase.aspx%22%5D'),function(n)%7Bvar%20r=((n.getAttribute(%22onclick%22)%7C%7C%22%22).match(/cc=(%5Cd+)/)%7C%7C%5B%5D)%5B1%5D;if(r&&!x%5Br%5D)%7Bx%5Br%5D=1;var%20i=o(%22.ucCHCol2%22);e.indexOf(i.toLowerCase())%3E=0%7C%7Ch.push(%7Bcc:r,date:o(%22.ucCHCol1%22),status:i,type:o(%22.ucCHCol3%22),own:n.textContent.indexOf(t)%3E=0%7D)%7Dfunction%20o(e)%7Bvar%20t=n.querySelector(e);return%20t?t.textContent.trim():%22%22%7D%7D),1===h.length)return%20void%20v(h%5B0%5D.cc);if(!h.length)return%20k(%22LinkIQ:%20Ingen%20%C3%A5ben%20sag%20for%20m%C3%A5ler%20%22+t+%22.%22),b(%22%C3%85bn%20kundesiden%22,function()%7Blocation.href=p%7D),void%20y();k(%22LinkIQ:%20%22+h.length+%22%20%C3%A5bne%20sager%20for%20m%C3%A5ler%20%22+t+%22.%20V%C3%A6lg%20sag:%22),h.forEach(function(e)%7Bb(e.date+%22%20%C2%B7%20%22+e.status+%22%20%C2%B7%20%22+e.type+(e.own?%22%20%C2%B7%20m%C3%A5ler%20n%C3%A6vnt%22:%22%22),function()%7Bv(e.cc)%7D)%7D),y()%7Dcatch(C)%7Bk(%22LinkIQ:%20Fejl%20%E2%80%93%20%22+(C&&C.message?C.message:C)),y()%7D%7D%7Delse%20alert(%22LinkIQ:%20%C3%85bn%20VVS-dialog%20og%20log%20ind%20f%C3%B8rst.%22);function%20b(e,t)%7Bvar%20n=document.createElement(%22button%22);return%20n.type=%22button%22,n.textContent=e,n.style.cssText=%22display:block;width:100%25;margin:0%200%208px;padding:12px;font:16px%20Arial,sans-serif;text-align:left;background:%23fff;color:%23111;border:0;border-radius:6px%22,n.onclick=t,i.appendChild(n),n%7Dfunction%20k(e)%7Bi.textContent=%22%22,function(e,t)%7Bvar%20n=document.createElement(%22div%22);n.textContent=e,n.style.margin=%220%200%208px%22,t&&(n.style.fontWeight=%22bold%22),i.appendChild(n)%7D(e,!0)%7Dfunction%20y()%7Bb(%22Luk%22,function()%7Bi.remove()%7D)%7D%7D();";
 
 </script>
 <script>
@@ -12256,7 +12311,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.13';
+  const VERSION = '0.14';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -12886,6 +12941,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     $('meter').value = '';
     $('scan-info').hidden = true; $('scan-chips').hidden = true;
     $('report-msg').hidden = true; $('report-preview').hidden = true; lastPhoto = null;
+    $('vvs-msg').textContent = T('Copiază seria contorului și deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță.');
     refreshData();
     showView('start');
   }
@@ -13884,17 +13940,53 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     try { await navigator.share({ title: 'LinkIQ feedback', text: feedbackText() }); $('fb-text').value = ''; $('feedback').hidden = true; }
     catch (e) { if (e.name !== 'AbortError') { $('fb-msg').textContent = T('Nu am putut deschide trimiterea. Folosește „Copiază textul”.'); $('fb-msg').hidden = false; } }
   };
-  $('fb-copy').onclick = async () => {
-    if (!fbReady()) return;
-    const text = feedbackText();
-    try { await navigator.clipboard.writeText(text); }
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; }
     catch {                                   // older browsers, or the page opened as a file
       const ta = document.createElement('textarea');
       ta.value = text; document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); } catch { /* nothing more to try */ }
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch { /* nothing more to try */ }
       ta.remove();
+      return ok;
     }
+  }
+  $('fb-copy').onclick = async () => {
+    if (!fbReady()) return;
+    await copyText(feedbackText());
     $('fb-msg').textContent = T('Text copiat. Lipește-l în grupul de Teams.'); $('fb-msg').hidden = false;
+  };
+
+  // ---------------------------------------------------------------- VVS-dialog
+  // LinkIQ cannot act inside VVS-dialog (another site, the installer's own login).
+  // It hands over the meter number three ways - in the address, as the name of the
+  // new tab, and on the clipboard - and the installer starts the "li" bookmark there.
+  const VVS_HOME = 'https://vvsdialog.kmd.dk/Home.aspx';
+  $('vvs-btn').onclick = () => {
+    const m = S ? String(S.session.meterSerial).replace(/\D/g, '') : '';
+    if (!m) return;
+    window.open(VVS_HOME + '#linkiq=' + m, 'linkiq_' + m);   // first, while the tap still counts
+    copyText(m).then((ok) => {
+      $('vvs-msg').textContent = ok
+        ? T('Seria {0} este copiată. În VVS-dialog scrie li în bara de adrese și alege bookmark-ul cu steluță.', m)
+        : T('În VVS-dialog scrie li în bara de adrese și alege bookmark-ul cu steluță. Seria contorului: {0}.', m);
+    });
+  };
+  const vvsCode = window.LINKIQ_VVS_BOOKMARK || '';
+  function openVvsSetup() {
+    $('vvs-code').value = vvsCode;
+    $('vvs-drag').href = vvsCode || '#';
+    $('vvs-setup-msg').hidden = true;
+    $('vvs-setup').hidden = false;
+  }
+  $('vvs-setup-open').onclick = openVvsSetup;
+  $('vvs-setup-open2').onclick = openVvsSetup;
+  $('vvs-setup-close').onclick = () => { $('vvs-setup').hidden = true; };
+  $('vvs-drag').onclick = (e) => e.preventDefault();          // it is for dragging to the bookmarks bar
+  $('vvs-copy').onclick = async () => {
+    const ok = await copyText(vvsCode);
+    $('vvs-setup-msg').textContent = ok ? T('Cod copiat. Continuă cu pasul 2.') : T('Nu am putut copia. Selectează textul din câmp și copiază-l.');
+    $('vvs-setup-msg').hidden = false;
   };
 
   // ---------------------------------------------------------------- boot

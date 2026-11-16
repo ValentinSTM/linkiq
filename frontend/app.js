@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.13';
+  const VERSION = '0.14';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -634,6 +634,7 @@
     $('meter').value = '';
     $('scan-info').hidden = true; $('scan-chips').hidden = true;
     $('report-msg').hidden = true; $('report-preview').hidden = true; lastPhoto = null;
+    $('vvs-msg').textContent = T('Copiază seria contorului și deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță.');
     refreshData();
     showView('start');
   }
@@ -1632,17 +1633,53 @@
     try { await navigator.share({ title: 'LinkIQ feedback', text: feedbackText() }); $('fb-text').value = ''; $('feedback').hidden = true; }
     catch (e) { if (e.name !== 'AbortError') { $('fb-msg').textContent = T('Nu am putut deschide trimiterea. Folosește „Copiază textul”.'); $('fb-msg').hidden = false; } }
   };
-  $('fb-copy').onclick = async () => {
-    if (!fbReady()) return;
-    const text = feedbackText();
-    try { await navigator.clipboard.writeText(text); }
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; }
     catch {                                   // older browsers, or the page opened as a file
       const ta = document.createElement('textarea');
       ta.value = text; document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); } catch { /* nothing more to try */ }
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch { /* nothing more to try */ }
       ta.remove();
+      return ok;
     }
+  }
+  $('fb-copy').onclick = async () => {
+    if (!fbReady()) return;
+    await copyText(feedbackText());
     $('fb-msg').textContent = T('Text copiat. Lipește-l în grupul de Teams.'); $('fb-msg').hidden = false;
+  };
+
+  // ---------------------------------------------------------------- VVS-dialog
+  // LinkIQ cannot act inside VVS-dialog (another site, the installer's own login).
+  // It hands over the meter number three ways - in the address, as the name of the
+  // new tab, and on the clipboard - and the installer starts the "li" bookmark there.
+  const VVS_HOME = 'https://vvsdialog.kmd.dk/Home.aspx';
+  $('vvs-btn').onclick = () => {
+    const m = S ? String(S.session.meterSerial).replace(/\D/g, '') : '';
+    if (!m) return;
+    window.open(VVS_HOME + '#linkiq=' + m, 'linkiq_' + m);   // first, while the tap still counts
+    copyText(m).then((ok) => {
+      $('vvs-msg').textContent = ok
+        ? T('Seria {0} este copiată. În VVS-dialog scrie li în bara de adrese și alege bookmark-ul cu steluță.', m)
+        : T('În VVS-dialog scrie li în bara de adrese și alege bookmark-ul cu steluță. Seria contorului: {0}.', m);
+    });
+  };
+  const vvsCode = window.LINKIQ_VVS_BOOKMARK || '';
+  function openVvsSetup() {
+    $('vvs-code').value = vvsCode;
+    $('vvs-drag').href = vvsCode || '#';
+    $('vvs-setup-msg').hidden = true;
+    $('vvs-setup').hidden = false;
+  }
+  $('vvs-setup-open').onclick = openVvsSetup;
+  $('vvs-setup-open2').onclick = openVvsSetup;
+  $('vvs-setup-close').onclick = () => { $('vvs-setup').hidden = true; };
+  $('vvs-drag').onclick = (e) => e.preventDefault();          // it is for dragging to the bookmarks bar
+  $('vvs-copy').onclick = async () => {
+    const ok = await copyText(vvsCode);
+    $('vvs-setup-msg').textContent = ok ? T('Cod copiat. Continuă cu pasul 2.') : T('Nu am putut copia. Selectează textul din câmp și copiază-l.');
+    $('vvs-setup-msg').hidden = false;
   };
 
   // ---------------------------------------------------------------- boot
