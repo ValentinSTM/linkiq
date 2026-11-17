@@ -1,0 +1,24 @@
+# Publishes frontend/ to Azure Static Web Apps on every change to main.
+# Needs one secret pipeline variable: deployment_token (the Static Web App's
+# deployment token, from the Azure portal: Static Web App > Overview > Manage deployment token).
+trigger:
+  branches:
+    include: [main]
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+    submodules: false
+  - script: node --test tests-js/engine.test.js
+    displayName: Engine tests
+  - task: AzureStaticWebApp@0
+    displayName: Publish to Azure Static Web Apps
+    inputs:
+      app_location: frontend
+      output_location: ''
+      skip_app_build: true
+      skip_api_build: true
+      azure_static_web_apps_api_token: $(deployment_token)
