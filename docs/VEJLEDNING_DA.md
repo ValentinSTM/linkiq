@@ -1,5 +1,7 @@
 # LinkIQ Field Assistant – kort vejledning til montøren
 
+**Dansk** · [English](en/GUIDE.md)
+
 1. Åbn appen. Scan målerens QR-kode, eller indtast målernummeret. Skriv dit navn.
 2. Position er valgfri: tryk **GPS**, eller **Vælg på kort**.
 3. Tryk **Start**. Sæt antennen i startposition (felt 1), og tryk **CALL** på måleren. Bekræft i appen, når CALL vises i displayet.
@@ -9,7 +11,7 @@
 7. Fastgør antennen, tryk **CALL** igen, og bekræft. Appen sammenligner slutmålingen med den bedste måling.
 8. Udfyld **Montage** (kan gøres, mens appen måler): hvor måleren sidder, intern eller ekstern antenne, og hvor antennen sidder. Vælg kælder eller etage først, derefter niveauet.
 9. Vælg resultat, skriv eventuelle bemærkninger, og tryk **Gem resultatet**.
-10. Tryk **Hent rapporten** (gemmes som `<målernummer>.png`) og **Fotografér antennen** (gemmes som `<målernummer>_antenne.jpg` med måledata på billedet).
+10. Tryk **Fotografér antennen** først (gemmes som `<målernummer>_antenne.jpg` med måledata på billedet), og derefter **Hent rapporten (PDF)** (gemmes som `<målernummer>.pdf`, med fotoet på side 2).
 11. Tryk **Åbn VVS-dialog**. Appen kopierer målernummeret og åbner VVS-dialog. Log ind, hvis du bliver bedt om det.
 12. Skriv **li** i adresselinjen i VVS-dialog, og vælg linjen med stjernen. Målerens åbne sag åbner. Tryk **+** ved **Dokumenter**, og vælg rapporten.
 

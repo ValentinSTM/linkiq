@@ -5,13 +5,13 @@ services:
     ports: ["8000:8000"]
     volumes: ["linkiq-data:/data"]
     environment:
-      KAMSTRUP_MODE: sim          # "live" = endpoint-ul real Kamstrup
+      KAMSTRUP_MODE: sim          # "live" = the real Kamstrup endpoint
       SIM_SPEED: "4"
-      # Cu KAMSTRUP_MODE=live, cuplarea telefoanelor devine obligatorie (scripts/pairing.py)
+      # With KAMSTRUP_MODE=live, phone pairing becomes mandatory (scripts/pairing.py)
     restart: unless-stopped
 
-  # HTTPS (obligatoriu pe telefon pentru GPS și instalarea PWA). Caddy = Apache-2.0,
-  # certificat Let's Encrypt automat. Decomentează și pune domeniul real.
+  # HTTPS (required on phones for GPS and installing the PWA). Caddy = Apache-2.0,
+  # automatic Let's Encrypt certificate. Uncomment and set the real domain.
   # caddy:
   #   image: caddy:2
   #   ports: ["80:80", "443:443"]

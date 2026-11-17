@@ -1,5 +1,7 @@
 # Arhitectură și alternativa fără licențe
 
+[Dansk](../ARKITEKTUR.md) · [English](../en/ARCHITECTURE.md) · **Română**
+
 ## De ce nu Power Apps
 
 Prototipul Power Apps funcționează, dar conectorul personalizat către Kamstrup îl face aplicație

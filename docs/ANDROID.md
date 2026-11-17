@@ -1,42 +1,40 @@
-# Android: funcționalitate completă fără găzduire
+# Android: fuld funktion uden hosting
 
-Browserul dă acces la GPS și la camera live doar paginilor de la o adresă sigură. `https://…` este
-una; `http://localhost` este cealaltă. Un fișier deschis direct din memoria telefonului nu este.
+**Dansk** · [English](en/ANDROID.md) · [Română](ro/ANDROID.md)
 
-Deci pe telefon rulează un mic server de fișiere, iar aplicația se deschide din Chrome la
-`http://localhost`. Serverul doar livrează fișierul `linkiq.html`; măsurarea rămâne în pagină.
+Browseren giver kun sider fra en sikker adresse adgang til GPS og live-kamera. `https://…` er én;
+`http://localhost` er en anden. En fil åbnet direkte fra telefonens hukommelse er ikke.
 
-## Pași
+Derfor kører en lille filserver på telefonen, og appen åbnes i Chrome på `http://localhost`.
+Serveren leverer kun filen `linkiq.html`; målingen foregår stadig på siden.
 
-1. Instalează din Google Play o aplicație de tip „static HTTP server”. Exemplu: **Simple HTTP Server**
-   (pachet `com.phlox.simpleserver`). Netestat de noi pe un telefon real.
-2. Creează pe telefon un dosar, de exemplu `Download/linkiq`, și copiază în el `dist/linkiq.html`,
-   redenumit `index.html`.
-3. În aplicația-server alege acel dosar ca rădăcină, lasă portul propus (de regulă 8080) și pornește serverul.
-4. În Chrome deschide `http://localhost:8080/`. Adresa trebuie să fie `localhost`, nu adresa IP a
-   telefonului: doar `localhost` este considerată sigură.
-5. La prima folosire, permite accesul la locație și la cameră.
-6. Meniul Chrome → „Adaugă pe ecranul principal”. Aplicația apare cu iconiță.
+I daglig drift bruges adressen på Azure i stedet. Denne vejledning er til prøver uden hosting.
 
-Serverul trebuie să fie pornit când se deschide aplicația. Multe aplicații-server au opțiune de pornire
-automată.
+## Trin
 
-## Ce se câștigă față de fișierul deschis direct
+1. Installér en app af typen „static HTTP server" fra Google Play. Eksempel: **Simple HTTP Server**
+   (pakke `com.phlox.simpleserver`).
+2. Opret en mappe på telefonen, fx `Download/linkiq`, og kopiér `dist/linkiq.html` dertil,
+   omdøbt til `index.html`.
+3. Vælg mappen som rod i server-appen, behold den foreslåede port (som regel 8080), og start serveren.
+4. Åbn `http://localhost:8080/` i Chrome. Adressen skal være `localhost`, ikke telefonens IP-adresse:
+   kun `localhost` regnes som sikker.
+5. Tillad adgang til placering og kamera første gang.
+6. Chrome-menuen → *Føj til startskærm*. Appen får et ikon.
 
-| | Fișier deschis direct | `http://localhost` sau HTTPS |
+Serveren skal køre, når appen åbnes. Mange server-apps kan starte automatisk.
+
+## Hvad man vinder i forhold til at åbne filen direkte
+
+| | Fil åbnet direkte | `http://localhost` eller HTTPS |
 |---|---|---|
-| Măsurare, raport, fotografie cu rezultat | da | da |
-| Seria din QR | prin fotografie | cameră live |
-| Poziție | aleasă pe hartă | GPS automat sau hartă |
-| Registrul și sesiunile se păstrează | nesigur | da |
-| Iconiță pe ecranul principal | nu | da |
+| Måling, rapport, foto med resultat | ja | ja |
+| Målernummer fra QR | via foto | live-kamera |
+| Position | valgt på kortet | automatisk GPS eller kort |
+| Register og sessioner gemmes | usikkert | ja |
+| Ikon på startskærmen | nej | ja |
 
 ## iPhone
 
-Pe iPhone, soluția practică este o adresă HTTPS (aceeași `linkiq.html` pe orice găzduire de fișiere
-statice). Aplicațiile-server pentru iOS există, dar sistemul le oprește când trec în fundal.
-
-## Alternativa fără nimic de instalat
-
-Publicarea `linkiq.html` la o adresă HTTPS dă același rezultat pe Android și iPhone, fără server pe
-telefon. Fișierul nu conține date: registrul se încarcă pe fiecare telefon.
+På iPhone er den praktiske løsning en HTTPS-adresse, dvs. den hostede app. Server-apps til iOS
+findes, men systemet stopper dem, når de går i baggrunden.

@@ -1,76 +1,81 @@
 # LinkIQ Field Assistant
 
-Aplicație web instalabilă pe telefon (PWA) care ghidează instalatorul la orientarea antenei
-unui contor de căldură Kamstrup, pe baza măsurătorilor radio reale. Înlocuiește prototipul
-Power Apps, fără nicio licență plătită. Cod deschis, licență MIT.
+**Dansk** · [English](README.en.md) · [Română](docs/ro/README.md)
 
-Stadiu: **v0.2**. Fluxul complet rulează cap-coadă pe simulator și pe răspunsuri Kamstrup
-interceptate în browser. Un baleiaj complet pe un contor real încă nu a fost făcut.
+LinkIQ er en webapp, der kan installeres på telefonen (PWA). Den hjælper montøren med at rette
+antennen ind på en Kamstrup-varmemåler ud fra rigtige radiomålinger. Appen erstatter
+Power Apps-prototypen og kræver ingen betalte licenser. Åben kildekode, MIT-licens.
 
-## Două moduri de rulare
+Status: **v0.14**. Hele forløbet kører på simulatoren og på opfangede svar fra Kamstrup i browseren.
+En hurtig bekræftelse er gennemført på en rigtig måler. En fuld rotation på en rigtig måler mangler.
 
-| | Fără server (implicit) | Cu server central (opțional) |
+Kort vejledning til montøren: [docs/VEJLEDNING_DA.md](docs/VEJLEDNING_DA.md).
+
+## To driftsformer
+
+| | Uden server (standard) | Med central server (valgfri) |
 |---|---|---|
-| Ce rulează | doar dosarul `frontend/`, ca pagini statice | `backend/` + `frontend/` |
-| Cine apelează Kamstrup | browserul de pe telefon, direct | serverul |
-| Registrul și sesiunile | pe dispozitiv; se exportă ca CSV | în baza de date a serverului |
-| Limita de 5 s per contor | per dispozitiv | centrală, pentru toate telefoanele |
-| Blocare când doi instalatori testează același contor | nu | da |
-| Cuplarea telefonului prin cod | nu este necesară | da |
+| Hvad kører | kun mappen `frontend/` som statiske sider | `backend/` + `frontend/` |
+| Hvem kalder Kamstrup | telefonens browser, direkte | serveren |
+| Register og sessioner | på enheden; eksporteres som CSV | i serverens database |
+| Grænse på 5 s pr. måler | pr. enhed | centralt, for alle telefoner |
+| Lås, når to montører tester samme måler | nej | ja |
+| Parring af telefonen med kode | ikke nødvendig | ja |
 
-Pagina alege singură: dacă la adresa ei nu răspunde un server LinkIQ, lucrează fără server.
-Kamstrup permite apelul direct din browser (verificat pe 12.11.2026).
+Siden vælger selv: svarer der ikke en LinkIQ-server på dens adresse, kører den uden server.
+Kamstrup tillader kaldet direkte fra browseren (kontrolleret 12.11.2026).
 
-## Pornire fără server
+## Start uden server
 
-**Pe laptop, pentru o probă:** dublu-clic pe `frontend/index.html`. Măsurarea funcționează; camera,
-GPS-ul și instalarea pe ecranul principal cer HTTPS, deci nu merg din fișier.
+**På en bærbar, til en prøve:** dobbeltklik på `frontend/index.html`. Målingen virker. Kamera,
+GPS og installation på startskærmen kræver HTTPS og virker derfor ikke fra en fil.
 
-**Pe telefon, pentru o probă fără găzduire:** copiază pe telefon un singur fișier, `dist/linkiq.html`,
-și deschide-l în Chrome. Are totul înăuntru. (Dosarul `frontend/` copiat pe telefon nu funcționează:
-telefonul nu lasă pagina să-și încarce fișierele vecine.) Se reface cu `python tools/build_single.py`.
-Deschis așa, seria se citește fotografiind codul QR, iar poziția se alege pe hartă; camera live și
-GPS-ul telefonului cer o adresă HTTPS. Datele pot să nu se păstreze între deschideri.
+**På en telefon, til en prøve uden hosting:** kopiér én fil, `dist/linkiq.html`, til telefonen,
+og åbn den i Chrome. Alt er indbygget. (Mappen `frontend/` virker ikke kopieret til telefonen,
+fordi telefonen ikke lader siden indlæse filerne ved siden af.) Filen bygges med
+`python tools/build_single.py`. Åbnet på denne måde læses målernummeret ved at fotografere
+QR-koden, og positionen vælges på kortet. Live-kamera og GPS kræver en HTTPS-adresse.
+Data bliver muligvis ikke gemt mellem åbningerne.
 
-**Pe Android, cu funcționalitate completă și fără găzduire:** Chrome tratează `http://localhost` ca
-adresă sigură, deci un mic server de fișiere pe telefon deblochează GPS-ul, camera live, instalarea pe
-ecranul principal și păstrarea datelor. Vezi `docs/ANDROID.md`.
+**På Android, fuld funktion uden hosting:** Chrome betragter `http://localhost` som en sikker
+adresse. En lille filserver på telefonen giver derfor GPS, live-kamera, installation og gemte data.
+Se [docs/ANDROID.md](docs/ANDROID.md).
 
-**Pe telefoane:** aplicația se publică pe Azure Static Web Apps (plan Free), doar pentru utilizatorii
-invitați. Instalatorul deschide adresa, se loghează cu contul de serviciu și alege „Adaugă pe ecranul
-principal”. Vezi „Găzduire și publicare” mai jos.
+**På telefonerne i drift:** appen udgives på Azure Static Web Apps (Free-plan), kun for inviterede
+brugere. Montøren åbner adressen, logger ind med sin arbejdskonto og vælger *Føj til startskærm*.
+Se *Hosting og udgivelse* nedenfor.
 
-### Registrul fără import pe fiecare telefon
+### Registret uden import på hver telefon
 
-Aplicația caută registrul în această ordine:
+Appen leder efter registret i denne rækkefølge:
 
-1. **Inclus în fișierul aplicației.** `python tools/build_single.py --sites linkiq_sites.csv --concentrators linkiq_koncentratorer.csv --out ../linkiq-med-register.html`
-   produce un singur fișier cu aplicația și registrul vostru. Montorii nu importă nimic, iar fișierul
-   funcționează și deschis direct din memoria telefonului. Conține locațiile reale: **nu se publică**.
-2. **Lângă aplicație, pe server.** Dacă `linkiq_sites.csv` și `linkiq_koncentratorer.csv` stau în același
-   dosar cu `index.html`, se încarcă singure la pornire. Potrivit pentru găzduire internă, cu acces
-   restricționat; nu pentru o adresă publică.
-3. **Importat manual**, o singură dată, din cardul de mai jos. Rămâne pe dispozitiv până la un nou import.
+1. **Indbygget i appfilen.** `python tools/build_single.py --sites linkiq_sites.csv --concentrators linkiq_koncentratorer.csv --out ../linkiq-med-register.html`
+   laver én fil med appen og jeres register. Montørerne skal ikke importere noget, og filen virker
+   også åbnet direkte fra telefonens hukommelse. Den indeholder de rigtige placeringer:
+   **den må ikke udgives**.
+2. **Ved siden af appen på serveren.** Ligger `linkiq_sites.csv` og `linkiq_koncentratorer.csv` i
+   samme mappe som `index.html`, indlæses de automatisk ved start. Egnet til intern hosting med
+   begrænset adgang, ikke til en offentlig adresse.
+3. **Importeret manuelt**, én gang, fra kortet nedenfor. Bliver på enheden indtil næste import.
 
-Un registru mai nou (inclus sau din dosar) îl înlocuiește pe cel vechi o singură dată; un import
-manual ulterior nu este suprascris.
+Et nyere register (indbygget eller fra mappen) erstatter det gamle én gang. En senere manuel import
+bliver ikke overskrevet.
 
-În cardul „Date pe acest dispozitiv”:
+I kortet *Data på denne enhed*:
 
-- **Încarcă site-uri / concentratoare (CSV)** – registrul rămâne doar pe telefon. Se acceptă
-  coloanele `Breddegrad` / `Længdegrad`, virgula zecimală și fișiere salvate din Excel. Fără
-  registru, toate receptoarele auzite sunt tratate ca proprii.
-- **Exportă măsurătorile (CSV)** – toate sesiunile de pe dispozitiv, pentru analiză.
-- **Mod demonstrație** – simulator, pentru instruire fără contor.
+- **Indlæs sites / koncentratorer (CSV)**: registret bliver kun på telefonen. Kolonnerne
+  `Breddegrad` / `Længdegrad`, decimalkomma og filer gemt fra Excel accepteres. Uden register
+  behandles alle modtagere, der hører måleren, som vores egne.
+- **Eksportér målingerne (CSV)**: alle sessioner på enheden, til analyse.
+- **Demotilstand**: simulator, til oplæring uden måler.
 
-Teste: `node --test tests-js/engine.test.js`
+Test: `node --test tests-js/engine.test.js`
 
-## Pornire cu server central
+## Start med central server
 
-**Windows:** dublu-clic pe `start.bat` (API-ul real Kamstrup) sau `start.bat sim`. Are nevoie de
-Python instalat.
+**Windows:** dobbeltklik på `start.bat` (rigtigt Kamstrup-API) eller `start.bat sim`. Kræver Python.
 
-**Manual, pe orice sistem:**
+**Manuelt, på ethvert system:**
 
 ```bash
 cd backend
@@ -79,157 +84,167 @@ python scripts/import_registry.py --sites data/sites.sample.csv --concentrators 
 uvicorn app.main:app --port 8000
 ```
 
-Teste: `pip install -r requirements-dev.txt && pytest`. Cu Docker: `docker compose up --build`.
+Test: `pip install -r requirements-dev.txt && pytest`. Med Docker: `docker compose up --build`.
 
-## Ce este implementat
+## Hvad er implementeret
 
-| Cerință din handoff | Stare |
+| Krav fra overdragelsesdokumentet | Status |
 |---|---|
-| Proxy central către Kamstrup; telefonul nu apelează Kamstrup direct | da |
-| Limită de 5 s per contor, indiferent câte telefoane interoghează | da |
-| Observație nouă = amprentă `serial\|timestamp\|rssi` nevăzută; baseline la CALL | da |
-| Observațiile mai vechi decât momentul poziționării nu se atribuie noii poziții; timestamp lipsă tratat explicit | da |
-| Baleiaj grosier în 4 felii (numărul se poate schimba), avertizare după 60 s fără a eșua, salt peste poziție | da |
-| O poziție e măsurată când a răspuns receptorul de referință (cel mai puternic), nu la prima citire slabă; citirile sosite târziu se atribuie poziției la care au fost luate | da |
-| Toate receptoarele proprii salvate, inclusiv cele slabe; cele externe doar în jurnal | da |
-| Pizza cu felii colorate (albastru / galben / verde / gri / gri deschis) | da |
-| Confirmare rapidă la semnal inițial puternic | da |
-| Reglaj fin live în felia câștigătoare: semnalul receptorului de referință pe ecran, fără apăsări; se actualizează când raportează receptorul, la 20–30 s | da |
-| CALL final și comparație cu cea mai bună măsurătoare | da |
-| Redundanță: rezervă pe alt site preferată celei de pe același site; nu se recomandă dacă slăbește legătura principală | da (afișare; fără baleiaj dedicat) |
-| Blocare sesiune per contor, cu heartbeat și reluare de către același instalator | da |
-| Listă receptoare, hartă cu distanță și direcție | da |
-| Import registru Site / Concentrator din CSV | da |
-| Export pentru Network Intelligence (`/api/export/observations.csv`) | da |
-| PWA: manifest, service worker, instalare pe ecranul principal | da |
-| Cuplarea telefonului prin cod QR personal, retragere acces | da |
-| Scanarea seriei contorului din codul QR | da (regula de extragere de confirmat pe un contor real) |
-| Citirea codului QR dintr-o fotografie și alegerea poziției pe hartă, când pagina nu rulează prin HTTPS | da |
-| Interfață în daneză (implicit) și română, comutabilă din antet | da |
-| Raport la finalul sesiunii: imagine `<seria>.png` cu baleiajul, reglajul fin, confirmarea finală și receptoarele | da |
-| Fotografie a antenei cu rezultatul scris pe ea: `<seria>_antenne.jpg` | da |
-| Hartă cu linii contor–site, semnal și distanță; aceeași hartă în raport | da |
-| Raport și ca PDF (`<seria>.pdf`), cu fotografia antenei pe pagina a doua | da |
-| Verificarea unui contor fără sesiune și fără CALL: cine îl aude acum și de când (`<seria>_status.pdf`) | da, doar în varianta fără server |
-| Dosar ales de montor pentru rapoarte (creat ca `LinkIQ-rapporter`), cu lista rapoartelor salvate; fără suport în browser, se folosește descărcarea obișnuită | da |
-| Poziția fiecărui contor se ține minte pe dispozitiv și se refolosește la verificarea fără CALL | da |
-| Date de montaj obligatorii la salvare, alese din butoane mari fără valori implicite: nivelul contorului, antenă internă/externă, locul antenei; apar în raport, pe fotografie și în exportul CSV | da |
-| Poziția contorului se poate indica sau corecta pe hartă și după măsurătoare, inclusiv la verificarea fără CALL | da |
-| Citirea seriei tipărite cu camera (OCR) | **nu** |
-| Autentificare Microsoft Entra ID | **nu** – cuplare prin cod personal |
-| Coadă offline pentru acțiuni | **nu** – sesiunea se reia după pierderea conexiunii, dar acțiunile nu se pun în coadă |
-| Citire busolă pentru ghidare | parțial – direcția telefonului se salvează dacă browserul o oferă, nu se folosește la ghidare |
+| Central proxy til Kamstrup; telefonen kalder ikke Kamstrup direkte (servertilstand) | ja |
+| Grænse på 5 s pr. måler, uanset hvor mange telefoner der spørger | ja |
+| Ny observation = ukendt fingeraftryk `serial\|timestamp\|rssi`; baseline ved CALL | ja |
+| Observationer ældre end positioneringen tilskrives ikke den nye position; manglende tidsstempel håndteres eksplicit | ja |
+| Grov rotation i 4 felter (antallet kan ændres), advarsel efter 60 s uden at fejle, spring position over | ja |
+| En position er målt, når referencemodtageren (den stærkeste) har svaret, ikke ved første svage måling; sene målinger tilskrives den position, de blev taget i | ja |
+| Alle egne modtagere gemmes, også de svage; fremmede kun i loggen | ja |
+| Lagkage med farvede felter (blå / gul / grøn / grå / lysegrå) | ja |
+| Hurtig bekræftelse ved stærkt startsignal | ja |
+| Live-finjustering i det vindende felt: referencemodtagerens signal på skærmen uden tryk; opdateres, når modtageren melder, hvert 20.–30. sekund | ja |
+| Afsluttende CALL og sammenligning med den bedste måling | ja |
+| Redundans: reserve på et andet site foretrækkes frem for samme site; anbefales ikke, hvis den svækker hovedforbindelsen | ja (visning; ingen særskilt rotation) |
+| Sessionslås pr. måler med heartbeat og genoptagelse af samme montør (servertilstand) | ja |
+| Modtagerliste, kort med afstand og retning | ja |
+| Import af register (sites / koncentratorer) fra CSV | ja |
+| Eksport til Network Intelligence (`/api/export/observations.csv`) | ja |
+| PWA: manifest, service worker, installation på startskærmen | ja |
+| Parring af telefon med personlig QR-kode, tilbagekaldelse af adgang (servertilstand) | ja |
+| Scanning af målernummer fra QR-kode | ja (reglen for udtræk skal bekræftes på en rigtig måler) |
+| QR-kode fra et foto og valg af position på kortet, når siden ikke kører via HTTPS | ja |
+| Brugerflade på dansk (standard) og rumænsk, skift i toppen | ja |
+| Rapport ved afslutning: billede `<målernummer>.png` med rotation, finjustering, slutbekræftelse og modtagere | ja |
+| Foto af antennen med resultatet skrevet på: `<målernummer>_antenne.jpg` | ja |
+| Kort med linjer måler–site, signal og afstand; samme kort i rapporten | ja |
+| Rapport også som PDF (`<målernummer>.pdf`) med antennefotoet på side 2 | ja |
+| Kontrol af en måler uden session og uden CALL: hvem hører den nu, og siden hvornår (`<målernummer>_status.pdf`) | ja, kun uden server |
+| Mappe valgt af montøren til rapporter (oprettes som `LinkIQ-rapporter`) med liste over gemte rapporter; uden browserunderstøttelse bruges almindelig download | ja |
+| Hver målers position huskes på enheden og genbruges ved kontrol uden CALL | ja |
+| Monteringsdata obligatoriske ved gem, valgt med store knapper uden standardværdier: målerens niveau, intern/ekstern antenne, antennens placering; vises i rapport, på foto og i CSV-eksport | ja |
+| Målerens position kan angives eller rettes på kortet efter målingen, også ved kontrol uden CALL | ja |
+| Feedback fra appen via telefonens deling (Teams, mail) eller udklipsholder | ja |
+| Åbn målerens sag i VVS-dialog (knap + bogmærket `li`) | ja |
+| Aflæsning af det trykte målernummer med kameraet (OCR) | **nej** |
+| Login med Microsoft Entra ID i appen | **nej**: adgangen styres af hostingen (Azure) eller af parringskode (server) |
+| Offline-kø til handlinger | **nej**: sessionen genoptages efter tabt forbindelse, men handlinger sættes ikke i kø |
+| Kompas til vejledning | delvist: telefonens retning gemmes, hvis browseren giver den, men bruges ikke til vejledning |
 
-## Server central: test cu API-ul real Kamstrup
+## Central server: test mod det rigtige Kamstrup-API
 
-Formatul răspunsului real a fost verificat pe 12.11.2026: seria receptorului este în câmpul
-`SerialNumber` al fiecărui element din `Links[]`, iar adaptorul îl citește corect.
+Svarformatet blev kontrolleret 12.11.2026: modtagerens nummer ligger i feltet `SerialNumber` i hvert
+element af `Links[]`, og adapteren læser det korrekt.
 
-Pe un laptop cu acces la internet:
+På en bærbar med internet:
 
 ```bash
 cd backend
-python scripts/check_kamstrup.py <seria-contorului>     # o singură cerere: ce vede adaptorul
-python scripts/import_registry.py --sites <site.csv> --concentrators <concentratoare.csv>
+python scripts/check_kamstrup.py <målernummer>          # én forespørgsel: hvad adapteren ser
+python scripts/import_registry.py --sites <sites.csv> --concentrators <koncentratorer.csv>
 python scripts/pairing.py add --name Ana --url http://localhost:8000
 KAMSTRUP_MODE=live uvicorn app.main:app --port 8000      # Windows: set KAMSTRUP_MODE=live
 ```
 
-Deschide linkul de cuplare afișat de `pairing.py`, introdu seria contorului de pe birou, apasă CALL
-pe contor și confirmă. Eticheta SIMULATOR dispare în modul live.
+Åbn parringslinket fra `pairing.py`, indtast nummeret på måleren på skrivebordet, tryk CALL på
+måleren, og bekræft. Mærket SIMULATOR forsvinder i live-tilstand.
 
-Pentru test pe telefon este nevoie de HTTPS (altfel camera și GPS-ul sunt blocate). Cel mai rapid:
-`cloudflared tunnel --url http://localhost:8000` dă o adresă HTTPS temporară către laptop; refă
-linkul de cuplare cu `--url` pe acea adresă.
+Test på telefon kræver HTTPS (ellers er kamera og GPS blokeret). Hurtigst:
+`cloudflared tunnel --url http://localhost:8000` giver en midlertidig HTTPS-adresse til den bærbare.
+Lav parringslinket igen med `--url` sat til den adresse.
 
-## Server central: cuplarea telefoanelor
+## Central server: parring af telefoner
 
-Codul sursă nu conține date. Registrul (site-uri, coordonate, concentratoare) stă doar în baza de
-date a instanței voastre și este servit numai telefoanelor cuplate. Altă organizație își pornește
-propria instanță, cu propriul registru.
+Kildekoden indeholder ingen data. Registret (sites, koordinater, koncentratorer) ligger kun i jeres
+instans' database og sendes kun til parrede telefoner. En anden organisation starter sin egen
+instans med sit eget register.
 
-- `python scripts/pairing.py add --name Ana --url https://adresa-voastră` creează un cod personal
-  și un fișier `pair-Ana.svg` cu codul QR.
-- Instalatorul scanează QR-ul o singură dată; aplicația se deschide deja cuplată pe numele lui.
-- `pairing.py revoke --name Ana` retrage accesul imediat (telefon pierdut, coleg plecat).
-- În baza de date se păstrează doar amprenta codului, deci linkul nu poate fi reafișat.
+- `python scripts/pairing.py add --name Ana --url https://jeres-adresse` laver en personlig kode
+  og en fil `pair-Ana.svg` med QR-koden.
+- Montøren scanner QR-koden én gang; appen åbner allerede parret i hans navn.
+- `pairing.py revoke --name Ana` fjerner adgangen med det samme (tabt telefon, kollega stoppet).
+- Databasen gemmer kun kodens fingeraftryk, så linket kan ikke vises igen.
 
-Cu `KAMSTRUP_MODE=live` cuplarea este obligatorie implicit: fără cod, API-ul răspunde 401.
+Med `KAMSTRUP_MODE=live` er parring påkrævet som standard: uden kode svarer API'et 401.
 
-## Scanarea seriei contorului
+## Scanning af målernummeret
 
-Butonul „Scanează” de lângă câmpul seriei deschide camera și citește codul QR. Dacă codul conține
-doar seria, câmpul se completează direct; dacă conține mai multe numere, aplicația le afișează și
-instalatorul o alege pe cea corectă. Conținutul exact al QR-ului Kamstrup nu este încă cunoscut –
-după o scanare reală, regula se poate fixa ca seria să fie aleasă automat.
+Knappen *Scan* ved målernummerfeltet åbner kameraet og læser QR-koden. Indeholder koden kun
+nummeret, udfyldes feltet direkte. Indeholder den flere tal, viser appen dem, og montøren vælger det
+rigtige. Det præcise indhold af Kamstrups QR-kode kendes endnu ikke; efter en rigtig scanning kan
+reglen fastlægges, så nummeret vælges automatisk.
 
-Citirea seriei tipărite (OCR) nu este implementată.
+Aflæsning af det trykte nummer (OCR) er ikke implementeret.
 
-## Deschiderea cazului în VVS-dialog (KMD)
+## Åbn sagen i VVS-dialog (KMD)
 
-Rapoartele se încarcă manual în VVS-dialog. LinkIQ nu poate acționa acolo (alt site, login-ul
-instalatorului), așa că doar scurtează drumul:
+Rapporterne uploades manuelt i VVS-dialog. LinkIQ kan ikke handle dér (et andet website, montørens
+eget login), så appen gør kun vejen kortere:
 
-- butonul „Deschide VVS-dialog” de lângă raport copiază seria contorului și deschide VVS-dialog,
-  cu seria în adresă (`#linkiq=…`) și ca nume al filei;
-- bookmark-ul `li`, creat o singură dată în Chrome din aplicație, este pornit de instalator din
-  bara de adrese a paginii VVS-dialog. Caută contorul, alege cazul care nu este „Afsluttet” sau
-  „Lukket” (dacă sunt mai multe, le arată) și îl deschide. Nu încarcă, nu modifică și nu șterge.
+- knappen *Åbn VVS-dialog* ved rapporten kopierer målernummeret og åbner VVS-dialog med nummeret i
+  adressen (`#linkiq=…`) og som fanens navn;
+- bogmærket `li`, oprettet én gang i Chrome fra appen, startes af montøren fra adresselinjen på
+  VVS-dialog-siden. Det søger på måleren, vælger den sag, der ikke er *Afsluttet* eller *Lukket*
+  (er der flere, vises de), og åbner den. Det uploader, ændrer og sletter ikke noget.
 
-Codul bookmark-ului: `tools/vvs/bookmark.src.js`; `python tools/build_vvs.py` îl împachetează în
-`frontend/vvs.js`. Pe Android bookmark-ul pornește doar din bara de adrese, iar aplicația instalată
-deschide de obicei VVS-dialog într-o fereastră fără bară de adrese („⋮ → Deschide în Chrome”).
+Bogmærkets kode: `tools/vvs/bookmark.src.js`; `python tools/build_vvs.py` pakker den ind i
+`frontend/vvs.js`. På Android starter bogmærket kun fra adresselinjen, og den installerede app åbner
+som regel VVS-dialog i et vindue uden adresselinje (*⋮ → Åbn i Chrome*).
 
-## Server central: găzduire
+## Central server: hosting
 
-| Variantă | Potrivită? | Observații |
+| Mulighed | Egnet? | Bemærkninger |
 |---|---|---|
-| Server / VM de la IT | **da, recomandat** | rulează exact ce este aici; registrul rămâne în infrastructura voastră |
-| Calculator intern + Cloudflare Tunnel | da | HTTPS fără porturi deschise în firewall; Cloudflare Access poate cere și login Microsoft |
-| Cloudflare Workers / Pages | nu direct | nu rulează serverul Python; ar cere rescrierea lui în JavaScript |
-| Microsoft 365 / SharePoint | nu | nu poate rula un server; bun doar ca sursă pentru fișierele registrului |
-| React Native | nu este găzduire | o aplicație nativă ulterioară ar folosi același server |
+| Server / VM fra IT | **ja, anbefalet** | kører præcis det, der ligger her; registret bliver i jeres infrastruktur |
+| Intern computer + Cloudflare Tunnel | ja | HTTPS uden åbne porte i firewallen; Cloudflare Access kan kræve Microsoft-login |
+| Cloudflare Workers / Pages | ikke direkte | kører ikke Python-serveren; den skulle omskrives til JavaScript |
+| Microsoft 365 / SharePoint | nej | kan ikke køre en server og viser ikke HTML-apps; kun egnet til registrets filer |
+| React Native | ikke hosting | en senere app ville bruge den samme server |
 
-Serverul are nevoie de ieșire la internet către `check.kamstrup.com` și de un volum persistent
-pentru fișierul SQLite.
+Serveren skal have adgang til internettet til `check.kamstrup.com` og et vedvarende drev til
+SQLite-filen.
 
-## Găzduire și publicare
+## Hosting og udgivelse
 
-Cât timp aplicația se dezvoltă, copia de lucru este pe GitHub. Pipeline-ul din Azure DevOps
-(*Målerservice-Udviklingsprojekt*) pornește la fiecare modificare pe `main` de pe GitHub: rulează
-testele motorului, copiază `main` în depozitul Azure Repos `linkiq` și publică `frontend/` pe
-Azure Static Web Apps. Montorii folosesc doar adresa din Azure. Copierea în Azure Repos cere ca
-„… Build Service” să aibă dreptul *Contribute* pe depozitul `linkiq`. Pipeline-ul are nevoie de o singură variabilă secretă, `deployment_token`
-(Static Web App → Overview → Manage deployment token).
+Mens appen udvikles, ligger arbejdskopien på GitHub. Pipelinen i Azure DevOps
+(*Målerservice-Udviklingsprojekt*) starter ved hver ændring på `main` på GitHub: den kører
+motortestene, kopierer `main` til Azure Repos-depotet `linkiq` og udgiver `frontend/` på
+Azure Static Web Apps. Montørerne bruger kun adressen i Azure.
 
-Accesul este stabilit în `frontend/staticwebapp.config.json`: intră doar utilizatorii invitați cu
-rolul `montor` (Static Web App → Role management → Invite, provider Microsoft Entra ID). Login-ul
-cu GitHub este blocat. Invitarea unui coleg: e-mailul de serviciu, rolul `montor`, linkul trimis lui.
+- Kopieringen til Azure Repos kræver, at *… Build Service* har rettigheden *Contribute* på depotet
+  `linkiq`.
+- Pipelinen skal bruge én hemmelig variabel, `deployment_token`
+  (Static Web App → Overview → Manage deployment token).
 
-Registrul real (site-uri și concentratoare) nu se pune în depozit fără acordul echipei, chiar dacă
-depozitul este privat.
+Adgangen er fastlagt i `frontend/staticwebapp.config.json`: kun inviterede brugere med rollen
+`montor` kommer ind (Static Web App → Role management → Invite, provider Microsoft Entra ID).
+Login med GitHub er blokeret. Invitation af en kollega: arbejdsmail, rollen `montor`, linket sendes
+til kollegaen.
 
-## Înainte de pilot
+Det rigtige register (sites og koncentratorer) lægges ikke i depotet uden teamets accept, heller ikke
+selv om depotet er privat.
 
-1. **Registrul real**: exportă cele două liste ca CSV și importă-le. `Breddegrad` / `Længdegrad` și
-   virgula zecimală sunt recunoscute; concentratoarele fără site sigur devin `REVIEW` /
-   `MISSING_LOCATION`. Cât timp registrul e gol, toate receptoarele sunt tratate ca proprii.
-   Fișierele CSV reale sunt excluse din git prin `.gitignore`.
-2. **HTTPS** pe adresa finală.
-3. **Praguri**: valorile din `.env.example` (−80 / −95 / −110 dBm, 6 dB) sunt provizorii.
-4. **Kamstrup**: condițiile de folosire a endpoint-ului în producție rămân de confirmat, cu atât
-   mai mult dacă proiectul devine public.
+## Før pilotdrift
 
-## Structură
+1. **Det rigtige register**: eksportér de to lister som CSV, og importér dem. `Breddegrad` /
+   `Længdegrad` og decimalkomma genkendes; koncentratorer uden sikkert site bliver `REVIEW` /
+   `MISSING_LOCATION`. Så længe registret er tomt, behandles alle modtagere som egne.
+   De rigtige CSV-filer er udelukket fra git via `.gitignore`.
+2. **HTTPS** på den endelige adresse.
+3. **Grænseværdier**: værdierne i `.env.example` (−80 / −95 / −110 dBm, 6 dB) er foreløbige.
+4. **Kamstrup**: betingelserne for at bruge endpointet i drift skal bekræftes.
+
+## Struktur
 
 ```
-frontend/engine.js        toată logica de măsurare, pe dispozitiv (modul fără server)
-frontend/app.js           interfața; aceeași în ambele moduri
-frontend/i18n.js          textele în daneză (sursa este în română)
-frontend/                 PWA (HTML + CSS + JavaScript simplu, fără pas de build)
-tests-js/                 18 teste pentru engine.js
-backend/app/              server central opțional: aceleași reguli, în Python
-backend/scripts/          import registru, coduri de cuplare, verificare Kamstrup
-backend/tests/            18 teste
-docs/ARHITECTURA.md       alternativa aleasă, licențe, API, model de amenințări
+frontend/engine.js        al målelogik på enheden (drift uden server)
+frontend/app.js           brugerfladen; den samme i begge driftsformer
+frontend/i18n.js          de danske tekster (kildeteksterne er på rumænsk)
+frontend/vvs.js           bogmærket li til VVS-dialog (bygges fra tools/vvs/)
+frontend/                 PWA (HTML + CSS + almindelig JavaScript, intet byggetrin)
+tests-js/                 18 test af engine.js
+backend/app/              valgfri central server: samme regler i Python
+backend/scripts/          import af register, parringskoder, kontrol af Kamstrup
+backend/tests/            18 test
+docs/VEJLEDNING_DA.md     kort vejledning til montøren
+docs/ARKITEKTUR.md        valgt løsning, licenser, API, trusselsmodel
+docs/ANDROID.md           fuld funktion på Android uden hosting
+docs/ro/                  de oprindelige rumænske dokumenter
+azure-pipelines.yml       test, kopi til Azure Repos og udgivelse på Azure
 ```
