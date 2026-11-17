@@ -211,8 +211,9 @@ Azure Static Web Apps. Installers use only the Azure address.
 
 - Copying into Azure Repos needs *… Build Service* to have the *Contribute* permission on the
   `linkiq` repository.
-- The pipeline needs one secret variable, `deployment_token`
-  (Static Web App → Overview → Manage deployment token).
+- Publishing needs two pipeline variables: `deployment_token` (secret; Static Web App →
+  Overview → Manage deployment token) and `publish_enabled` = `true`. Until then the pipeline only
+  tests and copies.
 
 Access is set in `frontend/staticwebapp.config.json`: only invited users with the role `montor` get
 in (Static Web App → Role management → Invite, provider Microsoft Entra ID). GitHub sign-in is

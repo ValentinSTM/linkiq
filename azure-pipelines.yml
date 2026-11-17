@@ -1,8 +1,9 @@
 # LinkIQ: runs in Azure DevOps on every push to main on GitHub (the development copy).
 # 1. tests the engine, 2. mirrors main into the Azure Repos repository "linkiq",
 # 3. publishes frontend/ to Azure Static Web Apps (the address the installers use).
-# Needs one secret pipeline variable: deployment_token
-# (Azure portal: Static Web App > Overview > Manage deployment token).
+# Publishing needs two pipeline variables: deployment_token (secret; Azure portal:
+# Static Web App > Overview > Manage deployment token) and publish_enabled = true.
+# Until publish_enabled is set, the pipeline only tests and mirrors.
 trigger:
   branches:
     include: [main]
@@ -23,13 +24,13 @@ steps:
       set -euo pipefail
       PROJECT=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$(System.TeamProject)")
       URL="$(System.CollectionUri)${PROJECT}/_git/linkiq"
-      git -c http.extraheader="AUTHORIZATION: bearer $(System.AccessToken)" push --force "$URL" HEAD:refs/heads/main
+      git -c http.extraheader="AUTHORIZATION: bearer $(System.AccessToken)" push "$URL" HEAD:refs/heads/main
     displayName: Mirror main to Azure Repos
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
 
   - task: AzureStaticWebApp@0
     displayName: Publish to Azure Static Web Apps
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['publish_enabled'], 'true'))
     inputs:
       app_location: frontend
       output_location: ''

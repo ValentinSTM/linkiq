@@ -209,8 +209,9 @@ Azure Static Web Apps. Montørerne bruger kun adressen i Azure.
 
 - Kopieringen til Azure Repos kræver, at *… Build Service* har rettigheden *Contribute* på depotet
   `linkiq`.
-- Pipelinen skal bruge én hemmelig variabel, `deployment_token`
-  (Static Web App → Overview → Manage deployment token).
+- Udgivelsen kræver to variabler i pipelinen: `deployment_token` (hemmelig; Static Web App →
+  Overview → Manage deployment token) og `publish_enabled` = `true`. Indtil da tester og kopierer
+  pipelinen kun.
 
 Adgangen er fastlagt i `frontend/staticwebapp.config.json`: kun inviterede brugere med rollen
 `montor` kommer ind (Static Web App → Role management → Invite, provider Microsoft Entra ID).
