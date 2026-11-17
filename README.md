@@ -36,9 +36,9 @@ GPS-ul telefonului cer o adresă HTTPS. Datele pot să nu se păstreze între de
 adresă sigură, deci un mic server de fișiere pe telefon deblochează GPS-ul, camera live, instalarea pe
 ecranul principal și păstrarea datelor. Vezi `docs/ANDROID.md`.
 
-**Pe telefoane:** publică dosarul `frontend/` pe orice găzduire de fișiere statice cu HTTPS (de
-exemplu GitHub Pages, Cloudflare Pages, Azure Static Web Apps). Nu rulează nimic pe server.
-Instalatorul deschide adresa și alege „Adaugă pe ecranul principal”.
+**Pe telefoane:** aplicația se publică pe Azure Static Web Apps (plan Free), doar pentru utilizatorii
+invitați. Instalatorul deschide adresa, se loghează cu contul de serviciu și alege „Adaugă pe ecranul
+principal”. Vezi „Găzduire și publicare” mai jos.
 
 ### Registrul fără import pe fiecare telefon
 
@@ -192,6 +192,20 @@ deschide de obicei VVS-dialog într-o fereastră fără bară de adrese („⋮ 
 
 Serverul are nevoie de ieșire la internet către `check.kamstrup.com` și de un volum persistent
 pentru fișierul SQLite.
+
+## Găzduire și publicare
+
+Proiectul stă în Azure DevOps (*Målerservice-Udviklingsprojekt*, depozitul `linkiq`). La fiecare
+modificare pe `main`, `azure-pipelines.yml` rulează testele motorului și publică `frontend/` pe
+Azure Static Web Apps. Pipeline-ul are nevoie de o singură variabilă secretă, `deployment_token`
+(Static Web App → Overview → Manage deployment token).
+
+Accesul este stabilit în `frontend/staticwebapp.config.json`: intră doar utilizatorii invitați cu
+rolul `montor` (Static Web App → Role management → Invite, provider Microsoft Entra ID). Login-ul
+cu GitHub este blocat. Invitarea unui coleg: e-mailul de serviciu, rolul `montor`, linkul trimis lui.
+
+Registrul real (site-uri și concentratoare) nu se pune în depozit fără acordul echipei, chiar dacă
+depozitul este privat.
 
 ## Înainte de pilot
 

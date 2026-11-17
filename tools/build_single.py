@@ -8,7 +8,7 @@
         -> the same app with YOUR registry built in: installers import nothing,
            and it also works when the file is opened straight from the phone.
            This file contains your concentrator locations: do NOT publish it
-           (keep it out of the public repository and of GitHub Pages).
+           (keep it out of the repository and of any published site).
 """
 from pathlib import Path
 import argparse, hashlib, json, re
