@@ -9,31 +9,42 @@ trigger:
     include: [main]
 pr: none
 
-pool:
-  vmImage: ubuntu-latest
+resources:
+  repositories:
+    # Declared so the job's token may write to it ("Protect access to repositories
+    # in YAML pipelines" only lets the token reach repositories named here).
+    - repository: azure_mirror
+      type: git
+      name: linkiq
 
-steps:
-  - checkout: self
-    fetchDepth: 0
-    submodules: false
+jobs:
+  - job: build
+    pool:
+      vmImage: ubuntu-latest
+    uses:
+      repositories: [azure_mirror]
+    steps:
+      - checkout: self
+        fetchDepth: 0
+        submodules: false
 
-  - script: node --test tests-js/engine.test.js
-    displayName: Engine tests
+      - script: node --test tests-js/engine.test.js
+        displayName: Engine tests
 
-  - bash: |
-      set -euo pipefail
-      PROJECT=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$(System.TeamProject)")
-      URL="$(System.CollectionUri)${PROJECT}/_git/linkiq"
-      git -c http.extraheader="AUTHORIZATION: bearer $(System.AccessToken)" push "$URL" HEAD:refs/heads/main
-    displayName: Mirror main to Azure Repos
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+      - bash: |
+          set -euo pipefail
+          PROJECT=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$(System.TeamProject)")
+          URL="$(System.CollectionUri)${PROJECT}/_git/linkiq"
+          git -c http.extraheader="AUTHORIZATION: bearer $(System.AccessToken)" push "$URL" HEAD:refs/heads/main
+        displayName: Mirror main to Azure Repos
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
 
-  - task: AzureStaticWebApp@0
-    displayName: Publish to Azure Static Web Apps
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['publish_enabled'], 'true'))
-    inputs:
-      app_location: frontend
-      output_location: ''
-      skip_app_build: true
-      skip_api_build: true
-      azure_static_web_apps_api_token: $(deployment_token)
+      - task: AzureStaticWebApp@0
+        displayName: Publish to Azure Static Web Apps
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['publish_enabled'], 'true'))
+        inputs:
+          app_location: frontend
+          output_location: ''
+          skip_app_build: true
+          skip_api_build: true
+          azure_static_web_apps_api_token: $(deployment_token)
