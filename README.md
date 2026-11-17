@@ -195,9 +195,11 @@ pentru fișierul SQLite.
 
 ## Găzduire și publicare
 
-Proiectul stă în Azure DevOps (*Målerservice-Udviklingsprojekt*, depozitul `linkiq`). La fiecare
-modificare pe `main`, `azure-pipelines.yml` rulează testele motorului și publică `frontend/` pe
-Azure Static Web Apps. Pipeline-ul are nevoie de o singură variabilă secretă, `deployment_token`
+Cât timp aplicația se dezvoltă, copia de lucru este pe GitHub. Pipeline-ul din Azure DevOps
+(*Målerservice-Udviklingsprojekt*) pornește la fiecare modificare pe `main` de pe GitHub: rulează
+testele motorului, copiază `main` în depozitul Azure Repos `linkiq` și publică `frontend/` pe
+Azure Static Web Apps. Montorii folosesc doar adresa din Azure. Copierea în Azure Repos cere ca
+„… Build Service” să aibă dreptul *Contribute* pe depozitul `linkiq`. Pipeline-ul are nevoie de o singură variabilă secretă, `deployment_token`
 (Static Web App → Overview → Manage deployment token).
 
 Accesul este stabilit în `frontend/staticwebapp.config.json`: intră doar utilizatorii invitați cu
