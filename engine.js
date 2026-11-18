@@ -274,6 +274,15 @@
       return true;
     }
     registryCopy() { return { sites: this.db.sites, concentrators: this.db.concentrators, source: this.db.registrySource || null }; }
+    /** The registry as two compact CSV texts (for passing it to a colleague's phone, e.g. by QR code). */
+    registryCsv() {
+      const cell = (v) => String(v === null || v === undefined ? '' : v).replace(/[;\r\n]/g, ' ');
+      const sites = ['siteCode;name;address;latitude;longitude;status'].concat(Object.values(this.db.sites).map((s) =>
+        [s.siteCode, s.name, s.address, s.latitude, s.longitude, s.status === 'MISSING_LOCATION' ? '' : s.status].map(cell).join(';')));
+      const conc = ['serialNumber;siteCode;status;active'].concat(Object.values(this.db.concentrators).map((c) =>
+        [c.serial, c.declaredSite, c.declaredStatus, c.active ? 1 : 0].map(cell).join(';')));
+      return { sites: sites.join('\n') + '\n', concentrators: conc.join('\n') + '\n' };
+    }
 
     importSites(csvText) {
       let n = 0, bad = 0;

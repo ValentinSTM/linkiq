@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.16';
+  const VERSION = '0.17';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -825,7 +825,7 @@
   // ---------------------------------------------------------------- camera scanning
   // Native BarcodeDetector where the browser has it (Chrome on Android); jsQR otherwise.
   const scanner = (() => {
-    let stream = null, timer = null, onResult = null, detector = null, canvas = null;
+    let stream = null, timer = null, onResult = null, detector = null, canvas = null, frame = 0;
     const loadScript = (src) => new Promise((ok, fail) => {
       const el = document.createElement('script');
       el.src = src; el.onload = ok; el.onerror = () => fail(new Error(T('Nu am putut încărca cititorul de coduri.')));
@@ -838,7 +838,7 @@
       $('scanner').hidden = false;
       try {
         if (!window.isSecureContext || !navigator.mediaDevices) throw new Error(T('Camera live cere o adresă sigură (HTTPS sau localhost). Apasă „Fotografiază codul”.'));
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } }, audio: false });
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 } }, audio: false });
         const v = $('scan-video');
         v.srcObject = stream;
         await v.play();
@@ -865,11 +865,20 @@
             const found = await detector.detect(v);
             if (found.length) text = found[0].rawValue;
           } else {
+            // Alternate the whole frame (small codes anywhere) with the centre square at full
+            // detail (dense codes, such as the registry, held in the middle of the picture).
             canvas = canvas || document.createElement('canvas');
-            const k = Math.min(1, 800 / v.videoWidth);
-            canvas.width = Math.round(v.videoWidth * k); canvas.height = Math.round(v.videoHeight * k);
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
-            ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+            frame++;
+            if (frame % 2) {
+              const k = Math.min(1, 800 / v.videoWidth);
+              canvas.width = Math.round(v.videoWidth * k); canvas.height = Math.round(v.videoHeight * k);
+              ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+            } else {
+              const side = Math.min(v.videoWidth, v.videoHeight), k = Math.min(1, 1100 / side);
+              canvas.width = canvas.height = Math.round(side * k);
+              ctx.drawImage(v, (v.videoWidth - side) / 2, (v.videoHeight - side) / 2, side, side, 0, 0, canvas.width, canvas.height);
+            }
             const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const hit = window.jsQR(img.data, img.width, img.height);
             if (hit && hit.data) text = hit.data;
@@ -936,9 +945,77 @@
         cb(text.trim());
       } catch (e) { showError('scan-error', T('Nu am putut citi fotografia: {0}', e.message)); }
     };
-    return { open, close };
+    return { open, close, decodePhoto, loadScript };
   })();
   $('scan-close').onclick = () => scanner.close();
+
+  // ---------------------------------------------------------------- registry by QR code
+  // Work phones may not save files from Teams or mail, so the registry travels as a
+  // QR code: shown on a colleague's screen or paper, or as a picture. Format:
+  // "LIQR1:<yyyymmdd>:" + base64url(deflate-raw(sites CSV + RS + concentrators CSV)).
+  const REGQR = 'LIQR1:';
+  const b64url = (bytes) => { let s = ''; for (const b of bytes) s += String.fromCharCode(b); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const unb64url = (t) => Uint8Array.from(atob(t.replace(/-/g, '+').replace(/_/g, '/')), (ch) => ch.charCodeAt(0));
+  async function pipe(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
+  async function registryToQrText() {
+    if (!('CompressionStream' in window)) throw new Error(T('Browserul este prea vechi pentru a face codul QR.'));
+    const csv = engine.registryCsv();
+    const z = await pipe(new TextEncoder().encode(csv.sites + '\u001e' + csv.concentrators), new CompressionStream('deflate-raw'));
+    const day = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    return `${REGQR}${day}:${b64url(z)}`;
+  }
+  async function importRegistryQr(text) {
+    const msg = $('reg-msg');
+    msg.hidden = false;
+    try {
+      const m = /^LIQR1:(\d{8}):([A-Za-z0-9_-]+)$/.exec((text || '').trim());
+      if (!m) { msg.textContent = T('Acesta nu este un cod QR cu registrul LinkIQ.'); return; }
+      if (!('DecompressionStream' in window)) throw new Error(T('Browserul este prea vechi pentru a citi codul QR.'));
+      const raw = new TextDecoder().decode(await pipe(unb64url(m[2]), new DecompressionStream('deflate-raw')));
+      const [sites, conc] = raw.split('\u001e');
+      const r = engine.replaceRegistry(sites || '', conc || '', { origin: 'qr', version: m[1] });
+      if (!r) { msg.textContent = T('Codul QR nu conține un registru valid.'); return; }
+      keepRegistry();
+      const d = m[1];
+      msg.textContent = T('Registru citit din codul QR din {0}: {1} site-uri, {2} concentratoare.', `${d.slice(6)}.${d.slice(4, 6)}.${d.slice(0, 4)}`, r.sites, r.concentrators);
+    } catch (e) { msg.textContent = T('Nu am putut citi registrul: {0}', e.message); }
+    refreshData();
+  }
+  $('regqr-scan').onclick = () => scanner.open(T('Îndreaptă camera spre codul QR cu registrul'), importRegistryQr);
+  $('regqr-image').onchange = async (ev) => {
+    const file = ev.target.files[0];
+    ev.target.value = '';
+    if (!file) return;
+    $('reg-msg').hidden = false; $('reg-msg').textContent = T('Caut codul QR în imagine…');
+    try {
+      const text = await scanner.decodePhoto(file);
+      if (!text) { $('reg-msg').textContent = T('Nu am găsit un cod QR în imagine.'); return; }
+      await importRegistryQr(text);
+    } catch (e) { $('reg-msg').textContent = T('Nu am putut citi imaginea: {0}', e.message); }
+  };
+  let regQrBlob = null;
+  $('regqr-make').onclick = async () => {
+    try {
+      if (!window.qrcode) await scanner.loadScript('vendor/qrcode.js');
+      const text = await registryToQrText();
+      const qr = window.qrcode(0, 'L');
+      qr.addData(text, 'Byte'); qr.make();
+      const n = qr.getModuleCount(), cell = Math.max(6, Math.floor(900 / (n + 8))), size = (n + 8) * cell;
+      const c = document.createElement('canvas'); c.width = size; c.height = size + 70;
+      const x = c.getContext('2d');
+      x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.fillStyle = '#000';
+      for (let r = 0; r < n; r++) for (let q = 0; q < n; q++) if (qr.isDark(r, q)) x.fillRect((q + 4) * cell, (r + 4) * cell, cell, cell);
+      const info = engine.registryInfo();
+      x.font = `600 26px ${SANS}`; x.textAlign = 'center'; x.fillStyle = '#0b1f2a';
+      x.fillText(`LinkIQ – ${T('registru')}: ${info.sites} ${T('site-uri')}, ${info.concentrators} ${T('concentratoare')} · ${fmtTime(new Date().toISOString())}`, size / 2, size + 40);
+      regQrBlob = await new Promise((ok) => c.toBlob(ok, 'image/png'));
+      $('regqr-img').src = URL.createObjectURL(regQrBlob);
+      $('regqr-info').textContent = T('{0} site-uri, {1} concentratoare · {2} caractere', info.sites, info.concentrators, text.length);
+      $('regqr-sheet').hidden = false;
+    } catch (e) { $('reg-msg').hidden = false; $('reg-msg').textContent = T('Nu am putut face codul QR: {0}', e.message); }
+  };
+  $('regqr-save').onclick = () => { if (regQrBlob) saveBlob(regQrBlob, `linkiq-register-qr-${new Date().toISOString().slice(0, 10)}.png`); };
+  $('regqr-close').onclick = () => { $('regqr-sheet').hidden = true; };
 
   // The exact content of the meter's QR code is not known yet, so: accept a bare
   // serial, otherwise offer every 6-12 digit group found in the text.
@@ -1123,7 +1200,8 @@
     const r = engine.registryInfo();
     $('reg-info').textContent = r.concentrators
       ? T('Registru: {0} site-uri, {1} concentratoare', r.sites, r.concentrators) + (r.review ? T(', {0} fără site sigur.', r.review) : '.')
-        + ' ' + T({ embedded: 'Este inclus în aplicație; nu trebuie importat.', folder: 'Se încarcă singur din dosarul aplicației.' }[(engine.db.registrySource || {}).origin]
+        + ' ' + T({ embedded: 'Este inclus în aplicație; nu trebuie importat.', folder: 'Se încarcă singur din dosarul aplicației.',
+          qr: 'Citit dintr-un cod QR; rămâne pe acest dispozitiv până imporți altul.' }[(engine.db.registrySource || {}).origin]
           || 'Importat manual; rămâne pe acest dispozitiv până imporți altul.')
       : T('Registrul nu este încărcat: toate receptoarele auzite sunt tratate ca proprii, iar harta nu are site-uri.');
     const embedded = (engine.db.registrySource || {}).origin === 'embedded';
@@ -1132,6 +1210,7 @@
     $('sess-info').textContent = T('{0} {1} pe acest dispozitiv. Datele nu pleacă nicăieri până nu le exporți.', n, n === 1 ? T('sesiune salvată') : T('sesiuni salvate'));
     $('sess-clear').hidden = n === 0;
     $('reg-clear').hidden = !r.concentrators;
+    $('regqr-make').hidden = !r.concentrators;
     $('mode').hidden = !engine.demo;
     cfg.kamstrupMode = engine.demo ? 'sim' : 'live';
   }

@@ -64,7 +64,10 @@
       <p id="store-warn" class="hint warn" hidden>Aplicația este deschisă într-un mod care nu poate păstra date între deschideri. Folosește fișierul aplicației cu registrul inclus sau deschide aplicația de la o adresă web.</p>
       <label class="file-btn">Încarcă site-uri (CSV)<input type="file" id="sites-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
       <label class="file-btn">Încarcă concentratoare (CSV)<input type="file" id="conc-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
+      <button type="button" id="regqr-scan" class="secondary">Scanează registrul de pe codul QR</button>
+      <label class="file-btn">Alege o imagine cu codul QR<input type="file" id="regqr-image" accept="image/*" hidden></label>
       <p id="reg-msg" class="hint" hidden></p>
+      <p class="hint"><button type="button" id="regqr-make" class="link" hidden>Fă un cod QR al registrului pentru colegi</button></p>
       <p class="hint"><button type="button" id="reg-clear" class="link">Scoate site-urile și concentratoarele din aplicație</button></p>
       <p id="sess-info" class="hint"></p>
       <p class="hint"><button type="button" id="sess-clear" class="link">Șterge măsurătorile salvate</button></p>
@@ -207,6 +210,22 @@
     <button type="button" id="fb-share" class="primary">Trimite (Teams, e-mail…)</button>
     <button type="button" id="fb-copy" class="secondary">Copiază textul</button>
     <button type="button" id="fb-close" class="secondary">Închide</button>
+  </div>
+</div>
+
+<div id="regqr-sheet" hidden>
+  <div class="card sheet">
+    <h2>Registrul ca cod QR</h2>
+    <p class="hint warn">Conține locațiile concentratoarelor. Dă-l doar colegilor, nu-l publica.</p>
+    <img id="regqr-img" alt="">
+    <p id="regqr-info" class="hint"></p>
+    <ol class="steps">
+      <li>Colegul deschide LinkIQ și apasă „Scanează registrul de pe codul QR”.</li>
+      <li>Ține telefonul la 20–30 cm de ecran sau de foaia tipărită, până se citește codul.</li>
+      <li>Sau: îi trimiți imaginea, iar el o alege cu „Alege o imagine cu codul QR”.</li>
+    </ol>
+    <button type="button" id="regqr-save" class="primary">Salvează imaginea</button>
+    <button type="button" id="regqr-close" class="secondary">Închide</button>
   </div>
 </div>
 
