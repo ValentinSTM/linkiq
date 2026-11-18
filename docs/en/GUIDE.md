@@ -19,6 +19,16 @@ The app's screens are in Danish (or Romanian); the button names below are the Da
 
 VVS-dialog opens without an address bar? Tap **⋮** and choose **Open in Chrome**.
 
+## The registry (sites and concentrators) by QR code
+
+Work phones may not save files from Teams or mail, so the registry travels as a QR code:
+
+1. A colleague who has the registry in the app (e.g. on a PC) taps **Lav en QR-kode af registret til kolleger** (make a QR code of the registry) in the card *Data på denne enhed*, and shows the code on screen or prints it.
+2. You tap **Scan registret fra QR-kode** and hold the phone 20–30 cm from the code.
+3. If you got the code as a picture (e.g. a screenshot), tap **Vælg et billede med QR-koden** (choose a picture).
+
+The app says *Register læst fra QR-koden fra …* with the number of sites and concentrators. The QR code holds the concentrators' locations: share it internally only.
+
 ## The li bookmark (created once)
 
 1. In the app: tap **Opret bogmærket li** on the start screen, then **Kopiér koden** (copy the code).

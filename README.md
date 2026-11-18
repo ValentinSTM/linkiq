@@ -57,7 +57,9 @@ Appen leder efter registret i denne rækkefølge:
 2. **Ved siden af appen på serveren.** Ligger `linkiq_sites.csv` og `linkiq_koncentratorer.csv` i
    samme mappe som `index.html`, indlæses de automatisk ved start. Egnet til intern hosting med
    begrænset adgang, ikke til en offentlig adresse.
-3. **Importeret manuelt**, én gang, fra kortet nedenfor. Bliver på enheden indtil næste import.
+3. **Importeret manuelt**, én gang, fra kortet nedenfor: fra de to CSV-filer eller fra en QR-kode, som en kollega viser
+   på skærmen eller sender som billede (*Lav en QR-kode af registret til kolleger*). QR-vejen bruges, hvor
+   arbejdstelefonen ikke må gemme filer fra Teams eller mail. Bliver på enheden indtil næste import.
 
 Et nyere register (indbygget eller fra mappen) erstatter det gamle én gang. En senere manuel import
 bliver ikke overskrevet.

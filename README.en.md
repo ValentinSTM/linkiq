@@ -59,7 +59,9 @@ The app looks for the registry in this order:
 2. **Next to the app on the server.** If `linkiq_sites.csv` and `linkiq_koncentratorer.csv` are in
    the same folder as `index.html`, they load automatically at start. Suitable for internal hosting
    with restricted access, not for a public address.
-3. **Imported by hand**, once, from the card below. Stays on the device until the next import.
+3. **Imported by hand**, once, from the card below: from the two CSV files, or from a QR code a colleague shows on
+   screen or sends as a picture (*Lav en QR-kode af registret til kolleger*). The QR route is for work phones that
+   may not save files from Teams or mail. Stays on the device until the next import.
 
 A newer registry (built in or from the folder) replaces the old one once. A later manual import is
 not overwritten.

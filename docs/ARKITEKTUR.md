@@ -49,6 +49,7 @@ i begge.
 | Leaflet 1.9.4 (i `frontend/vendor`) | BSD-2 | 0 |
 | jsQR 1.4.0 (QR-læsning, hvor browseren ikke selv kan) | Apache-2.0 | 0 |
 | segno (QR-kode til parring) | BSD-3 | 0 |
+| qrcode-generator 1.4.4 (QR-kode med registret, i `frontend/vendor`) | MIT | 0 |
 | OpenStreetMap-data og -kortfliser | ODbL; brugsregler for fliseserveren | 0 ved lav trafik |
 | Docker Engine (valgfri) | Apache-2.0 | 0 |
 | Caddy + Let's Encrypt (HTTPS, valgfri) | Apache-2.0 | 0 |

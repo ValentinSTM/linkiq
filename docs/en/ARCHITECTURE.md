@@ -49,6 +49,7 @@ scenarios in both.
 | Leaflet 1.9.4 (in `frontend/vendor`) | BSD-2 | 0 |
 | jsQR 1.4.0 (QR reading where the browser has no reader) | Apache-2.0 | 0 |
 | segno (QR code for pairing) | BSD-3 | 0 |
+| qrcode-generator 1.4.4 (QR code with the registry, in `frontend/vendor`) | MIT | 0 |
 | OpenStreetMap data and tiles | ODbL; tile server usage policy | 0 at low traffic |
 | Docker Engine (optional) | Apache-2.0 | 0 |
 | Caddy + Let's Encrypt (HTTPS, optional) | Apache-2.0 | 0 |

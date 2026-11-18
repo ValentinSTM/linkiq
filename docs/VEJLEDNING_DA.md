@@ -17,6 +17,16 @@
 
 Åbner VVS-dialog uden adresselinje? Tryk **⋮**, og vælg **Åbn i Chrome**.
 
+## Registret (sites og koncentratorer) via QR-kode
+
+Arbejdstelefonen må ikke gemme filer fra Teams eller mail. Registret kommer derfor som en QR-kode:
+
+1. En kollega med registret i appen (fx på pc'en) trykker **Lav en QR-kode af registret til kolleger** i kortet *Data på denne enhed* og viser koden på skærmen eller udskriver den.
+2. Du trykker **Scan registret fra QR-kode** og holder telefonen 20–30 cm fra koden.
+3. Har du fået koden som billede (fx et skærmbillede), så tryk **Vælg et billede med QR-koden**.
+
+Appen skriver *Register læst fra QR-koden fra …* med antal sites og koncentratorer. QR-koden indeholder koncentratorernes placering: del den kun internt.
+
 ## Bogmærket li (oprettes én gang)
 
 1. I appen: tryk **Opret bogmærket li** på startskærmen, og tryk **Kopiér koden**.

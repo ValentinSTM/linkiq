@@ -52,7 +52,7 @@ def main() -> None:
     for name in ("vendor/leaflet.js", "i18n.js", "vvs.js", "engine.js", "app.js"):
         tag = f'<script src="{name}"></script>'
         assert tag in html, name
-        extra = "<script>\n" + js("vendor/jsQR.js") + "\n</script>\n" if name == "engine.js" else ""
+        extra = "<script>\n" + js("vendor/jsQR.js") + "\n</script>\n<script>\n" + js("vendor/qrcode.js") + "\n</script>\n" if name == "engine.js" else ""
         if name == "app.js":
             extra += registry
         html = html.replace(tag, extra + "<script>\n" + js(name) + "\n</script>")

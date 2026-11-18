@@ -294,6 +294,19 @@ test('status check: last contact is current (<= 75 min), occasional (<= 8 h) or 
   assert.ok(s.warnings.includes('NO_RECENT_CONTACT'));
 });
 
+test('registryCsv round-trips the registry through replaceRegistry', () => {
+  const { eng } = make({ live: () => ({ Links: [] }) });
+  const before = eng.registryInfo();
+  const csv = eng.registryCsv();
+  const { eng: other } = make({ registry: false, live: () => ({ Links: [] }) });
+  assert.deepEqual(other.replaceRegistry(csv.sites, csv.concentrators, { origin: 'qr' }), before);
+  assert.deepEqual(other.db.sites, eng.db.sites);
+  for (const k of Object.keys(eng.db.concentrators)) {
+    const a = eng.db.concentrators[k], b = other.db.concentrators[k];
+    assert.deepEqual([b.siteCode, b.status, b.active], [a.siteCode, a.status, a.active]);
+  }
+});
+
 test('the position of a meter is remembered and reused for a status check', async () => {
   const live = () => ({ Links: [{ SerialNumber: '70000001', TimestampUtcToDevice: new Date(Date.UTC(2026, 10, 12, 8, 59)).toISOString(), RssiToDevice: -70 }] });
   const { eng, clock } = make({ live });
