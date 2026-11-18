@@ -270,6 +270,30 @@ test('status check: a receiver listed several times by Kamstrup counts once, wit
   assert.equal(s.primary.serial, '70000001');
 });
 
+test('status check: last contact is current (<= 75 min), occasional (<= 8 h) or old; old contact makes no link', async () => {
+  const now = Date.UTC(2026, 10, 12, 9, 0, 0);
+  const at = (minAgo) => new Date(now - minAgo * 60000).toISOString();
+  let links = [
+    { SerialNumber: '70000002', TimestampUtcToDevice: at(9 * 60), RssiToDevice: -80 },  // strong, but 9 h old
+    { SerialNumber: '70000001', TimestampUtcToDevice: at(48), RssiToDevice: -119 },     // weaker, but the only current one
+    { SerialNumber: '70000003', TimestampUtcToDevice: at(76), RssiToDevice: -90 },      // just over the hour
+    { SerialNumber: '70000001', TimestampUtcToDevice: at(58 * 1440), RssiToDevice: -95 }];
+  const { eng, clock } = make({ live: () => ({ Links: links }) });
+  let s = await eng.check(METER);
+  assert.deepEqual(s.receivers.map((r) => [r.serial, r.age, r.ageMin]),
+    [['70000001', 'CURRENT', 48], ['70000003', 'OCCASIONAL', 76], ['70000002', 'OLD', 540]]);
+  assert.equal(s.primary.serial, '70000001');
+  assert.deepEqual([s.check.contact.current, s.check.contact.occasional, s.check.contact.old], [1, 1, 1]);
+  assert.equal(s.backup.serial, '70000003');            // the old one is never offered
+  assert.equal(s.backup.usable, false);                 // only occasional contact: no redundancy
+  links = [{ SerialNumber: '70000001', TimestampUtcToDevice: at(10 * 60), RssiToDevice: -70 }];
+  clock.tick(10);
+  s = await eng.check(METER);
+  assert.equal(s.primary, null);
+  assert.equal(s.backup, null);
+  assert.ok(s.warnings.includes('NO_RECENT_CONTACT'));
+});
+
 test('the position of a meter is remembered and reused for a status check', async () => {
   const live = () => ({ Links: [{ SerialNumber: '70000001', TimestampUtcToDevice: new Date(Date.UTC(2026, 10, 12, 8, 59)).toISOString(), RssiToDevice: -70 }] });
   const { eng, clock } = make({ live });

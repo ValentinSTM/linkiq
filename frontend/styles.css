@@ -178,3 +178,6 @@ ol.steps { margin: 0; padding-left: 22px; }
 ol.steps li { margin: 6px 0; }
 #vvs-code { font: 11px/1.3 ui-monospace, monospace; }
 a.drag { display: block; text-align: center; padding: 12px; border-radius: 10px; border: 2px dashed var(--gray); color: inherit; font-weight: 700; text-decoration: none; }
+.tag.age.CURRENT { background: var(--green); } .tag.age.OCCASIONAL { background: #b26a00; } .tag.age.OLD { background: #9aa5ad; }
+ul.rows li.old { opacity: 0.55; }
+ul.rows li.legend { display: block; font-size: 13px; color: var(--gray); border-top: 2px solid var(--light); padding-top: 8px; }

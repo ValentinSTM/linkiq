@@ -19,6 +19,8 @@
     ABORTED: 'Abandonat',
   };
   const RELATION_RO = { PRIMARY: 'principal', SAME_SITE: 'același site', DISTINCT_SITE: 'alt site', UNKNOWN_SITE: 'site necunoscut' };
+  // Age of the last contact in a status check (thresholds from the engine: 75 min and 8 h).
+  const AGE_RO = { CURRENT: 'ultima oră', OCCASIONAL: 'ocazional', OLD: 'peste 8 ore' };
 
   const store = {
     get: (k, d = null) => { try { const v = localStorage.getItem('linkiq.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
@@ -41,6 +43,33 @@
     if (sec < 172800) return T('acum {0} ore', Math.round(sec / 3600));
     return T('acum {0} zile', Math.round(sec / 86400));
   }
+  /** Status check: how many of our receivers had contact, and when, in one sentence. */
+  function contactText(s) {
+    const c = s.check && s.check.contact;
+    if (!c) return '';
+    const parts = [];
+    if (c.current) parts.push(T('{0} cu contact în ultima oră', c.current));
+    if (c.occasional) parts.push(T('{0} doar ocazional (1–{1} ore)', c.occasional, c.historyMaxH));
+    if (c.old) parts.push(T('{0} fără contact de peste {1} ore (nu contează)', c.old, c.historyMaxH));
+    return parts.join(' · ');
+  }
+  /** Status check verdict: [colour, sentence]. Hourly data is the goal; contact older than 8 h is history only. */
+  function contactVerdict(s) {
+    const c = s.check && s.check.contact;
+    if (!c || !s.receivers.length) return ['red', T('Niciun concentrator de-al nostru nu a auzit contorul.')];
+    if (!s.primary) return ['red', T('Fără contact în ultimele {0} ore: datele din această perioadă se pierd.', c.historyMaxH)];
+    if (c.current >= 2) return ['green', T('Date orare, cu redundanță.')];
+    if (c.current === 1) return ['yellow', T('Un singur concentrator cu contact în ultima oră: fără redundanță.')];
+    return ['yellow', T('Niciun contact în ultima oră: datele ajung cu întârziere.')];
+  }
+  /** One line with the signal and contact-age limits, so a report can be read on its own. */
+  function limitsText(withAge) {
+    const th = cfg.thresholds || { goodDbm: -95, marginalDbm: -110 };
+    let t = T('Semnal: bun ≥ {0} dBm · la limită {0}…{1} dBm · slab < {1} dBm (praguri provizorii).', th.goodDbm, th.marginalDbm);
+    if (withAge) t += ' ' + T('Contact: ultima oră ≤ {0} min · ocazional ≤ {1} ore · mai vechi de {1} ore nu contează.', th.contactCurrentMaxMin || 75, th.contactHistoryMaxH || 8);
+    return t;
+  }
+
   /** Translate the text that is written in index.html (labels, buttons, placeholders). */
   function translatePage() {
     document.documentElement.lang = lang;
@@ -325,10 +354,11 @@
         // Status without CALL: who hears this meter right now.
         const c = s.check, n = s.receivers.length, top = s.receivers[0];
         const seen = c.lastSeenUtc ? T('Auzit ultima dată {0} ({1}).', fmtTime(c.lastSeenUtc), ago(c.lastSeenUtc)) : T('Nu se știe când a fost auzit ultima dată.');
-        const who = s.warnings.includes('REGISTRY_EMPTY') ? T('{0} receptoare îl aud; registrul nu este încărcat, deci nu se știe care sunt ale noastre.', n)
-          : n === 1 ? T('1 receptor de-al nostru îl aude.') : T('{0} receptoare de-ale noastre îl aud.', n);
+        const [color, verdict] = contactVerdict(s);
+        const who = s.warnings.includes('REGISTRY_EMPTY') ? T('{0} receptoare l-au auzit; registrul nu este încărcat, deci nu se știe care sunt ale noastre.', n)
+          : n ? T('Concentratoarele noastre: {0}.', contactText(s)) : '';
         const pos = s.session.gps.source === 'saved' ? ' ' + T('Poziția este cea salvată la vizita din {0}.', fmtTime(s.session.gps.savedUtc)) : '';
-        setInstruction(!n ? 'red' : top.stale ? 'yellow' : 'green', T('Contor {0}', s.session.meterSerial), seen + ' ' + who + pos);
+        setInstruction(color, T('Contor {0}', s.session.meterSerial), [verdict, seen, who].filter(Boolean).join(' ') + pos);
         setButtons({ label: T('Actualizează'), run: async () => {
           apply(await api('/api/check', 'POST', { meterSerial: s.session.meterSerial, technician: s.session.technician, gps: s.session.gps.lat !== null ? s.session.gps : null }));
         } }, { label: T('Înapoi'), run: async () => { leaveSession(); } });
@@ -468,7 +498,10 @@
       title.textContent = [first.siteName, first.address].filter(Boolean).join(', ') || T('site necunoscut în registru');
       const hsub = document.createElement('span');
       hsub.className = 'sub';
+      const isCheck = first.bestPhase === 'check';
+      const counts = isCheck ? ['CURRENT', 'OCCASIONAL', 'OLD'].map((k) => [k, group.filter((r) => r.age === k).length]).filter(([, v]) => v) : [];
       hsub.textContent = (group.length === 1 ? T('1 concentrator a auzit contorul') : T('{0} concentratoare au auzit contorul', group.length))
+        + (counts.length ? ' (' + counts.map(([k, v]) => `${v} ${T(AGE_RO[k])}`).join(', ') + ')' : '')
         + (first.distanceM !== null ? T(' · {0} spre {1}', dist(first.distanceM), T(first.compass)) : '');
       head.append(title, document.createElement('span'), hsub);
       if (!flat) list.appendChild(head);
@@ -480,25 +513,37 @@
         name.textContent = r.serial + ' ';
         const tag = document.createElement('span');
         tag.className = 'tag ' + r.relation; tag.textContent = T(RELATION_RO[r.relation]);
-        name.appendChild(tag);
+        if (!(r.age === 'OLD' && r.relation !== 'PRIMARY')) name.appendChild(tag);
+        if (r.age) {
+          const at = document.createElement('span');
+          at.className = 'tag age ' + r.age; at.textContent = T(AGE_RO[r.age]);
+          name.append(' ', at);
+          if (r.age === 'OLD') li.classList.add('old');
+        }
         const val = document.createElement('span');
         val.className = 'val'; val.textContent = dbm(r.bestRssi);
         const sub = document.createElement('span');
         sub.className = 'sub';
-        sub.textContent = r.bestPhase === 'check' ? (r.observedUtc ? T('auzit {0}', ago(r.observedUtc)) + (r.stale ? ' · ' + T('nu a mai fost auzit de peste o zi') : '') : T('fără oră de la sursă'))
+        sub.textContent = r.bestPhase === 'check' ? (r.observedUtc ? T('ultimul contact {0}', ago(r.observedUtc))
+            + (r.age === 'OLD' ? ' · ' + T('nu contează: contorul păstrează doar {0} ore de date', (cfg.thresholds || {}).contactHistoryMaxH || 8)
+              : r.age === 'OCCASIONAL' ? ' · ' + T('nu în ultima oră') : '') : T('fără oră de la sursă'))
           : T('felii: {0} · cel mai bun pe felia {1}', r.sectors.join(', ') || '–', r.bestPhase === 'coarse' ? r.bestStep : (s.coarseWinner ? s.coarseWinner.step : '–'));
         li.append(name, val, sub);
         li.onclick = () => { selectedSerial = r.serial; showView('map'); };
         list.appendChild(li);
       }
     }
+    const legend = document.createElement('li');
+    legend.className = 'legend';
+    legend.textContent = limitsText(s.session.status === 'CHECK');
+    if (s.receivers.length) list.appendChild(legend);
     const b = s.backup;
     $('backup-card').hidden = !b;
     if (b) {
       const kind = b.redundancy === 'DISTINCT_SITE' ? T('pe alt site (rezervă reală)') :
         b.redundancy === 'SAME_SITE' ? T('pe același site (doar rezervă de echipament)') : T('pe un site necunoscut');
       let t = T('Rezervă: {0} {1}, {2}', b.serial, kind, dbm(b.bestRssi));
-      t += b.usable ? '.' : T(' – prea slab pentru a conta.');
+      t += b.age && b.age !== 'CURRENT' ? T(' – doar contact ocazional, nu contează ca redundanță.') : b.usable ? '.' : T(' – prea slab pentru a conta.');
       if (b.primaryDegradationDb !== null && b.primaryDegradationDb > 0) {
         t += b.positionRecommendable
           ? T(' Poziția ei cea mai bună costă doar {0} dB pe legătura principală.', b.primaryDegradationDb)
@@ -514,25 +559,30 @@
     const by = new Map();
     for (const r of s.receivers) {
       if (r.latitude === null) continue;
-      const key = r.siteCode || r.serial, cur = by.get(key);
+      const key = r.siteCode || r.serial, cur = by.get(key), rank = AGE_RANK[r.age] || 0;
       if (!cur) {
         by.set(key, { key, lat: r.latitude, lon: r.longitude, name: r.siteName, address: r.address, distanceM: r.distanceM,
-          best: r.bestRssi, serial: r.serial, count: 1, primary: r.relation === 'PRIMARY' });
+          best: r.bestRssi, serial: r.serial, count: 1, primary: r.relation === 'PRIMARY', age: r.age || null, rank });
       } else {
         cur.count++;
         if (r.relation === 'PRIMARY') cur.primary = true;
-        if (r.bestRssi > cur.best) { cur.best = r.bestRssi; cur.serial = r.serial; }
+        if (rank < cur.rank || (rank === cur.rank && r.bestRssi > cur.best)) { cur.best = r.bestRssi; cur.serial = r.serial; cur.age = r.age || null; cur.rank = rank; }
       }
     }
-    return [...by.values()].sort((x, y) => y.best - x.best);
+    return [...by.values()].sort((x, y) => (x.rank - y.rank) || y.best - x.best);
   }
+  const AGE_RANK = { CURRENT: 0, OCCASIONAL: 1, OLD: 2 };
+  const OLD_GRAY = '#9aa5ad';
+  /** Line style: solid for contact in the last hour, dashed for occasional, grey dotted for older than 8 h. */
+  const linkStyle = (l) => (l.age === 'OLD' ? { color: OLD_GRAY, dash: [4, 8], dashL: '2 8' }
+    : { color: linkColor(l.best), dash: l.primary ? [] : l.age === 'OCCASIONAL' ? [14, 10] : [12, 9], dashL: l.primary ? null : '8 8' });
   // Colours follow the PROVISIONAL thresholds: good / marginal / weak.
   const linkColor = (rssi) => {
     const th = cfg.thresholds || { goodDbm: -95, marginalDbm: -110 };
     return rssi >= th.goodDbm ? '#1b8a3a' : rssi >= th.marginalDbm ? '#b26a00' : '#c62828';
   };
   const meters = (m) => Math.round(m).toLocaleString(lang === 'da' ? 'da-DK' : 'ro-RO') + ' m';
-  const linkText = (l) => `${Math.round(l.best)} dBm` + (l.distanceM !== null ? ` · ${meters(l.distanceM)}` : '');
+  const linkText = (l) => `${Math.round(l.best)} dBm` + (l.distanceM !== null ? ` · ${meters(l.distanceM)}` : '') + (l.age === 'OLD' ? ` · ${T('peste 8 ore')}` : '');
   let lastFit = '';
 
   function drawMap() {
@@ -542,10 +592,10 @@
     const links = S ? siteLinks(S) : [];
     const pts = [];
     links.forEach((l, i) => {
-      const color = linkColor(l.best);
+      const st = linkStyle(l), color = st.color;
       if (g) {
         // meter -> site: signal and distance written on the line
-        const line = L.polyline([[g.lat, g.lon], [l.lat, l.lon]], { color, weight: l.primary ? 6 : 3, dashArray: l.primary ? null : '8 8', opacity: 0.9 }).addTo(mapLayer);
+        const line = L.polyline([[g.lat, g.lon], [l.lat, l.lon]], { color, weight: l.primary ? 6 : 3, dashArray: st.dashL, opacity: l.age === 'OLD' ? 0.7 : 0.9 }).addTo(mapLayer);
         line.bindTooltip(linkText(l), { permanent: i < 6 || l.primary, direction: 'center', className: 'link-label' + (l.primary ? ' primary' : '') });
       }
       L.circleMarker([l.lat, l.lon], { radius: l.primary ? 10 : 7, color: '#fff', weight: 3, fillColor: color, fillOpacity: 1 })
@@ -559,6 +609,7 @@
     let info = T('Harta explică doar geometria. Măsurătoarea radio rămâne decisivă.');
     if (links.length) {
       info = T('{0} site-uri au auzit contorul. Linia groasă este receptorul principal; verde = semnal bun, galben = la limită, roșu = slab.', links.length)
+        + (S.session.status === 'CHECK' ? ' ' + T('Linie gri = fără contact de peste 8 ore.') : '')
         + (g ? '' : ' ' + T('Alege poziția contorului la început ca să apară liniile și distanțele.'));
     } else if (S && S.warnings.includes('REGISTRY_EMPTY')) info = T('Încarcă registrul (site-uri și concentratoare) pe ecranul de start ca să apară concentratoarele pe hartă.');
     else if (!pts.length) info = T('Fără poziție GPS și fără receptoare cu coordonate. ') + info;
@@ -1211,8 +1262,8 @@
       x.fillStyle = INK.ink; x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillText(str, lx + 8, ly + 16);
     };
     [...links].reverse().forEach((l) => {          // weakest first, so the strong links stay on top
-      const [sx, sy] = P(l.lat, l.lon), color = linkColor(l.best);
-      x.strokeStyle = color; x.lineWidth = l.primary ? 7 : 3; x.setLineDash(l.primary ? [] : [12, 9]);
+      const [sx, sy] = P(l.lat, l.lon), st = linkStyle(l), color = st.color;
+      x.strokeStyle = color; x.lineWidth = l.primary ? 7 : 3; x.setLineDash(st.dash);
       x.beginPath(); x.moveTo(mx, my); x.lineTo(sx, sy); x.stroke(); x.setLineDash([]);
       x.fillStyle = color; x.strokeStyle = '#fff'; x.lineWidth = 3;
       x.beginPath(); x.arc(sx, sy, l.primary ? 12 : 9, 0, 2 * Math.PI); x.fill(); x.stroke();
@@ -1220,7 +1271,7 @@
     links.forEach((l, i) => {
       if (i >= 8 && !l.primary) return;
       const [sx, sy] = P(l.lat, l.lon);
-      boxed(linkText(l), mx + (sx - mx) * 0.62, my + (sy - my) * 0.62, linkColor(l.best), l.primary);
+      boxed(linkText(l), mx + (sx - mx) * 0.62, my + (sy - my) * 0.62, linkStyle(l).color, l.primary);
       x.font = `600 18px ${SANS}`; x.fillStyle = INK.ink; x.textAlign = 'center'; x.textBaseline = 'top';
       x.lineWidth = 4; x.strokeStyle = 'rgba(255,255,255,0.9)';
       const nm = (l.name || (l.address || '').split(',')[0] || l.serial).slice(0, 26);
@@ -1232,9 +1283,10 @@
     x.strokeText(T('Contor'), mx, my - 15); x.fillStyle = INK.ink; x.fillText(T('Contor'), mx, my - 15);
     // legend, scale, north, attribution
     const legend = [[linkColor(-50), T('bun')], [linkColor(-100), T('la limită')], [linkColor(-130), T('slab')]];
+    if (s.session.status === 'CHECK') legend.push([OLD_GRAY, T('peste 8 ore')]);
     x.font = `600 17px ${SANS}`; x.textBaseline = 'middle'; x.textAlign = 'left';
     let lx = 14;
-    x.fillStyle = 'rgba(255,255,255,0.88)'; x.fillRect(6, H - 38, 470, 32);
+    x.fillStyle = 'rgba(255,255,255,0.88)'; x.fillRect(6, H - 38, s.session.status === 'CHECK' ? 640 : 470, 32);
     for (const [col, name] of legend) { x.fillStyle = col; x.fillRect(lx, H - 27, 26, 9); x.fillStyle = INK.ink; x.fillText(name, lx + 32, H - 22); lx += 44 + x.measureText(name).width; }
     x.fillStyle = INK.ink; x.fillRect(lx, H - 29, 26, 13); x.fillText('= ' + T('receptor principal'), lx + 32, H - 22);
     const mpp = 156543.03392 * Math.cos(g.lat * Math.PI / 180) / 2 ** z;
@@ -1295,7 +1347,12 @@
     row(T('Instalator'), s.session.technician);
     const g = s.session.gps;
     row(T('Poziție'), g && g.lat !== null ? `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}` + (g.accuracyM ? ` (±${g.accuracyM} m)` : '') + (g.source === 'saved' ? ' · ' + T('salvată la vizita din {0}', fmtTime(g.savedUtc)) : '') : T('neînregistrată'));
-    if (isCheck) row(T('Auzit ultima dată'), s.check.lastSeenUtc ? `${fmtTime(s.check.lastSeenUtc)} (${ago(s.check.lastSeenUtc)})` : '–');
+    if (isCheck) {
+      row(T('Auzit ultima dată'), s.check.lastSeenUtc ? `${fmtTime(s.check.lastSeenUtc)} (${ago(s.check.lastSeenUtc)})` : '–');
+      const [vc, vt] = contactVerdict(s);
+      row(T('Contact'), vt, vc === 'green' ? INK.green : vc === 'red' ? INK.red : INK.amber);
+      if (s.check.contact && s.receivers.length) row('', contactText(s), INK.gray);
+    }
 
     const ins = s.session.install;
     if (ins) {
@@ -1362,14 +1419,24 @@
     const p1 = s.receivers.find((q) => q.relation === 'PRIMARY');
     row(T('Receptor principal'), p1 ? [p1.serial, dbm(p1.bestRssi), where(p1)].filter(Boolean).join(' · ') : '–');
     const b = s.backup;
-    row(T('Rezervă'), b ? [b.serial, dbm(b.bestRssi), T(RELATION_RO[b.redundancy] || 'site necunoscut'), b.siteName].filter(Boolean).join(' · ') : T('niciuna'), b ? INK.ink : INK.gray);
+    const occasional = b && b.age && b.age !== 'CURRENT';
+    row(T('Rezervă'), b ? [b.serial, dbm(b.bestRssi), T(RELATION_RO[b.redundancy] || 'site necunoscut'), b.siteName,
+      occasional ? T('doar ocazional – nu contează ca redundanță') : null].filter(Boolean).join(' · ') : T('niciuna'), b && !occasional ? INK.ink : INK.gray);
     y += 16;
-    for (const q of s.receivers.slice(0, 8)) {
+    for (const q of s.receivers.slice(0, 10)) {
       y += 36; font(500, 23);
-      text(q.serial, P, y); text(dbm(q.bestRssi), P + 300, y, INK.ink, 'right');
-      text(q.bestPhase === 'check' && q.observedUtc ? ago(q.observedUtc) : T(RELATION_RO[q.relation]), P + 330, y, INK.gray);
-      text((wrap(where(q) + (q.distanceM !== null ? ' · ' + meters(q.distanceM) : ''), W - 2 * P - 540)[0] || ''), P + 540, y, INK.gray);
+      const old = q.age === 'OLD', ageCol = q.age === 'CURRENT' ? INK.green : q.age === 'OCCASIONAL' ? INK.amber : INK.gray;
+      text(q.serial, P, y, old ? INK.gray : INK.ink); text(dbm(q.bestRssi), P + 250, y, old ? INK.gray : INK.ink, 'right');
+      if (q.bestPhase === 'check') {
+        text(q.observedUtc ? ago(q.observedUtc) : '–', P + 280, y, ageCol);
+        font(700, 19); text(T(AGE_RO[q.age] || ''), P + 500, y, ageCol); font(500, 23);
+      } else text(T(RELATION_RO[q.relation]), P + 280, y, INK.gray);
+      font(500, 21);
+      text((wrap(where(q) + (q.distanceM !== null ? ' · ' + meters(q.distanceM) : ''), W - 2 * P - 660)[0] || ''), P + 660, y, INK.gray);
     }
+    if (s.receivers.length > 10) { y += 34; font(500, 20); text(T('… și încă {0}', s.receivers.length - 10), P, y, INK.gray); }
+    y += 18; font(500, 19);
+    for (const l of wrap(limitsText(isCheck), W - 2 * P)) { y += 28; text(l, P, y, INK.gray); }
     if (s.session.note) {
       section(T('Observații'));
       font(500, 26);

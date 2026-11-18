@@ -1,5 +1,6 @@
 # LinkIQ Field Assistant
 
+docs/IDEER.md             idéer og planlagte test (fx døgntest af kontakt)
 **Dansk** · [English](README.en.md) · [Română](docs/ro/README.md)
 
 LinkIQ er en webapp, der kan installeres på telefonen (PWA). Den hjælper montøren med at rette
@@ -116,6 +117,7 @@ Test: `pip install -r requirements-dev.txt && pytest`. Med Docker: `docker compo
 | Kort med linjer måler–site, signal og afstand; samme kort i rapporten | ja |
 | Rapport også som PDF (`<målernummer>.pdf`) med antennefotoet på side 2 | ja |
 | Kontrol af en måler uden session og uden CALL: hvem hører den nu, og siden hvornår (`<målernummer>_status.pdf`) | ja, kun uden server |
+| Statuskontrol: hver koncentrator én gang; seneste kontakt inden for den seneste time (≤ 75 min), lejlighedsvis (≤ 8 t) eller ældre (tæller ikke); dom om timedata og redundans; grænser for signal og kontakt skrevet i rapporten | ja |
 | Mappe valgt af montøren til rapporter (oprettes som `LinkIQ-rapporter`) med liste over gemte rapporter; uden browserunderstøttelse bruges almindelig download | ja |
 | Hver målers position huskes på enheden og genbruges ved kontrol uden CALL | ja |
 | Monteringsdata obligatoriske ved gem, valgt med store knapper uden standardværdier: målerens niveau, intern/ekstern antenne, antennens placering; vises i rapport, på foto og i CSV-eksport | ja |
