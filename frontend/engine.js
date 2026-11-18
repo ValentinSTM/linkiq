@@ -550,7 +550,16 @@
       const payload = hit.payload || {}, links = normalise(payload, this.cfg.serialFields);
       const registryEmpty = Object.keys(this.db.concentrators).length === 0;
       const g = this._position(meterSerial, gps);
-      const rows = links.filter((l) => registryEmpty || this.db.concentrators[l.serial]).map((l) => {
+      // Kamstrup can list the same receiver several times (older link records stay in the
+      // snapshot). One row per receiver: its most recent reading; a tie goes to the stronger one.
+      const latest = {};
+      for (const l of links) {
+        if (!registryEmpty && !this.db.concentrators[l.serial]) continue;
+        const had = latest[l.serial], t = l.observedMs === null ? -Infinity : l.observedMs;
+        const ht = had ? (had.observedMs === null ? -Infinity : had.observedMs) : null;
+        if (!had || t > ht || (t === ht && l.rssi > had.rssi)) latest[l.serial] = l;
+      }
+      const rows = Object.values(latest).map((l) => {
         const c = this.db.concentrators[l.serial], site = c ? this.db.sites[c.siteCode] : null;
         const d = { serial: l.serial, siteCode: c ? c.siteCode : null, siteName: site ? site.name || null : null,
           address: site ? site.address || null : null, latitude: site ? site.latitude : null, longitude: site ? site.longitude : null,

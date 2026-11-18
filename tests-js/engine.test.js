@@ -253,6 +253,23 @@ test('status check without CALL: only our receivers, grouped relations, nothing 
   await assert.rejects(eng.check('../x'), EngineError);
 });
 
+test('status check: a receiver listed several times by Kamstrup counts once, with its latest reading', async () => {
+  const now = Date.UTC(2026, 10, 12, 9, 0, 0);
+  const at = (minAgo) => new Date(now - minAgo * 60000).toISOString();
+  const live = () => ({ Links: [
+    { SerialNumber: '70000001', TimestampUtcToDevice: at(48), RssiToDevice: -119 },
+    { SerialNumber: '70000002', TimestampUtcToDevice: at(240), RssiToDevice: -127 },
+    { SerialNumber: '70000001', TimestampUtcToDevice: at(58 * 1440), RssiToDevice: -100 },  // older record, stronger
+    { SerialNumber: '70000002', TimestampUtcToDevice: at(57 * 1440), RssiToDevice: -129 },
+    { SerialNumber: '70000002', TimestampUtcToDevice: null, RssiToDevice: -90 }] });     // no timestamp: oldest
+  const { eng } = make({ live });
+  const s = await eng.check(METER);
+  assert.deepEqual(s.receivers.map((r) => [r.serial, r.bestRssi]), [['70000001', -119], ['70000002', -127]]);
+  assert.equal(s.check.linksTotal, 5);
+  assert.equal(s.check.linksOwned, 2);
+  assert.equal(s.primary.serial, '70000001');
+});
+
 test('the position of a meter is remembered and reused for a status check', async () => {
   const live = () => ({ Links: [{ SerialNumber: '70000001', TimestampUtcToDevice: new Date(Date.UTC(2026, 10, 12, 8, 59)).toISOString(), RssiToDevice: -70 }] });
   const { eng, clock } = make({ live });
