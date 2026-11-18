@@ -32,6 +32,10 @@
     rssiGoodDbm: -95,
     rssiMarginalDbm: -110,
     primaryDegradationMaxDb: 6,
+    // Age of the last contact (status check). LinkIQ meters keep 8 h of history, so a
+    // receiver heard within 8 h can still collect the data; older contact is history only.
+    contactCurrentMaxMin: 75,    // hourly data: contact in the last hour, with some slack
+    contactHistoryMaxH: 8,
     simSpeed: 4,
     keepSessions: 200,
   };
@@ -39,6 +43,7 @@
     'GOOD_PRIMARY_ONLY', 'MARGINAL', 'NO_RELIABLE_LINK', 'INCONCLUSIVE', 'ABORTED'];
   const FINE_OFFSETS_DEG = [-24, -12, 0, 12, 24];
   const METER_RE = /^[0-9A-Za-z]{4,20}$/;
+  const AGE_RANK = { CURRENT: 0, OCCASIONAL: 1, OLD: 2 };
   const COMPASS_RO = ['N', 'NE', 'E', 'SE', 'S', 'SV', 'V', 'NV'];
 
   // Installation details recorded by the installer (nothing is guessed or defaulted).
@@ -564,8 +569,11 @@
         const d = { serial: l.serial, siteCode: c ? c.siteCode : null, siteName: site ? site.name || null : null,
           address: site ? site.address || null : null, latitude: site ? site.latitude : null, longitude: site ? site.longitude : null,
           registryStatus: c ? c.status : null, bestRssi: l.rssi, lastRssi: l.rssi, bestPhase: 'check', bestStep: null, sectors: [],
-          observedUtc: iso(l.observedMs), stale: l.observedMs !== null && now - l.observedMs > 26 * 3600e3,   // not heard for over a day
-          relation: 'UNKNOWN_SITE', distanceM: null, bearingDeg: null, compass: null };
+          observedUtc: iso(l.observedMs), ageMin: l.observedMs === null ? null : Math.max(0, Math.round((now - l.observedMs) / 60000)),
+          age: 'OLD', stale: true, relation: 'UNKNOWN_SITE', distanceM: null, bearingDeg: null, compass: null };
+        if (d.ageMin !== null && d.ageMin <= this.cfg.contactCurrentMaxMin) d.age = 'CURRENT';
+        else if (d.ageMin !== null && d.ageMin <= this.cfg.contactHistoryMaxH * 60) d.age = 'OCCASIONAL';
+        d.stale = d.age === 'OLD';
         if (g.lat !== null && d.latitude !== null && d.latitude !== undefined) {
           d.distanceM = Math.round(distanceM(g.lat, g.lon, d.latitude, d.longitude));
           const b = bearingDeg(g.lat, g.lon, d.latitude, d.longitude);
@@ -573,17 +581,26 @@
         }
         if (d.latitude === undefined) d.latitude = d.longitude = null;
         return d;
-      }).sort((a, b) => (a.stale - b.stale) || b.bestRssi - a.bestRssi);
-      const p1 = rows[0] || null;
-      rows.forEach((r, i) => {
-        r.relation = i === 0 ? 'PRIMARY' : (r.siteCode === null || p1.siteCode === null) ? 'UNKNOWN_SITE' : r.siteCode === p1.siteCode ? 'SAME_SITE' : 'DISTINCT_SITE';
+      }).sort((a, b) => (AGE_RANK[a.age] - AGE_RANK[b.age]) || b.bestRssi - a.bestRssi);
+      // The primary is the best receiver with contact within the history window; contact older
+      // than that is history and makes no link. The backup must have contact in the last hour.
+      const p1 = rows[0] && rows[0].age !== 'OLD' ? rows[0] : null;
+      rows.forEach((r) => {
+        r.relation = r === p1 ? 'PRIMARY' : (!p1 || r.siteCode === null || p1.siteCode === null) ? 'UNKNOWN_SITE'
+          : r.siteCode === p1.siteCode ? 'SAME_SITE' : 'DISTINCT_SITE';
       });
-      const others = rows.slice(1).filter((r) => !r.stale);
-      const pick = others.find((r) => r.relation === 'DISTINCT_SITE') || others[0] || null;
+      const others = rows.filter((r) => r !== p1 && r.age !== 'OLD');
+      const current = others.filter((r) => r.age === 'CURRENT');
+      const pick = current.find((r) => r.relation === 'DISTINCT_SITE') || current[0]
+        || others.find((r) => r.relation === 'DISTINCT_SITE') || others[0] || null;
+      const contact = { current: rows.filter((r) => r.age === 'CURRENT').length,
+        occasional: rows.filter((r) => r.age === 'OCCASIONAL').length, old: rows.filter((r) => r.age === 'OLD').length,
+        currentMaxMin: this.cfg.contactCurrentMaxMin, historyMaxH: this.cfg.contactHistoryMaxH };
       const lastSeenMs = parseTs(payload.LastSeenTimestampUtc);
       const warnings = [];
       if (registryEmpty) warnings.push('REGISTRY_EMPTY');
       if (g.lat === null) warnings.push('NO_GPS');
+      if (rows.length && !p1) warnings.push('NO_RECENT_CONTACT');
       return {
         session: { id: null, meterSerial, technician: String(technician || '').trim(), gps: g, status: 'CHECK', state: 'CHECK',
           startedUtc: iso(now), finishedUtc: iso(now), initialCallUtc: null, finalCallUtc: null, outcome: null, note: null, demo: this.db.demo },
@@ -591,11 +608,12 @@
         best: p1 ? { phase: 'check', step: null, rssi: p1.bestRssi, serial: p1.serial } : null,
         primary: p1 ? { serial: p1.serial, siteCode: p1.siteCode, siteName: p1.siteName, address: p1.address, rssi: p1.bestRssi } : null,
         backup: pick ? { serial: pick.serial, siteCode: pick.siteCode, siteName: pick.siteName, redundancy: pick.relation, bestRssi: pick.bestRssi,
-          bestPhase: 'check', bestStep: null, usable: pick.bestRssi >= this.cfg.rssiMarginalDbm, primaryRssiThere: null,
+          bestPhase: 'check', bestStep: null, age: pick.age, observedUtc: pick.observedUtc,
+          usable: pick.bestRssi >= this.cfg.rssiMarginalDbm && pick.age === 'CURRENT', primaryRssiThere: null,
           primaryDegradationDb: null, positionRecommendable: false } : null,
         receivers: rows, finalCheck: null, live: null, quickConfirmEligible: false,
         check: { lastSeenUtc: iso(lastSeenMs), hoursSinceLastSeen: typeof payload.HoursSinceLastSeen === 'number' ? payload.HoursSinceLastSeen : null,
-          linksTotal: links.length, linksOwned: rows.length, fetchedUtc: iso(hit.atMs) },
+          linksTotal: links.length, linksOwned: rows.length, contact, fetchedUtc: iso(hit.atMs) },
         suggestedOutcome: 'INCONCLUSIVE', outcomes: OUTCOMES, warnings,
       };
     }
@@ -776,7 +794,8 @@
         return { authMode: 'none', kamstrupMode: this.db.demo ? 'sim' : 'live', standalone: true,
           pollIntervalS: this.cfg.pollMinIntervalS, warnAfterS: this.cfg.warnAfterS,
           coarseSteps: this.cfg.coarseSteps, fineSteps: this.cfg.fineSteps,
-          thresholds: { quickConfirmDbm: this.cfg.rssiQuickConfirmDbm, goodDbm: this.cfg.rssiGoodDbm, marginalDbm: this.cfg.rssiMarginalDbm, provisional: true } };
+          thresholds: { quickConfirmDbm: this.cfg.rssiQuickConfirmDbm, goodDbm: this.cfg.rssiGoodDbm, marginalDbm: this.cfg.rssiMarginalDbm, provisional: true,
+          contactCurrentMaxMin: this.cfg.contactCurrentMaxMin, contactHistoryMaxH: this.cfg.contactHistoryMaxH } };
       }
       if (route === '/api/me') return { technician: null };
       if (route === '/api/sites') return this.sites(q.lat !== undefined ? Number(q.lat) : null, q.lon !== undefined ? Number(q.lon) : null);
