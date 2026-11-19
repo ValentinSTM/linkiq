@@ -35,7 +35,7 @@ jobs:
           set -euo pipefail
           PROJECT=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$(System.TeamProject)")
           URL="$(System.CollectionUri)${PROJECT}/_git/linkiq"
-          git -c http.extraheader="AUTHORIZATION: bearer $(System.AccessToken)" push "$URL" HEAD:refs/heads/main
+          git -c http.extraheader="AUTHORIZATION: bearer $(System.AccessToken)" push --force "$URL" HEAD:refs/heads/main
         displayName: Mirror main to Azure Repos
         condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
 
