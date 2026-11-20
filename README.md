@@ -7,7 +7,7 @@ LinkIQ er en webapp, der kan installeres på telefonen (PWA). Den hjælper mont�
 antennen ind på en Kamstrup-varmemåler ud fra rigtige radiomålinger. Appen erstatter
 Power Apps-prototypen og kræver ingen betalte licenser. Åben kildekode, MIT-licens.
 
-Status: **v0.14**. Hele forløbet kører på simulatoren og på opfangede svar fra Kamstrup i browseren.
+Status: **v0.17**. Hele forløbet kører på simulatoren og på opfangede svar fra Kamstrup i browseren.
 En hurtig bekræftelse er gennemført på en rigtig måler. En fuld rotation på en rigtig måler mangler.
 
 Kort vejledning til montøren: [docs/VEJLEDNING_DA.md](docs/VEJLEDNING_DA.md).
