@@ -1,6 +1,6 @@
 /* App-shell cache. Live RF data (/api) is never cached: it always needs the network. */
-const VERSION = 'linkiq-shell-v19';
-const SHELL = ['./', 'index.html', 'styles.css', 'i18n.js', 'vvs.js', 'engine.js', 'app.js', 'manifest.webmanifest',
+const VERSION = 'linkiq-shell-v20';
+const SHELL = ['./', 'index.html', 'styles.css', 'i18n.js', 'vvs.js', 'lcd.js', 'engine.js', 'app.js', 'manifest.webmanifest',
   'vendor/leaflet.js', 'vendor/leaflet.css', 'vendor/jsQR.js', 'vendor/qrcode.js', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
