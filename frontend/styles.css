@@ -169,9 +169,9 @@ ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
 button.link.armed { color: var(--red); font-weight: 800; }
 button.link[hidden] { display: none; }
 
-#feedback, #vvs-setup, #regqr-sheet { position: fixed; inset: 0; background: rgba(11, 31, 42, .6); z-index: 900; display: flex; align-items: flex-end; justify-content: center; }
-#feedback[hidden], #vvs-setup[hidden], #regqr-sheet[hidden] { display: none; }
-#feedback .sheet, #vvs-setup .sheet, #regqr-sheet .sheet { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+#feedback, #vvs-setup, #regqr-sheet, #readings-ask { position: fixed; inset: 0; background: rgba(11, 31, 42, .6); z-index: 900; display: flex; align-items: flex-end; justify-content: center; }
+#feedback[hidden], #vvs-setup[hidden], #regqr-sheet[hidden], #readings-ask[hidden] { display: none; }
+#feedback .sheet, #vvs-setup .sheet, #regqr-sheet .sheet, #readings-ask .sheet { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
 #fb-card { display: flex; flex-direction: column; gap: 8px; }
 .hint.center { text-align: center; }
 ol.steps { margin: 0; padding-left: 22px; }
@@ -182,3 +182,36 @@ a.drag { display: block; text-align: center; padding: 12px; border-radius: 10px;
 ul.rows li.old { opacity: 0.55; }
 ul.rows li.legend { display: block; font-size: 13px; color: var(--gray); border-top: 2px solid var(--light); padding-top: 8px; }
 #regqr-img { display: block; width: 100%; max-width: 420px; margin: 0 auto; image-rendering: pixelated; background: #fff; }
+
+/* meter readings */
+#readings-card { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--light); padding-top: 10px; }
+#readings-card h3 { margin: 0; }
+#readings-card .sub { font-weight: 500; color: var(--gray); font-size: 15px; }
+#readings-card.flash { animation: flash 1.2s ease-out 2; }
+@keyframes flash { 0% { background: #fff6d6; } 100% { background: transparent; } }
+ul.readings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+ul.readings li { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; align-items: center; border: 2px solid var(--light); border-radius: 12px; padding: 8px; }
+ul.readings .rk { font-weight: 800; }
+ul.readings .rk small { font-weight: 500; color: var(--gray); }
+ul.readings .rk input { width: 100%; min-height: 40px; }
+ul.readings .rv { display: flex; gap: 6px; align-items: center; grid-column: 1 / -1; }
+ul.readings .rv input { flex: 1; min-width: 0; min-height: 52px; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; padding: 10px 8px; }
+ul.readings .rv select { width: auto; min-height: 52px; padding: 8px 4px; }
+ul.readings .rv .unit { font-weight: 700; min-width: 3em; }
+ul.readings .cam { width: 56px; min-height: 52px; padding: 0; font-size: 26px; }
+ul.readings .rm { width: 40px; min-height: 40px; padding: 0; background: #fff; color: var(--red); border: 2px solid var(--light); }
+ul.readings .rs { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--gray); }
+ul.readings .rs img { height: 54px; border-radius: 6px; border: 1px solid var(--light); }
+ul.readings .rs.edited { color: #b26a00; font-weight: 700; }
+#lcd-reader { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; justify-content: space-between; }
+#lcd-reader[hidden] { display: none; }
+#lcd-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.lcd-frame { position: absolute; left: 50%; top: 40%; width: min(88vw, 560px); aspect-ratio: 2 / 1; transform: translate(-50%, -50%); border: 4px solid #fff; border-radius: 14px; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .45); }
+.lcd-frame.seen { border-color: #ffd23f; }
+.lcd-frame.ok { border-color: #2ecc71; }
+#lcd-tip { margin: 0; font-size: 16px; font-weight: 500; }
+.lcd-live { color: #fff; text-align: center; font: 800 38px/1.1 ui-monospace, monospace; letter-spacing: 2px; min-height: 44px; text-shadow: 0 1px 4px #000; }
+.lcd-row { display: flex; gap: 8px; }
+.lcd-row button { flex: 1; }
+.lcd-row button[hidden] { display: none; }
+#lcd-use { min-height: 56px; }

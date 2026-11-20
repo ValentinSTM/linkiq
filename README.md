@@ -1,13 +1,12 @@
 # LinkIQ Field Assistant
 
-docs/IDEER.md             idéer og planlagte test (fx døgntest af kontakt)
 **Dansk** · [English](README.en.md) · [Română](docs/ro/README.md)
 
 LinkIQ er en webapp, der kan installeres på telefonen (PWA). Den hjælper montøren med at rette
 antennen ind på en Kamstrup-varmemåler ud fra rigtige radiomålinger. Appen erstatter
 Power Apps-prototypen og kræver ingen betalte licenser. Åben kildekode, MIT-licens.
 
-Status: **v0.17**. Hele forløbet kører på simulatoren og på opfangede svar fra Kamstrup i browseren.
+Status: **v0.18**. Hele forløbet kører på simulatoren og på opfangede svar fra Kamstrup i browseren.
 En hurtig bekræftelse er gennemført på en rigtig måler. En fuld rotation på en rigtig måler mangler.
 
 Kort vejledning til montøren: [docs/VEJLEDNING_DA.md](docs/VEJLEDNING_DA.md).
@@ -72,7 +71,7 @@ I kortet *Data på denne enhed*:
 - **Eksportér målingerne (CSV)**: alle sessioner på enheden, til analyse.
 - **Demotilstand**: simulator, til oplæring uden måler.
 
-Test: `node --test tests-js/engine.test.js`
+Test: `node --test tests-js/engine.test.js tests-js/lcd.test.js` (motoren og aflæsningen af displayet)
 
 ## Start med central server
 
@@ -126,6 +125,7 @@ Test: `pip install -r requirements-dev.txt && pytest`. Med Docker: `docker compo
 | Målerens position kan angives eller rettes på kortet efter målingen, også ved kontrol uden CALL | ja |
 | Feedback fra appen via telefonens deling (Teams, mail) eller udklipsholder | ja |
 | Åbn målerens sag i VVS-dialog (knap + bogmærket `li`) | ja |
+| Målerstande i rapporten (valgfrit): E1, V1, V2, E8, E9 og andre registre aflæses med kameraet fra målerens display, kan rettes, og billedet af displayet står ved værdien | ja (testet på billeder af en MULTICAL 603, endnu ikke i felten) |
 | Aflæsning af det trykte målernummer med kameraet (OCR) | **nej** |
 | Login med Microsoft Entra ID i appen | **nej**: adgangen styres af hostingen (Azure) eller af parringskode (server) |
 | Offline-kø til handlinger | **nej**: sessionen genoptages efter tabt forbindelse, men handlinger sættes ikke i kø |
@@ -175,6 +175,28 @@ rigtige. Det præcise indhold af Kamstrups QR-kode kendes endnu ikke; efter en r
 reglen fastlægges, så nummeret vælges automatisk.
 
 Aflæsning af det trykte nummer (OCR) er ikke implementeret.
+
+## Målerstande i rapporten (valgfrit)
+
+Under *Rapport* står felterne **E1, V1, V2, E8 og E9**. Andre registre (fx driftstimer, infokode,
+flow, temperaturer) tilføjes med *+ Tilføj andet register*. Inden den første rapport gemmes, spørger
+appen én gang, om målerstandene skal med. Svaret er frivilligt.
+
+Sådan læses en værdi:
+
+1. Vis registret på måleren (fx E1), og tryk på kameraet ved E1 i appen.
+2. Hold hele displayet inde i rammen. Når det samme tal er læst flere gange i træk, vibrerer
+   telefonen, og værdien står i feltet sammen med et lille billede af displayet.
+3. Kontrollér tallet mod displayet. Ret det i feltet, hvis det er forkert.
+
+Aflæsningen sker på telefonen, uden internet og uden eksterne tjenester (`frontend/lcd.js`). Den er
+lavet til 7-segment-displayet på MULTICAL 603: lokal tærskel mod skygge og genskin, retter en skæv
+telefon op, finder decimalpunktet og stemmer over flere billeder. Hovedregistrene viser 8 cifre; et
+andet antal accepteres kun, når det er meget stabilt. Kan intet læses, gemmes billedet, og montøren
+skriver værdien selv. Knapperne *Lygte* og *Tag billede* hjælper i mørke rum og på svage kameraer.
+
+I rapporten står hver værdi med enhed, kilden (*aflæst med kameraet*, *rettet af montøren* med den
+oprindelige aflæsning, eller *indtastet af montøren*), tidspunktet og billedet af displayet.
 
 ## Åbn sagen i VVS-dialog (KMD)
 
@@ -242,8 +264,9 @@ frontend/engine.js        al målelogik på enheden (drift uden server)
 frontend/app.js           brugerfladen; den samme i begge driftsformer
 frontend/i18n.js          de danske tekster (kildeteksterne er på rumænsk)
 frontend/vvs.js           bogmærket li til VVS-dialog (bygges fra tools/vvs/)
+frontend/lcd.js           aflæsning af målerens 7-segment-display med kameraet
 frontend/                 PWA (HTML + CSS + almindelig JavaScript, intet byggetrin)
-tests-js/                 18 test af engine.js
+tests-js/                 21 test af engine.js, 17 af lcd.js (billeder af displayet)
 backend/app/              valgfri central server: samme regler i Python
 backend/scripts/          import af register, parringskoder, kontrol af Kamstrup
 backend/tests/            18 test

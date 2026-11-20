@@ -1,13 +1,12 @@
 # LinkIQ Field Assistant
 
-docs/IDEER.md             ideas and planned tests (Danish), e.g. the 24-hour contact test
 [Dansk](README.md) · **English** · [Română](docs/ro/README.md)
 
 LinkIQ is a web app that can be installed on a phone (PWA). It guides the installer in aligning the
 antenna of a Kamstrup heat meter, based on real radio measurements. It replaces the Power Apps
 prototype and needs no paid licences. Open source, MIT licence.
 
-Status: **v0.17**. The whole flow runs on the simulator and on Kamstrup responses captured in the
+Status: **v0.18**. The whole flow runs on the simulator and on Kamstrup responses captured in the
 browser. A quick confirmation has been done on a real meter. A full rotation on a real meter is
 still to be done.
 
@@ -74,7 +73,7 @@ In the card *Data on this device*:
 - **Export measurements (CSV)**: all sessions on the device, for analysis.
 - **Demo mode**: simulator, for training without a meter.
 
-Tests: `node --test tests-js/engine.test.js`
+Tests: `node --test tests-js/engine.test.js tests-js/lcd.test.js` (the engine and the display reader)
 
 ## Starting with a central server
 
@@ -128,6 +127,7 @@ Tests: `pip install -r requirements-dev.txt && pytest`. With Docker: `docker com
 | The meter's position can be set or corrected on the map after measuring, also when checking without CALL | yes |
 | Feedback from the app through the phone's share sheet (Teams, mail) or clipboard | yes |
 | Open the meter's case in VVS-dialog (button + bookmark `li`) | yes |
+| Meter readings in the report (optional): E1, V1, V2, E8, E9 and other registers read with the camera from the meter display, editable, with the picture of the display next to the value | yes (tested on pictures of a MULTICAL 603, not yet in the field) |
 | Reading the printed meter number with the camera (OCR) | **no** |
 | Microsoft Entra ID sign-in inside the app | **no**: access is controlled by the hosting (Azure) or by a pairing code (server) |
 | Offline queue for actions | **no**: the session resumes after a lost connection, but actions are not queued |
@@ -177,6 +177,26 @@ lists them and the installer picks the right one. The exact content of Kamstrup'
 yet known; after a real scan the rule can be fixed so the number is picked automatically.
 
 Reading the printed number (OCR) is not implemented.
+
+## Meter readings in the report (optional)
+
+Under *Report* there are fields for **E1, V1, V2, E8 and E9**. Other registers (operating hours,
+info code, flow, temperatures…) are added with *+ Add another register*. Before the first report is
+saved, the app asks once whether the readings should be included. It is optional.
+
+1. Show the register on the meter (e.g. E1) and tap the camera next to E1 in the app.
+2. Keep the whole display inside the frame. When the same number has been read several times in a
+   row, the phone vibrates and the value appears in the field with a small picture of the display.
+3. Check the number against the display and correct it in the field if needed.
+
+Reading happens on the phone, offline, with no external service (`frontend/lcd.js`). It is made for
+the 7-segment display of the MULTICAL 603: local threshold against shadow and glare, straightens a
+tilted phone, finds the decimal point and votes over several frames. The main registers show 8
+digits; another count is accepted only when very steady. If nothing can be read, the picture is kept
+and the installer types the value. *Torch* and *Take picture* help in dark rooms and with weak cameras.
+
+The report shows each value with its unit, the source (*read with the camera*, *corrected by the
+installer* with the original reading, or *typed by the installer*), the time and the picture.
 
 ## Opening the case in VVS-dialog (KMD)
 
@@ -243,8 +263,9 @@ frontend/engine.js        all measuring logic on the device (no-server mode)
 frontend/app.js           the user interface; the same in both modes
 frontend/i18n.js          the Danish texts (source strings are Romanian)
 frontend/vvs.js           the li bookmark for VVS-dialog (built from tools/vvs/)
+frontend/lcd.js           reads the meter's 7-segment display with the camera
 frontend/                 PWA (HTML + CSS + plain JavaScript, no build step)
-tests-js/                 18 tests for engine.js
+tests-js/                 21 tests for engine.js, 17 for lcd.js (display pictures)
 backend/app/              optional central server: the same rules in Python
 backend/scripts/          registry import, pairing codes, Kamstrup check
 backend/tests/            18 tests

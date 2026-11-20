@@ -49,7 +49,7 @@ def main() -> None:
         data = {"sites": sites, "concentrators": conc, "built": date.today().isoformat(),
                 "version": hashlib.sha1((sites + conc).encode("utf-8")).hexdigest()[:12]}
         registry = "<script>\nwindow.LINKIQ_REGISTRY = " + json.dumps(data, ensure_ascii=False).replace("</", "<\\/") + ";\n</script>\n"
-    for name in ("vendor/leaflet.js", "i18n.js", "vvs.js", "engine.js", "app.js"):
+    for name in ("vendor/leaflet.js", "i18n.js", "vvs.js", "lcd.js", "engine.js", "app.js"):
         tag = f'<script src="{name}"></script>'
         assert tag in html, name
         extra = "<script>\n" + js("vendor/jsQR.js") + "\n</script>\n<script>\n" + js("vendor/qrcode.js") + "\n</script>\n" if name == "engine.js" else ""

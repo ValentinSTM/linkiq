@@ -49,6 +49,7 @@ scenarios in both.
 | Leaflet 1.9.4 (in `frontend/vendor`) | BSD-2 | 0 |
 | jsQR 1.4.0 (QR reading where the browser has no reader) | Apache-2.0 | 0 |
 | segno (QR code for pairing) | BSD-3 | 0 |
+| Meter display reader (`frontend/lcd.js`, own work) | MIT (the project's) | 0 |
 | qrcode-generator 1.4.4 (QR code with the registry, in `frontend/vendor`) | MIT | 0 |
 | OpenStreetMap data and tiles | ODbL; tile server usage policy | 0 at low traffic |
 | Docker Engine (optional) | Apache-2.0 | 0 |
@@ -63,6 +64,16 @@ Three things to know:
   installers are far below the limit; at a larger scale you can host your own tile server.
 - **Hosting** is not a licence, but it needs a machine or a service. Azure Static Web Apps on the
   Free plan needs an Azure subscription in the company; the plan itself costs nothing.
+
+## Reading the meter display
+
+Meter readings use a small 7-segment reader of our own (`frontend/lcd.js`) instead of general OCR.
+General OCR (e.g. Tesseract.js) needs model files of several MB, reads segment digits poorly and is
+slow on cheap phones; cloud OCR sends pictures out of the company. This reader knows the display:
+it finds the row of large digits, reads each digit's 7 segments, finds the decimal point,
+straightens a tilted phone and uses a local threshold against shadow and glare. It takes about 7 ms
+per frame, fully offline, and several frames in a row must give the same number before the value is
+used. The installer always checks the number, and the picture of the display is kept in the report.
 
 ## Data flow
 

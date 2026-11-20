@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.17';
+  const VERSION = '0.18';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -674,6 +674,7 @@
     $('outcome').replaceChildren(); delete $('outcome').dataset.touched; $('note').value = '';
     showView('align');
     render();
+    renderReadings();
     if (navigator.wakeLock) navigator.wakeLock.request('screen').then((w) => { wakeLock = w; }).catch(() => {});
   }
 
@@ -1441,6 +1442,8 @@
       row(T('Locul antenei'), levelText(ins.antennaPlace));
     }
 
+    y = await drawReadings(x, P, W, y, (t) => { section(t); return y; }, font, text);
+
     const mapCanvas = await reportMap(s, W - 2 * P, 620);
     if (mapCanvas) {
       section(T('Hartă'));
@@ -1707,13 +1710,15 @@
   }
   const reportName = (s) => safeName(s.session.meterSerial) + (s.session.status === 'CHECK' ? '_status' : '');
 
-  $('report-btn').onclick = async () => {
+  $('report-btn').onclick = () => S && askReadings(savePng);
+  async function savePng() {
     if (!S) return;
     await dirReady(true);          // while the tap still counts as a user action
     try { await saveBlob(await canvasBlob(await buildReport(S), 'image/png'), reportName(S) + '.png', 'Raportul a fost salvat ca {0}.'); }
     catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
-  };
-  $('report-pdf-btn').onclick = async () => {
+  }
+  $('report-pdf-btn').onclick = () => S && askReadings(savePdf);
+  async function savePdf() {
     if (!S) return;
     await dirReady(true);
     try {
@@ -1721,7 +1726,7 @@
       if (lastPhoto && S.session.status !== 'CHECK') pages.push(lastPhoto);
       await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', pages.length > 1 ? 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.' : 'Raportul PDF a fost salvat ca {0}.', null);
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
-  };
+  }
   $('photo-file').onchange = async (ev) => {
     const file = ev.target.files[0];
     ev.target.value = '';
@@ -1732,6 +1737,302 @@
       await saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + '_antenne.jpg', 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   };
+
+  // ---------------------------------------------------------------- meter readings
+  // Optional: the register values on the meter's own display, read with the camera
+  // (lcd.js, on the phone, offline) and always editable before they go in the report.
+  // A small picture of the display is kept with each value as evidence.
+  const REGS = [
+    { k: 'E1', ro: 'Energie termică', units: ['kWh', 'MWh', 'GJ'], n: 8, main: true },
+    { k: 'V1', ro: 'Volum', units: ['m³'], n: 8, main: true },
+    { k: 'V2', ro: 'Volum 2', units: ['m³'], n: 8, main: true },
+    { k: 'E8', ro: 'm³ × t1 (tur)', units: ['m³·°C'], n: 8, main: true },
+    { k: 'E9', ro: 'm³ × t2 (retur)', units: ['m³·°C'], n: 8, main: true },
+    { k: 'E2', ro: 'Energie de răcire', units: ['kWh', 'MWh', 'GJ'], n: 8 },
+    { k: 'E3', ro: 'Energie E3', units: ['kWh', 'MWh', 'GJ'], n: 8 },
+    { k: 'HR', ro: 'Ore de funcționare', units: ['h'] },
+    { k: 'INFO', ro: 'Cod info', units: [''] },
+    { k: 't1', ro: 'Temperatură tur', units: ['°C'] },
+    { k: 't2', ro: 'Temperatură retur', units: ['°C'] },
+    { k: 't1-t2', ro: 'Diferență de temperatură', units: ['K'] },
+    { k: 'Q', ro: 'Debit', units: ['l/h', 'm³/h'] },
+    { k: 'P', ro: 'Putere', units: ['kW', 'MW'] },
+    { k: 'qp', ro: 'Debit nominal', units: ['m³/h'] },
+    { k: 'P/l', ro: 'Impulsuri pe litru', units: [''] },
+    { k: 'TA2', ro: 'Registru tarifar TA2', units: [''] },
+    { k: 'TA3', ro: 'Registru tarifar TA3', units: [''] },
+    { k: 'A1', ro: 'Registru A1', units: [''] },
+    { k: 'A2', ro: 'Registru A2', units: [''] },
+    { k: '*', ro: 'Alt registru', units: [''] },
+  ];
+  const regOf = (k) => REGS.find((r) => r.k === k) || REGS[REGS.length - 1];
+  const SRC_RO = { camera: 'citit cu camera', edited: 'corectat de montor', manual: 'introdus de montor' };
+
+  function readings() {
+    const meter = S ? S.session.meterSerial : null;
+    if (!Array.isArray(ui.readings) || ui.readingsMeter !== meter) {
+      ui.readings = REGS.filter((r) => r.main).map((r) => ({ k: r.k, unit: r.units[0], value: '' }));
+      ui.readingsMeter = meter;
+    }
+    return ui.readings;
+  }
+  const filledReadings = () => readings().filter((r) => r.value || r.img);
+  const saveReadings = () => store.set('ui', ui);
+  const cleanValue = (v) => String(v || '').replace(/,/g, '.').replace(/[^0-9.\-]/g, '').slice(0, 16);
+
+  function renderReadings() {
+    const list = $('readings-list');
+    list.replaceChildren();
+    readings().forEach((r, i) => {
+      const reg = regOf(r.k), li = document.createElement('li');
+      const head = document.createElement('div'); head.className = 'rk';
+      if (r.k === '*') {
+        const name = document.createElement('input');
+        name.placeholder = T('Numele registrului'); name.value = r.label || ''; name.maxLength = 30;
+        name.onchange = () => { r.label = name.value.trim(); saveReadings(); };
+        head.append(name);
+      } else {
+        const small = document.createElement('small');
+        small.textContent = T(reg.ro);
+        head.append(r.k + ' ', small);
+      }
+      li.append(head);
+      if (!reg.main) {
+        const rm = document.createElement('button');
+        rm.type = 'button'; rm.className = 'rm'; rm.textContent = '✕'; rm.setAttribute('aria-label', T('Șterge'));
+        rm.onclick = () => { readings().splice(i, 1); saveReadings(); renderReadings(); };
+        li.append(rm);
+      } else li.append(document.createElement('span'));
+      const row = document.createElement('div'); row.className = 'rv';
+      const val = document.createElement('input');
+      val.inputMode = 'decimal'; val.autocomplete = 'off'; val.value = r.value || ''; val.placeholder = '–';
+      val.setAttribute('aria-label', r.k);
+      val.onchange = () => {
+        r.value = cleanValue(val.value); val.value = r.value;
+        r.src = r.read ? (r.value === r.read ? 'camera' : 'edited') : (r.value ? 'manual' : null);
+        r.ts = r.ts || new Date().toISOString();
+        saveReadings(); renderReadings();
+      };
+      row.append(val);
+      if (reg.units.length > 1) {
+        const sel = document.createElement('select');
+        for (const u of reg.units) sel.add(new Option(u, u, false, u === r.unit));
+        sel.onchange = () => { r.unit = sel.value; saveReadings(); };
+        row.append(sel);
+      } else if (reg.units[0]) {
+        const u = document.createElement('span'); u.className = 'unit'; u.textContent = reg.units[0]; row.append(u);
+      }
+      const cam = document.createElement('button');
+      cam.type = 'button'; cam.className = 'cam primary'; cam.textContent = '📷';
+      cam.setAttribute('aria-label', T('Citește {0} cu camera', r.k));
+      cam.onclick = () => lcdReader.open(r);
+      row.append(cam);
+      li.append(row);
+      if (r.img || r.src) {
+        const st = document.createElement('div');
+        st.className = 'rs' + (r.src === 'edited' ? ' edited' : '');
+        if (r.img) { const im = document.createElement('img'); im.src = r.img; im.alt = ''; st.append(im); }
+        const t = document.createElement('span');
+        t.textContent = r.src === 'edited' ? T('corectat de montor; camera a citit {0}', r.read) : r.src ? T(SRC_RO[r.src]) : T('doar poza');
+        st.append(t);
+        li.append(st);
+      }
+      list.append(li);
+    });
+    const add = $('readings-add');
+    add.replaceChildren(new Option(T('+ Adaugă alt registru'), ''));
+    for (const reg of REGS.filter((q) => !q.main)) add.add(new Option(reg.k === '*' ? T(reg.ro) : `${reg.k} – ${T(reg.ro)}`, reg.k));
+  }
+  $('readings-add').onchange = (ev) => {
+    const k = ev.target.value;
+    if (!k) return;
+    const reg = regOf(k);
+    readings().push({ k, unit: reg.units[0], value: '' });
+    saveReadings(); renderReadings();
+    lcdReader.open(readings()[readings().length - 1]);
+  };
+
+  // Live camera: the display is held inside a 2:1 frame; each frame is read and a
+  // value is taken once the same text has come back several times.
+  const lcdReader = (() => {
+    let stream = null, timer = null, target = null, voter = null, startedAt = 0, best = null, seenAt = 0;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const digitCount = (t) => (t.match(/\d/g) || []).length;
+
+    function frameRegion(v) {
+      const vw = v.videoWidth, vh = v.videoHeight, vr = v.getBoundingClientRect(), fr = $('lcd-frame').getBoundingClientRect();
+      const k = Math.max(vr.width / vw, vr.height / vh);
+      const dx = (vr.width - vw * k) / 2, dy = (vr.height - vh * k) / 2;
+      let sx = (fr.left - vr.left - dx) / k, sy = (fr.top - vr.top - dy) / k, sw = fr.width / k, sh = fr.height / k;
+      sx = Math.max(0, sx); sy = Math.max(0, sy); sw = Math.min(vw - sx, sw); sh = Math.min(vh - sy, sh);
+      return [sx, sy, sw, sh];
+    }
+    function snapshot(src, region) {
+      const c = document.createElement('canvas'), [sx, sy, sw, sh] = region;
+      const k = Math.min(1, 420 / sw);
+      c.width = Math.round(sw * k); c.height = Math.round(sh * k);
+      c.getContext('2d').drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      return c.toDataURL('image/jpeg', 0.72);
+    }
+    function grab(src, region) {
+      const [sx, sy, sw, sh] = region, k = Math.min(1, 720 / sw);
+      canvas.width = Math.round(sw * k); canvas.height = Math.round(sh * k);
+      ctx.drawImage(src, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+      return window.LinkIQLcd.readLcd(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    }
+    function setUse() {
+      $('lcd-use').textContent = best ? T('Folosește {0}', best.text) : T('Păstrează poza, scriu eu valoarea');
+    }
+    async function open(r) {
+      target = r; best = null; seenAt = 0;
+      const reg = regOf(r.k);
+      voter = new window.LinkIQLcd.Voter(3, 10);
+      $('lcd-title').textContent = `${r.k === '*' ? (r.label || T('Alt registru')) : r.k} · ${T(reg.ro)}`;
+      $('lcd-tip').textContent = T('Arată {0} pe contor și ține tot afișajul în chenar.', r.k === '*' ? T('registrul') : r.k);
+      $('lcd-live').textContent = '…';
+      $('lcd-frame').className = 'lcd-frame';
+      $('lcd-error').hidden = true; $('lcd-torch').hidden = true;
+      setUse();
+      $('lcd-reader').hidden = false;
+      startedAt = Date.now();
+      try {
+        if (!window.isSecureContext || !navigator.mediaDevices) throw new Error(T('Camera live cere o adresă sigură (HTTPS sau localhost). Apasă „Fotografiază”.'));
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+        const v = $('lcd-video');
+        v.srcObject = stream;
+        await v.play();
+        const track = stream.getVideoTracks()[0], caps = track.getCapabilities ? track.getCapabilities() : {};
+        if (caps.torch) $('lcd-torch').hidden = false;
+        if (caps.focusMode && caps.focusMode.includes('continuous')) track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+        loop();
+      } catch (e) {
+        showError('lcd-error', e.name === 'NotAllowedError' ? T('Permite accesul la cameră din setările browserului.') : e.message);
+      }
+    }
+    function loop() {
+      if (!stream) return;
+      const v = $('lcd-video');
+      if (v.readyState >= 2 && v.videoWidth) {
+        try {
+          const region = frameRegion(v), res = grab(v, region);
+          const want = regOf(target.k).n;
+          const ok = res.text && res.text.indexOf('?') < 0;
+          if (res.kind !== 'none') seenAt = Date.now();
+          $('lcd-frame').className = 'lcd-frame' + (ok ? ' seen' : '');
+          $('lcd-live').textContent = res.text || '…';
+          const vote = voter.add(ok ? res : null);
+          if (ok && vote.text === res.text) { best = { text: res.text, img: snapshot(v, region) }; setUse(); }
+          // The main registers show 8 digits; another count is taken only when it is very steady.
+          const need = !want || !vote.text || vote.text === '---' || digitCount(vote.text) === want ? 3 : 6;
+          if (vote.count >= need && best && best.text === vote.text) { finish(best, 'camera'); return; }
+          if (!seenAt && Date.now() - startedAt > 4000) $('lcd-tip').textContent = T('Nu văd cifre. Apropie telefonul; dacă lumina se reflectă în geam, înclină-l puțin sau stinge lanterna.');
+          else if (seenAt && !best && Date.now() - startedAt > 6000) $('lcd-tip').textContent = T('Cifrele nu se citesc sigur. Ține telefonul nemișcat, drept în fața afișajului, fără reflexii.');
+        } catch { /* next frame */ }
+      }
+      timer = setTimeout(loop, 140);
+    }
+    function finish(res, how) {
+      const r = target;
+      close();
+      if (res && res.text) { r.value = cleanValue(res.text); r.read = r.value; r.src = how; }
+      else if (!r.value) r.src = null;
+      if (res && res.img) r.img = res.img;
+      r.ts = new Date().toISOString();
+      saveReadings(); renderReadings();
+      if (navigator.vibrate && res && res.text) navigator.vibrate(80);
+    }
+    function close() {
+      clearTimeout(timer);
+      if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+      $('lcd-video').srcObject = null;
+      $('lcd-reader').hidden = true;
+    }
+    $('lcd-close').onclick = close;
+    $('lcd-use').onclick = () => {
+      if (best) { finish(best, 'camera'); return; }
+      const v = $('lcd-video');
+      finish(v.videoWidth ? { text: '', img: snapshot(v, frameRegion(v)) } : null, 'manual');
+    };
+    $('lcd-torch').onclick = async () => {
+      if (!stream) return;
+      const track = stream.getVideoTracks()[0], on = !track.getSettings().torch;
+      try { await track.applyConstraints({ advanced: [{ torch: on }] }); } catch { /* not supported after all */ }
+    };
+    // Photo from the phone's camera app: try display-sized windows around the centre.
+    $('lcd-photo-btn').onclick = () => $('lcd-photo').click();
+    $('lcd-photo').onchange = async (ev) => {
+      const file = ev.target.files[0];
+      ev.target.value = '';
+      if (!file || !target) return;
+      try {
+        const bmp = await createImageBitmap(file), W = bmp.width, H = bmp.height;
+        let found = null;
+        for (const f of [0.55, 0.7, 0.85, 0.4, 1]) {
+          for (const cy of [0.45, 0.35, 0.55]) {
+            const sw = W * f, sh = Math.min(H, sw / 2), region = [(W - sw) / 2, Math.max(0, Math.min(H - sh, H * cy - sh / 2)), sw, sh];
+            const res = grab(bmp, region);
+            const score = res.text && res.text.indexOf('?') < 0 ? res.quality + digitCount(res.text) / 10 : 0;
+            if (score > (found ? found.score : 0)) found = { score, text: res.text, img: snapshot(bmp, region) };
+          }
+        }
+        if (found) finish(found, 'camera');
+        else {
+          const sw = W * 0.7, sh = Math.min(H, sw / 2);
+          finish({ text: '', img: snapshot(bmp, [(W - sw) / 2, (H - sh) / 2, sw, sh]) }, 'manual');
+          showError('align-error', T('Nu am putut citi cifrele din poză. Poza este păstrată; scrie valoarea de mână.'));
+        }
+      } catch (e) { showError('lcd-error', T('Nu am putut citi fotografia: {0}', e.message)); }
+    };
+    return { open, close };
+  })();
+
+  // Asked once per session before a report is saved, while no value has been entered.
+  function askReadings(then) {
+    if (ui.readingsAsked || filledReadings().length) { then(); return; }
+    ui.readingsAsked = true; saveReadings();
+    $('readings-ask').hidden = false;
+    $('ask-no').onclick = () => { $('readings-ask').hidden = true; then(); };
+    $('ask-yes').onclick = () => {
+      $('readings-ask').hidden = true;
+      const card = $('readings-card');
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+      const first = readings().find((r) => !r.value);
+      if (first) lcdReader.open(first);
+    };
+  }
+
+  /** Report section with the readings and the picture of the display beside each value. */
+  async function drawReadings(x, P, W, y, section, font, text) {
+    const list = filledReadings();
+    if (!list.length) return y;
+    y = section(T('Citirile contorului'));
+    for (const r of list) {
+      const reg = regOf(r.k), top = y + 18;
+      let img = null;
+      if (r.img) { try { img = new Image(); img.src = r.img; await img.decode(); } catch { img = null; } }
+      const ih = 104, iw = img ? Math.round(ih * img.width / img.height) : 0;
+      font(800, 28); text(r.k === '*' ? (r.label || T('Alt registru')) : r.k, P, top + 34);
+      font(500, 20); text(r.k === '*' ? '' : T(reg.ro), P, top + 62, INK.gray);
+      font(800, 40); x.fillStyle = r.src === 'edited' ? INK.amber : INK.ink; x.textAlign = 'left';
+      x.fillText(r.value ? `${r.value} ${r.unit || ''}`.trim() : '–', P + 250, top + 44, W - 2 * P - 250 - (img ? iw + 16 : 0));
+      font(500, 20);
+      const how = r.src === 'edited' ? T('corectat de montor; camera a citit {0}', r.read) : r.src ? T(SRC_RO[r.src]) : T('doar poza');
+      const room = W - 2 * P - 250 - (img ? iw + 16 : 0);
+      x.fillStyle = r.src === 'edited' ? INK.amber : INK.gray; x.textAlign = 'left';
+      x.fillText(how, P + 250, top + 76, room);
+      if (r.ts) x.fillText(fmtTime(r.ts), P + 250, top + 102, room);
+      if (img) {
+        x.drawImage(img, W - P - iw, top, iw, ih);
+        x.strokeStyle = INK.light; x.lineWidth = 2; x.strokeRect(W - P - iw, top, iw, ih);
+      }
+      y = top + ih + 6;
+    }
+    font(500, 19);
+    text(T(list.some((r) => r.img) ? 'Valorile vin de pe afișajul contorului; montorul le-a verificat. Poza afișajului e alături.' : 'Valorile vin de pe afișajul contorului; montorul le-a verificat.'), P, y + 30, INK.gray);
+    return y + 40;
+  }
 
   // ---------------------------------------------------------------- feedback
   // The app has no server of its own, so feedback leaves through the phone's share

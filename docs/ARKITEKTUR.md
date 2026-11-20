@@ -49,6 +49,7 @@ i begge.
 | Leaflet 1.9.4 (i `frontend/vendor`) | BSD-2 | 0 |
 | jsQR 1.4.0 (QR-læsning, hvor browseren ikke selv kan) | Apache-2.0 | 0 |
 | segno (QR-kode til parring) | BSD-3 | 0 |
+| Aflæsning af målerens display (`frontend/lcd.js`, eget arbejde) | MIT (projektets) | 0 |
 | qrcode-generator 1.4.4 (QR-kode med registret, i `frontend/vendor`) | MIT | 0 |
 | OpenStreetMap-data og -kortfliser | ODbL; brugsregler for fliseserveren | 0 ved lav trafik |
 | Docker Engine (valgfri) | Apache-2.0 | 0 |
@@ -63,6 +64,16 @@ Tre ting, man skal vide:
   få montører er langt under grænsen; ved udvidelse kan man hoste sin egen fliseserver.
 - **Hosting** er ikke en licens, men kræver en maskine eller en tjeneste. Azure Static Web Apps på
   Free-planen kræver en Azure-subscription i virksomheden; selve planen koster intet.
+
+## Aflæsning af målerens display
+
+Målerstandene læses med en lille, egen 7-segment-læser (`frontend/lcd.js`) i stedet for en generel
+OCR. Generel OCR (fx Tesseract.js) kræver modelfiler på flere MB, læser segmenttal dårligt og er
+langsom på billige telefoner; OCR i skyen sender billeder ud af huset. Læseren her kender displayets
+form: den finder rækken med de store cifre, læser hvert ciffers 7 segmenter, finder decimalpunktet,
+retter en skæv telefon op og bruger lokal tærskel mod skygge og genskin. Den kører på ca. 7 ms pr.
+billede, helt offline, og flere billeder i træk skal give det samme tal, før værdien bruges.
+Montøren kontrollerer altid tallet, og billedet af displayet gemmes i rapporten som dokumentation.
 
 ## Dataflow
 

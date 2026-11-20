@@ -28,8 +28,8 @@ jobs:
         fetchDepth: 0
         submodules: false
 
-      - script: node --test tests-js/engine.test.js
-        displayName: Engine tests
+      - script: node --test tests-js/engine.test.js tests-js/lcd.test.js
+        displayName: Engine and display reader tests
 
       - bash: |
           set -euo pipefail

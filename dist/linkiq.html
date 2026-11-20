@@ -839,9 +839,9 @@ ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
 button.link.armed { color: var(--red); font-weight: 800; }
 button.link[hidden] { display: none; }
 
-#feedback, #vvs-setup, #regqr-sheet { position: fixed; inset: 0; background: rgba(11, 31, 42, .6); z-index: 900; display: flex; align-items: flex-end; justify-content: center; }
-#feedback[hidden], #vvs-setup[hidden], #regqr-sheet[hidden] { display: none; }
-#feedback .sheet, #vvs-setup .sheet, #regqr-sheet .sheet { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+#feedback, #vvs-setup, #regqr-sheet, #readings-ask { position: fixed; inset: 0; background: rgba(11, 31, 42, .6); z-index: 900; display: flex; align-items: flex-end; justify-content: center; }
+#feedback[hidden], #vvs-setup[hidden], #regqr-sheet[hidden], #readings-ask[hidden] { display: none; }
+#feedback .sheet, #vvs-setup .sheet, #regqr-sheet .sheet, #readings-ask .sheet { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
 #fb-card { display: flex; flex-direction: column; gap: 8px; }
 .hint.center { text-align: center; }
 ol.steps { margin: 0; padding-left: 22px; }
@@ -852,6 +852,39 @@ a.drag { display: block; text-align: center; padding: 12px; border-radius: 10px;
 ul.rows li.old { opacity: 0.55; }
 ul.rows li.legend { display: block; font-size: 13px; color: var(--gray); border-top: 2px solid var(--light); padding-top: 8px; }
 #regqr-img { display: block; width: 100%; max-width: 420px; margin: 0 auto; image-rendering: pixelated; background: #fff; }
+
+/* meter readings */
+#readings-card { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--light); padding-top: 10px; }
+#readings-card h3 { margin: 0; }
+#readings-card .sub { font-weight: 500; color: var(--gray); font-size: 15px; }
+#readings-card.flash { animation: flash 1.2s ease-out 2; }
+@keyframes flash { 0% { background: #fff6d6; } 100% { background: transparent; } }
+ul.readings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+ul.readings li { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; align-items: center; border: 2px solid var(--light); border-radius: 12px; padding: 8px; }
+ul.readings .rk { font-weight: 800; }
+ul.readings .rk small { font-weight: 500; color: var(--gray); }
+ul.readings .rk input { width: 100%; min-height: 40px; }
+ul.readings .rv { display: flex; gap: 6px; align-items: center; grid-column: 1 / -1; }
+ul.readings .rv input { flex: 1; min-width: 0; min-height: 52px; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; padding: 10px 8px; }
+ul.readings .rv select { width: auto; min-height: 52px; padding: 8px 4px; }
+ul.readings .rv .unit { font-weight: 700; min-width: 3em; }
+ul.readings .cam { width: 56px; min-height: 52px; padding: 0; font-size: 26px; }
+ul.readings .rm { width: 40px; min-height: 40px; padding: 0; background: #fff; color: var(--red); border: 2px solid var(--light); }
+ul.readings .rs { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--gray); }
+ul.readings .rs img { height: 54px; border-radius: 6px; border: 1px solid var(--light); }
+ul.readings .rs.edited { color: #b26a00; font-weight: 700; }
+#lcd-reader { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; justify-content: space-between; }
+#lcd-reader[hidden] { display: none; }
+#lcd-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.lcd-frame { position: absolute; left: 50%; top: 40%; width: min(88vw, 560px); aspect-ratio: 2 / 1; transform: translate(-50%, -50%); border: 4px solid #fff; border-radius: 14px; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .45); }
+.lcd-frame.seen { border-color: #ffd23f; }
+.lcd-frame.ok { border-color: #2ecc71; }
+#lcd-tip { margin: 0; font-size: 16px; font-weight: 500; }
+.lcd-live { color: #fff; text-align: center; font: 800 38px/1.1 ui-monospace, monospace; letter-spacing: 2px; min-height: 44px; text-shadow: 0 1px 4px #000; }
+.lcd-row { display: flex; gap: 8px; }
+.lcd-row button { flex: 1; }
+.lcd-row button[hidden] { display: none; }
+#lcd-use { min-height: 56px; }
 
 </style>
 </head>
@@ -971,6 +1004,12 @@ ul.rows li.legend { display: block; font-size: 13px; color: var(--gray); border-
       <h2>Raport</h2>
       <p class="hint">Fotografiază întâi antena, apoi descarcă raportul: PDF-ul include și fotografia.</p>
       <label class="file-btn" id="photo-label">Fotografiază antena<input type="file" id="photo-file" accept="image/*" capture="environment" hidden></label>
+      <div id="readings-card">
+        <h3>Citirile contorului <span class="sub">(opțional)</span></h3>
+        <p class="hint">Apasă camera de lângă registru și ține afișajul în chenar. Verifică cifrele: le poți corecta.</p>
+        <ul id="readings-list" class="readings"></ul>
+        <select id="readings-add" aria-label="Adaugă alt registru"></select>
+      </div>
       <button type="button" id="report-pdf-btn" class="secondary">Descarcă raportul (PDF)</button>
       <button type="button" id="report-btn" class="secondary">Descarcă raportul (imagine)</button>
       <p id="dir-info2" class="hint"></p>
@@ -1041,6 +1080,31 @@ ul.rows li.legend { display: block; font-size: 13px; color: var(--gray); border-
     <button id="scan-photo-btn" class="primary">Fotografiază codul</button>
     <button id="scan-close" class="secondary">Închide</button>
     <input type="file" id="scan-photo" accept="image/*" capture="environment" hidden>
+  </div>
+</div>
+
+<div id="lcd-reader" hidden>
+  <video id="lcd-video" playsinline muted></video>
+  <div id="lcd-frame" class="lcd-frame"></div>
+  <div class="scan-top"><strong id="lcd-title"></strong><p id="lcd-tip"></p><p id="lcd-error" class="error" hidden></p></div>
+  <div class="scan-bottom">
+    <div id="lcd-live" class="lcd-live">…</div>
+    <button type="button" id="lcd-use" class="primary">Păstrează poza, scriu eu valoarea</button>
+    <div class="lcd-row">
+      <button type="button" id="lcd-torch" class="secondary" hidden>Lanternă</button>
+      <button type="button" id="lcd-photo-btn" class="secondary">Fotografiază</button>
+      <button type="button" id="lcd-close" class="secondary">Închide</button>
+    </div>
+    <input type="file" id="lcd-photo" accept="image/*" capture="environment" hidden>
+  </div>
+</div>
+
+<div id="readings-ask" hidden>
+  <div class="card sheet">
+    <h2>Adaugi citirile contorului în raport?</h2>
+    <p class="hint">E1, V1, V2, E8 și E9 se citesc cu camera, direct de pe afișaj. Nu e obligatoriu.</p>
+    <button type="button" id="ask-yes" class="primary">Da, adaug citirile</button>
+    <button type="button" id="ask-no" class="secondary">Nu, salvează raportul</button>
   </div>
 </div>
 
@@ -1447,12 +1511,452 @@ window.LINKIQ_DA = {
  "Contact": "Kontakt",
  "doar ocazional – nu contează ca redundanță": "kun lejlighedsvis – tæller ikke som redundans",
  "… și încă {0}": "… og {0} mere",
+ "Scanează registrul de pe codul QR": "Scan registret fra QR-kode",
+ "Alege o imagine cu codul QR": "Vælg et billede med QR-koden",
+ "Fă un cod QR al registrului pentru colegi": "Lav en QR-kode af registret til kolleger",
+ "Registrul ca cod QR": "Registret som QR-kode",
+ "Conține locațiile concentratoarelor. Dă-l doar colegilor, nu-l publica.": "Indeholder koncentratorernes placering. Giv den kun til kolleger, og offentliggør den ikke.",
+ "Colegul deschide LinkIQ și apasă „Scanează registrul de pe codul QR”.": "Kollegaen åbner LinkIQ og trykker Scan registret fra QR-kode.",
+ "Ține telefonul la 20–30 cm de ecran sau de foaia tipărită, până se citește codul.": "Hold telefonen 20–30 cm fra skærmen eller det udskrevne ark, til koden er læst.",
+ "Sau: îi trimiți imaginea, iar el o alege cu „Alege o imagine cu codul QR”.": "Eller: send billedet, og kollegaen vælger det med Vælg et billede med QR-koden.",
+ "Salvează imaginea": "Gem billedet",
+ "Browserul este prea vechi pentru a face codul QR.": "Browseren er for gammel til at lave QR-koden.",
+ "Acesta nu este un cod QR cu registrul LinkIQ.": "Det er ikke en QR-kode med LinkIQ-registret.",
+ "Browserul este prea vechi pentru a citi codul QR.": "Browseren er for gammel til at læse QR-koden.",
+ "Codul QR nu conține un registru valid.": "QR-koden indeholder ikke et gyldigt register.",
+ "Registru citit din codul QR din {0}: {1} site-uri, {2} concentratoare.": "Register læst fra QR-koden fra {0}: {1} sites, {2} koncentratorer.",
+ "Nu am putut citi registrul: {0}": "Kunne ikke læse registret: {0}",
+ "Îndreaptă camera spre codul QR cu registrul": "Ret kameraet mod QR-koden med registret",
+ "Caut codul QR în imagine…": "Leder efter QR-koden i billedet …",
+ "Nu am găsit un cod QR în imagine.": "Fandt ingen QR-kode i billedet.",
+ "Nu am putut citi imaginea: {0}": "Kunne ikke læse billedet: {0}",
+ "registru": "register",
+ "site-uri": "sites",
+ "concentratoare": "koncentratorer",
+ "{0} site-uri, {1} concentratoare · {2} caractere": "{0} sites, {1} koncentratorer · {2} tegn",
+ "Nu am putut face codul QR: {0}": "Kunne ikke lave QR-koden: {0}",
+ "Citit dintr-un cod QR; rămâne pe acest dispozitiv până imporți altul.": "Læst fra en QR-kode; bliver på denne enhed, til du indlæser et andet.",
+ "Citirile contorului": "Målerstande",
+ "(opțional)": "(valgfrit)",
+ "Apasă camera de lângă registru și ține afișajul în chenar. Verifică cifrele: le poți corecta.": "Tryk på kameraet ved registret, og hold displayet inde i rammen. Kontrollér tallene – du kan rette dem.",
+ "Numele registrului": "Registrets navn",
+ "Șterge": "Slet",
+ "Citește {0} cu camera": "Aflæs {0} med kameraet",
+ "corectat de montor; camera a citit {0}": "rettet af montøren; kameraet læste {0}",
+ "doar poza": "kun billede",
+ "+ Adaugă alt registru": "+ Tilføj andet register",
+ "Adaugă alt registru": "Tilføj andet register",
+ "Folosește {0}": "Brug {0}",
+ "Păstrează poza, scriu eu valoarea": "Gem billedet, jeg skriver selv værdien",
+ "Alt registru": "Andet register",
+ "Arată {0} pe contor și ține tot afișajul în chenar.": "Vis {0} på måleren, og hold hele displayet inde i rammen.",
+ "registrul": "registret",
+ "Camera live cere o adresă sigură (HTTPS sau localhost). Apasă „Fotografiază”.": "Live-kamera kræver en sikker adresse (HTTPS eller localhost). Tryk „Tag billede“.",
+ "Nu văd cifre. Apropie telefonul; dacă lumina se reflectă în geam, înclină-l puțin sau stinge lanterna.": "Jeg kan ikke se tal. Gå tættere på. Spejler lyset sig i glasset, så vip telefonen lidt eller sluk lygten.",
+ "Cifrele nu se citesc sigur. Ține telefonul nemișcat, drept în fața afișajului, fără reflexii.": "Tallene kan ikke læses sikkert. Hold telefonen stille, lige foran displayet og uden genskin.",
+ "Nu am putut citi cifrele din poză. Poza este păstrată; scrie valoarea de mână.": "Tallene kunne ikke læses på billedet. Billedet er gemt – skriv værdien selv.",
+ "Valorile vin de pe afișajul contorului; montorul le-a verificat. Poza afișajului e alături.": "Værdierne er aflæst på målerens display og kontrolleret af montøren. Billedet af displayet står ved siden af.",
+ "Valorile vin de pe afișajul contorului; montorul le-a verificat.": "Værdierne er aflæst på målerens display og kontrolleret af montøren.",
+ "Energie termică": "Varmeenergi",
+ "Volum": "Volumen",
+ "Volum 2": "Volumen 2",
+ "m³ × t1 (tur)": "m³ × t1 (frem)",
+ "m³ × t2 (retur)": "m³ × t2 (retur)",
+ "Energie de răcire": "Køleenergi",
+ "Energie E3": "Energi E3",
+ "Ore de funcționare": "Driftstimer",
+ "Cod info": "Infokode",
+ "Temperatură tur": "Fremløbstemperatur",
+ "Temperatură retur": "Returtemperatur",
+ "Diferență de temperatură": "Temperaturdifferens",
+ "Debit": "Flow",
+ "Putere": "Effekt",
+ "Debit nominal": "Nominelt flow",
+ "Impulsuri pe litru": "Pulser pr. liter",
+ "Registru tarifar TA2": "Tarifregister TA2",
+ "Registru tarifar TA3": "Tarifregister TA3",
+ "Registru A1": "Register A1",
+ "Registru A2": "Register A2",
+ "citit cu camera": "aflæst med kameraet",
+ "corectat de montor": "rettet af montøren",
+ "introdus de montor": "indtastet af montøren",
+ "Lanternă": "Lygte",
+ "Fotografiază": "Tag billede",
+ "Adaugi citirile contorului în raport?": "Skal målerstandene med i rapporten?",
+ "E1, V1, V2, E8 și E9 se citesc cu camera, direct de pe afișaj. Nu e obligatoriu.": "E1, V1, V2, E8 og E9 aflæses med kameraet direkte fra displayet. Det er ikke obligatorisk.",
+ "Da, adaug citirile": "Ja, tilføj målerstande",
+ "Nu, salvează raportul": "Nej, gem rapporten"
 };
 
 </script>
 <script>
 /* Generated by tools/build_vvs.py from tools/vvs/bookmark.src.js. Do not edit. */
 window.LINKIQ_VVS_BOOKMARK = "javascript:!async%20function()%7Bvar%20e=%5B%22afsluttet%22,%22lukket%22%5D;if(%22vvsdialog.kmd.dk%22===location.hostname)%7Bvar%20t=(location.hash.match(/linkiq=(%5Cd+)/)%7C%7C%5B%5D)%5B1%5D%7C%7C(String(window.name%7C%7C%22%22).match(/%5Elinkiq_(%5Cd+)$/)%7C%7C%5B%5D)%5B1%5D;if(!t)%7Bvar%20n=%22%22;try%7Bnavigator.clipboard&&navigator.clipboard.readText&&(n=await%20Promise.race(%5Bnavigator.clipboard.readText(),new%20Promise(function(e)%7BsetTimeout(function()%7Be(%22%22)%7D,4e3)%7D)%5D))%7Dcatch(w)%7Bn=%22%22%7Dn=String(n%7C%7C%22%22).trim(),t=prompt(%22LinkIQ:%20M%C3%A5lernummer?%22,/%5E%5Cd%7B6,12%7D$/.test(n)?n:%22%22)%7Dif(t=(t%7C%7C%22%22).replace(/%5CD/g,%22%22))%7Bvar%20r=document.getElementById(%22linkiq-box%22);r&&r.remove();var%20i=document.createElement(%22div%22);i.id=%22linkiq-box%22,i.style.cssText=%22position:fixed;left:0;right:0;top:0;z-index:99999;background:%231f5e4f;color:%23fff;font:17px/1.4%20Arial,sans-serif;padding:14px;max-height:100%25;overflow:auto;box-shadow:0%202px%2010px%20rgba(0,0,0,.5)%22,document.body.appendChild(i);try%7Bk(%22LinkIQ:%20s%C3%B8ger%20m%C3%A5ler%20%22+t+%22%20%E2%80%A6%22);var%20o=new%20DOMParser,a=await%20fetch(%22/Home.aspx%22,%7Bcredentials:%22same-origin%22%7D),c=o.parseFromString(await%20a.text(),%22text/html%22),l=c.querySelector(%22form%22),d=l?Array.prototype.slice.call(l.querySelectorAll(%22input%22)):%5B%5D,s=d.find(function(e)%7Breturn/meternumber/i.test(e.name%7C%7C%22%22)%7D),u=d.find(function(e)%7Breturn%22submit%22===(e.type%7C%7C%22%22).toLowerCase()&&%22S%C3%B8g%22===(e.value%7C%7C%22%22).trim()%7D);if(!s%7C%7C!u)return%20k(%22LinkIQ:%20Log%20ind%20i%20VVS-dialog%20f%C3%B8rst,%20og%20tryk%20derefter%20p%C3%A5%20li%20igen.%22),void%20y();var%20f=new%20URLSearchParams;Array.prototype.forEach.call(l.querySelectorAll(%22input,select,textarea%22),function(e)%7Bif(e.name&&!e.disabled)%7Bvar%20n=(e.type%7C%7C%22%22).toLowerCase();%22submit%22!==n&&%22button%22!==n&&%22image%22!==n&&%22file%22!==n&&%22reset%22!==n&&(%22checkbox%22!==n&&%22radio%22!==n%7C%7Ce.checked)&&f.append(e.name,e===s?t:e.value%7C%7C%22%22)%7D%7D),f.append(u.name,u.value);var%20m=new%20URL(l.getAttribute(%22action%22)%7C%7C%22Home.aspx%22,location.origin+%22/Home.aspx%22),p=(a=await%20fetch(m.href,%7Bmethod:%22POST%22,credentials:%22same-origin%22,headers:%7B%22Content-Type%22:%22application/x-www-form-urlencoded%22%7D,body:f.toString()%7D)).url,g=await%20a.text();if(!/ShowCustomer%5C.aspx/i.test(p))return%20k(%22LinkIQ:%20M%C3%A5ler%20%22+t+%22%20blev%20ikke%20fundet%20entydigt.%20S%C3%B8g%20manuelt%20p%C3%A5%20forsiden.%22),void%20y();c=o.parseFromString(g,%22text/html%22);var%20x=%7B%7D,h=%5B%5D;function%20v(e)%7Bk(%22LinkIQ:%20%C3%A5bner%20sagen%20%E2%80%A6%22),location.href=%22/Cases/ShowCase.aspx?cc=%22+e%7Dif(Array.prototype.forEach.call(c.querySelectorAll('%5Bonclick*=%22ShowCase.aspx%22%5D'),function(n)%7Bvar%20r=((n.getAttribute(%22onclick%22)%7C%7C%22%22).match(/cc=(%5Cd+)/)%7C%7C%5B%5D)%5B1%5D;if(r&&!x%5Br%5D)%7Bx%5Br%5D=1;var%20i=o(%22.ucCHCol2%22);e.indexOf(i.toLowerCase())%3E=0%7C%7Ch.push(%7Bcc:r,date:o(%22.ucCHCol1%22),status:i,type:o(%22.ucCHCol3%22),own:n.textContent.indexOf(t)%3E=0%7D)%7Dfunction%20o(e)%7Bvar%20t=n.querySelector(e);return%20t?t.textContent.trim():%22%22%7D%7D),1===h.length)return%20void%20v(h%5B0%5D.cc);if(!h.length)return%20k(%22LinkIQ:%20Ingen%20%C3%A5ben%20sag%20for%20m%C3%A5ler%20%22+t+%22.%22),b(%22%C3%85bn%20kundesiden%22,function()%7Blocation.href=p%7D),void%20y();k(%22LinkIQ:%20%22+h.length+%22%20%C3%A5bne%20sager%20for%20m%C3%A5ler%20%22+t+%22.%20V%C3%A6lg%20sag:%22),h.forEach(function(e)%7Bb(e.date+%22%20%C2%B7%20%22+e.status+%22%20%C2%B7%20%22+e.type+(e.own?%22%20%C2%B7%20m%C3%A5ler%20n%C3%A6vnt%22:%22%22),function()%7Bv(e.cc)%7D)%7D),y()%7Dcatch(C)%7Bk(%22LinkIQ:%20Fejl%20%E2%80%93%20%22+(C&&C.message?C.message:C)),y()%7D%7D%7Delse%20alert(%22LinkIQ:%20%C3%85bn%20VVS-dialog%20og%20log%20ind%20f%C3%B8rst.%22);function%20b(e,t)%7Bvar%20n=document.createElement(%22button%22);return%20n.type=%22button%22,n.textContent=e,n.style.cssText=%22display:block;width:100%25;margin:0%200%208px;padding:12px;font:16px%20Arial,sans-serif;text-align:left;background:%23fff;color:%23111;border:0;border-radius:6px%22,n.onclick=t,i.appendChild(n),n%7Dfunction%20k(e)%7Bi.textContent=%22%22,function(e,t)%7Bvar%20n=document.createElement(%22div%22);n.textContent=e,n.style.margin=%220%200%208px%22,t&&(n.style.fontWeight=%22bold%22),i.appendChild(n)%7D(e,!0)%7Dfunction%20y()%7Bb(%22Luk%22,function()%7Bi.remove()%7D)%7D%7D();";
+
+</script>
+<script>
+/* LinkIQ - reading the 7-segment LCD of a Kamstrup MULTICAL 603 from the camera.
+ * Plain JavaScript, no network, no library: fits low-end phones and works offline.
+ * Input: ImageData-like {width, height, data (RGBA)} with the display inside the frame.
+ * Output: {text, digits, kind, quality, row}. The installer can always correct the text. */
+(function (root) {
+  'use strict';
+
+  // Segment order: a b c d e f g
+  var PATTERNS = {
+    '1111110': '0', '0110000': '1', '1101101': '2', '1111001': '3', '0110011': '4',
+    '1011011': '5', '1011111': '6', '1110000': '7', '1111111': '8', '1111011': '9',
+    '0011111': '6', '1110011': '9', '1110010': '7', '0000001': '-'
+  };
+
+  // Zones relative to the digit box: [x0, x1, y0, y1]
+  var ZONES = [
+    [0.28, 0.72, 0.00, 0.17], // a
+    [0.62, 1.00, 0.14, 0.44], // b
+    [0.58, 1.00, 0.56, 0.86], // c
+    [0.24, 0.70, 0.83, 1.00], // d
+    [0.00, 0.40, 0.56, 0.86], // e
+    [0.00, 0.40, 0.14, 0.44], // f
+    [0.26, 0.74, 0.40, 0.60]  // g
+  ];
+
+  function toGray(img, targetW) {
+    var sw = img.width, sh = img.height, d = img.data;
+    var f = Math.max(1, sw / targetW);
+    var w = Math.max(1, Math.round(sw / f)), h = Math.max(1, Math.round(sh / f));
+    var g = new Float32Array(w * h);
+    for (var y = 0; y < h; y++) {
+      var sy0 = Math.floor(y * f), sy1 = Math.max(sy0 + 1, Math.floor((y + 1) * f));
+      for (var x = 0; x < w; x++) {
+        var sx0 = Math.floor(x * f), sx1 = Math.max(sx0 + 1, Math.floor((x + 1) * f));
+        var s = 0, n = 0;
+        for (var yy = sy0; yy < sy1 && yy < sh; yy++) {
+          var o = (yy * sw + sx0) * 4;
+          for (var xx = sx0; xx < sx1 && xx < sw; xx++, o += 4) {
+            s += 0.299 * d[o] + 0.587 * d[o + 1] + 0.114 * d[o + 2]; n++;
+          }
+        }
+        g[y * w + x] = n ? s / n : 0;
+      }
+    }
+    return { w: w, h: h, g: g };
+  }
+
+  // Local threshold (Bradley): copes with shadow, uneven light and glare.
+  function threshold(G, winFrac, t, minDiff) {
+    var w = G.w, h = G.h, g = G.g;
+    var I = new Float64Array((w + 1) * (h + 1));
+    for (var y = 0; y < h; y++) {
+      var row = 0;
+      for (var x = 0; x < w; x++) {
+        row += g[y * w + x];
+        I[(y + 1) * (w + 1) + x + 1] = I[y * (w + 1) + x + 1] + row;
+      }
+    }
+    var r = Math.max(4, Math.round(w * winFrac / 2));
+    var m = new Uint8Array(w * h);
+    for (y = 0; y < h; y++) {
+      var y0 = Math.max(0, y - r), y1 = Math.min(h, y + r + 1);
+      for (x = 0; x < w; x++) {
+        var x0 = Math.max(0, x - r), x1 = Math.min(w, x + r + 1);
+        var sum = I[y1 * (w + 1) + x1] - I[y0 * (w + 1) + x1] - I[y1 * (w + 1) + x0] + I[y0 * (w + 1) + x0];
+        var mean = sum / ((x1 - x0) * (y1 - y0));
+        var v = g[y * w + x];
+        if (v < mean * (1 - t) && mean - v > minDiff) m[y * w + x] = 1;
+      }
+    }
+    return m;
+  }
+
+  function components(m, w, h) {
+    var lab = new Int32Array(w * h), comps = [], stack = [];
+    for (var i = 0; i < w * h; i++) {
+      if (!m[i] || lab[i]) continue;
+      var id = comps.length + 1, c = { id: id, x0: 1e9, y0: 1e9, x1: -1, y1: -1, n: 0 };
+      lab[i] = id; stack.push(i);
+      while (stack.length) {
+        var p = stack.pop(), px = p % w, py = (p - px) / w;
+        c.n++;
+        if (px < c.x0) c.x0 = px; if (px > c.x1) c.x1 = px;
+        if (py < c.y0) c.y0 = py; if (py > c.y1) c.y1 = py;
+        if (px > 0 && m[p - 1] && !lab[p - 1]) { lab[p - 1] = id; stack.push(p - 1); }
+        if (px < w - 1 && m[p + 1] && !lab[p + 1]) { lab[p + 1] = id; stack.push(p + 1); }
+        if (py > 0 && m[p - w] && !lab[p - w]) { lab[p - w] = id; stack.push(p - w); }
+        if (py < h - 1 && m[p + w] && !lab[p + w]) { lab[p + w] = id; stack.push(p + w); }
+      }
+      c.x1++; c.y1++; c.w = c.x1 - c.x0; c.h = c.y1 - c.y0;
+      comps.push(c);
+    }
+    return { lab: lab, comps: comps };
+  }
+
+  function median(a) {
+    if (!a.length) return 0;
+    var s = a.slice().sort(function (x, y) { return x - y; });
+    return s[s.length >> 1];
+  }
+
+  function xOverlap(a, b) { return Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0); }
+
+  // Join segments lying above each other into one digit.
+  function groupComps(list, maxGap, maxW, maxH) {
+    maxW = maxW || 1e9; maxH = maxH || 1e9;
+    var groups = list.map(function (c) {
+      return { x0: c.x0, x1: c.x1, y0: c.y0, y1: c.y1, ids: [c.id], n: c.n };
+    });
+    var merged = true;
+    while (merged) {
+      merged = false;
+      for (var i = 0; i < groups.length && !merged; i++) {
+        for (var j = i + 1; j < groups.length; j++) {
+          var a = groups[i], b = groups[j];
+          var ov = xOverlap(a, b), minW = Math.min(a.x1 - a.x0, b.x1 - b.x0);
+          var gap = Math.max(a.y0, b.y0) - Math.min(a.y1, b.y1);
+          var nw = Math.max(a.x1, b.x1) - Math.min(a.x0, b.x0), nh = Math.max(a.y1, b.y1) - Math.min(a.y0, b.y0);
+          if (ov >= 0.3 * minW && gap <= maxGap && nw <= maxW && nh <= maxH) {
+            a.x0 = Math.min(a.x0, b.x0); a.x1 = Math.max(a.x1, b.x1);
+            a.y0 = Math.min(a.y0, b.y0); a.y1 = Math.max(a.y1, b.y1);
+            a.ids = a.ids.concat(b.ids); a.n += b.n;
+            groups.splice(j, 1); merged = true; break;
+          }
+        }
+      }
+    }
+    groups.forEach(function (g) { g.w = g.x1 - g.x0; g.h = g.y1 - g.y0; });
+    return groups;
+  }
+
+  function zoneFill(lab, w, ids, box, z) {
+    var bw = box.x1 - box.x0, bh = box.y1 - box.y0;
+    var x0 = Math.round(box.x0 + z[0] * bw), x1 = Math.round(box.x0 + z[1] * bw);
+    var y0 = Math.round(box.y0 + z[2] * bh), y1 = Math.round(box.y0 + z[3] * bh);
+    var horiz = (z[1] - z[0]) * bw > (z[3] - z[2]) * bh;
+    // Share of cross-lines (across the segment) that hit dark pixels.
+    var hit = 0, tot = 0, x, y, k;
+    if (horiz) {
+      for (x = x0; x < x1; x++) {
+        tot++;
+        for (y = y0; y < y1; y++) { k = lab[y * w + x]; if (k && ids[k]) { hit++; break; } }
+      }
+    } else {
+      for (y = y0; y < y1; y++) {
+        tot++;
+        for (x = x0; x < x1; x++) { k = lab[y * w + x]; if (k && ids[k]) { hit++; break; } }
+      }
+    }
+    return tot ? hit / tot : 0;
+  }
+
+  var DIGITS = ['1111110', '0110000', '1101101', '1111001', '0110011', '1011011', '1011111', '1110000', '1111111', '1111011'];
+
+  function decode(segs) {
+    var key = segs.map(function (s) { return s ? '1' : '0'; }).join('');
+    return PATTERNS[key] || '?';
+  }
+
+  // Glare can wipe out one segment: take the only digit that is one segment away.
+  function decodeSoft(fills, thr) {
+    var on = fills.map(function (f) { return f > thr; });
+    var ch = decode(on);
+    if (ch !== '?') return { ch: ch, exact: true };
+    var cand = [];
+    DIGITS.forEach(function (p, d) {
+      var diff = 0;
+      for (var i = 0; i < 7; i++) if ((p[i] === '1') !== on[i]) diff++;
+      if (diff === 1) cand.push(String(d));
+    });
+    return cand.length === 1 ? { ch: cand[0], exact: false } : { ch: '?', exact: false };
+  }
+
+  function rotateGray(G, ang) {
+    var w = G.w, h = G.h, src = G.g, out = new Float32Array(w * h);
+    var c = Math.cos(ang), s = Math.sin(ang), cx = w / 2, cy = h / 2, fill = G.bg || 128;
+    for (var y = 0; y < h; y++) {
+      for (var x = 0; x < w; x++) {
+        var dx = x - cx, dy = y - cy;
+        var sx = c * dx - s * dy + cx, sy = s * dx + c * dy + cy;
+        var x0 = Math.floor(sx), y0 = Math.floor(sy);
+        if (x0 < 0 || y0 < 0 || x0 >= w - 1 || y0 >= h - 1) { out[y * w + x] = fill; continue; }
+        var fx = sx - x0, fy = sy - y0, i = y0 * w + x0;
+        out[y * w + x] = (src[i] * (1 - fx) + src[i + 1] * fx) * (1 - fy) + (src[i + w] * (1 - fx) + src[i + w + 1] * fx) * fy;
+      }
+    }
+    return { w: w, h: h, g: out, bg: G.bg };
+  }
+
+  function bgLevel(G) {
+    var w = G.w, h = G.h, a = [];
+    for (var y = Math.round(h * 0.2); y < h * 0.8; y += 2)
+      for (var x = Math.round(w * 0.2); x < w * 0.8; x += 2) a.push(G.g[y * w + x]);
+    a.sort(function (p, q) { return p - q; });
+    return a[Math.round(a.length * 0.6)] || 128;
+  }
+
+  function analyze(G, opts) {
+    var w = G.w, h = G.h;
+    // the minimum contrast follows the light level, so a dim room works like a bright one
+    var m = threshold(G, opts.win, opts.t, opts.minDiff * Math.max(0.5, Math.min(1, (G.bg || 150) / 150)));
+    var cc = components(m, w, h), lab = cc.lab;
+    var D = opts.debug ? { w: w, h: h, m: m, dots: [], y0: 0, y1: 0 } : null;
+    var minArea = Math.max(4, w * h * 0.00006);
+    var comps = cc.comps.filter(function (c) {
+      return c.n >= minArea && c.x0 > 0 && c.y0 > 0 && c.x1 < w && c.y1 < h &&
+        c.w < 0.45 * w && c.h < 0.8 * h;
+    });
+
+    // Pass 1: find the row of large digits
+    var g1 = groupComps(comps, 0.04 * h, 0.13 * w, 0.62 * h).filter(function (g) {
+      return g.h > 0.18 * h && g.h < 0.8 * h && g.h / Math.max(1, g.w) > 0.9;
+    });
+    var best = null;
+    g1.forEach(function (a) {
+      var mem = g1.filter(function (b) {
+        var cyA = (a.y0 + a.y1) / 2, cyB = (b.y0 + b.y1) / 2;
+        return Math.abs(b.h - a.h) < 0.2 * a.h && Math.abs(cyB - cyA) < 0.12 * a.h + 0.08 * Math.abs((b.x0 - a.x0));
+      });
+      var score = mem.reduce(function (s, b) { return s + b.h; }, 0);
+      if (!best || score > best.score) best = { score: score, mem: mem };
+    });
+
+    var dashed = function () {
+      // No digits: are there dashes ("- - -": no value, e.g. no sensor)?
+      var dashes = comps.filter(function (c) {
+        return c.w > 2.2 * c.h && c.w > 0.04 * w && c.h < 0.08 * h && c.y0 > 0.2 * h && c.y1 < 0.8 * h;
+      });
+      var rowD = [];
+      dashes.forEach(function (a) {
+        var r = dashes.filter(function (b) {
+          return Math.abs((b.y0 + b.y1) - (a.y0 + a.y1)) < 2 * a.h + 2 &&
+            b.w > 0.65 * a.w && b.w < 1.5 * a.w && b.h < 2 * a.h + 2 && b.h > 0.5 * a.h - 1;
+        });
+        if (r.length > rowD.length) rowD = r;
+      });
+      return rowD.length >= 2 ? { text: '---', digits: [], kind: 'dashes', quality: 1, angle: 0, dbg: D } : null;
+    };
+    if (!best) return dashed() || { text: '', digits: [], kind: 'none', quality: 0, angle: 0, dbg: D };
+
+    // Tilt (phone held at an angle): line through the digit centres
+    var angle = 0, mem = best.mem;
+    if (mem.length >= 2) {
+      var n = mem.length, sx = 0, sy = 0, sxx = 0, sxy = 0;
+      mem.forEach(function (g) {
+        var x = (g.x0 + g.x1) / 2, y = (g.y0 + g.y1) / 2;
+        sx += x; sy += y; sxx += x * x; sxy += x * y;
+      });
+      var den = n * sxx - sx * sx;
+      if (den > 0) angle = Math.atan((n * sxy - sx * sy) / den);
+    }
+
+    var y0 = median(mem.map(function (g) { return g.y0; }));
+    var y1 = median(mem.map(function (g) { return g.y1; }));
+    var H = y1 - y0, tol = 0.07 * H;
+
+    // Pass 2: only components inside the row; dots are kept apart
+    var inBand = comps.filter(function (c) {
+      return c.y0 >= y0 - tol && c.y1 <= y1 + tol && c.h <= 1.06 * H;
+    });
+    var dots = [], segs = [];
+    inBand.forEach(function (c) {
+      var small = Math.max(c.w, c.h) < 0.16 * H && Math.max(c.w, c.h) < 2.2 * Math.min(c.w, c.h);
+      var cy = (c.y0 + c.y1) / 2;
+      if (small && cy > y0 + 0.78 * H) dots.push(c); else segs.push(c);
+    });
+    var compById = {}; segs.forEach(function (c) { compById[c.id] = c; });
+    var groups = groupComps(segs, 0.12 * H, 0.75 * H, 1.1 * H).filter(function (g) { return g.h >= 0.3 * H; });
+    groups.sort(function (a, b) { return a.x0 - b.x0; });
+
+    var wide = groups.filter(function (g) { return g.w >= 0.35 * H; }).map(function (g) { return g.w; });
+    var Wref = wide.length ? median(wide) : 0.55 * H;
+
+    // A narrow "1" is two vertical segments (upper and lower); one long line is
+    // the display edge or the box drawn around the last digit.
+    groups = groups.filter(function (g, i) {
+      if (g.w >= 0.6 * Wref) return true;
+      var parts = g.ids.map(function (id) { return compById[id]; });
+      var up = parts.some(function (c) { return c.y1 < y0 + 0.62 * H && c.h > 0.25 * H; });
+      var lo = parts.some(function (c) { return c.y0 > y0 + 0.38 * H && c.h > 0.25 * H; });
+      var full = parts.some(function (c) { return c.h > 0.8 * H; });
+      if (!full && (!up || !lo)) return false;
+      var prev = groups[i - 1];
+      if (prev && prev.w >= 0.6 * Wref && g.x1 - Wref < prev.x1 - 0.3 * Wref) return false;
+      return true;
+    });
+
+    var digits = groups.map(function (g) {
+      var box = { x0: g.x0, x1: g.x1, y0: y0, y1: y1 };
+      if (g.w < 0.6 * Wref) { // narrow = "1" (right side of the cell); a "7" would have a wide top
+        box.x0 = g.x1 - Wref;
+        return { ch: '1', exact: true, box: box, fills: [0, 1, 1, 0, 0, 0, 0], margin: 0.5 };
+      }
+      var ids = {}; g.ids.forEach(function (id) { ids[id] = true; });
+      var fills = ZONES.map(function (z) { return zoneFill(lab, w, ids, box, z); });
+      var dec = decodeSoft(fills, 0.45);
+      var margin = dec.exact ? Math.min.apply(null, fills.map(function (f) { return Math.abs(f - 0.45); })) : 0;
+      return { ch: dec.ch, exact: dec.exact, box: box, fills: fills, margin: margin };
+    });
+
+    // Decimal point: small dot at the bottom, between two digits
+    var dpAfter = -1;
+    dots.forEach(function (d) {
+      var cx = (d.x0 + d.x1) / 2;
+      var inside = digits.some(function (g) { return cx > g.box.x0 + 0.15 * Wref && cx < g.box.x1 - 0.1 * Wref; });
+      if (inside) return;
+      if (Math.min(d.w, d.h) < 0.05 * H) return;
+      for (var i = 0; i < digits.length - 1; i++) {
+        var px1 = groups[i].x1; // right edge of the previous digit's segments
+        if (d.x0 >= px1 - 1 && cx <= px1 + 0.4 * Wref && cx < digits[i + 1].box.x0 + 0.1 * Wref) dpAfter = i;
+      }
+    });
+
+    var text = '';
+    digits.forEach(function (d, i) { text += d.ch; if (i === dpAfter) text += '.'; });
+    var bad = digits.filter(function (d) { return d.ch === '?'; }).length;
+    var soft = digits.filter(function (d) { return !d.exact; }).length;
+    var quality = digits.length ? (1 - (bad + 0.5 * soft) / digits.length) : 0;
+    if (D) { D.dots = dots; D.y0 = y0; D.y1 = y1; }
+    var alt = quality < 0.6 ? dashed() : null;   // shadow noise taken for digits next to real dashes?
+    return {
+      text: text, digits: digits, kind: 'digits', quality: quality, dp: dpAfter, angle: angle, alt: alt, dbg: D,
+      row: { x0: digits.length ? digits[0].box.x0 / w : 0, x1: digits.length ? digits[digits.length - 1].box.x1 / w : 0, y0: y0 / h, y1: y1 / h }
+    };
+  }
+
+  function readLcd(img, opts) {
+    opts = Object.assign({ width: 360, win: 0.06, t: 0.08, minDiff: 8 }, opts || {});
+    var G = toGray(img, opts.width);
+    G.bg = bgLevel(G);
+    var r = analyze(G, opts);
+    // Tilted reading: straighten and try again
+    if (r.kind === 'digits' && Math.abs(r.angle) > 0.012 && Math.abs(r.angle) < 0.35) {
+      var r2 = analyze(rotateGray(G, r.angle), opts);
+      if (r2.kind === 'digits' && r2.quality >= r.quality) r = r2;
+    }
+    if (r.kind === 'digits' && r.alt) return r.alt;
+    return r;
+  }
+
+  // Voting over camera frames: the same text several times is a safe reading.
+  function Voter(need, size) {
+    this.need = need || 3; this.size = size || 8; this.hist = [];
+  }
+  Voter.prototype.add = function (r) {
+    if (!r || !r.text || r.text.indexOf('?') >= 0) { this.hist.push(null); }
+    else this.hist.push(r.text);
+    if (this.hist.length > this.size) this.hist.shift();
+    var counts = {}, bestT = null, bestN = 0;
+    this.hist.forEach(function (t) {
+      if (!t) return;
+      counts[t] = (counts[t] || 0) + 1;
+      if (counts[t] > bestN) { bestN = counts[t]; bestT = t; }
+    });
+    return { text: bestT, count: bestN, stable: bestN >= this.need };
+  };
+  Voter.prototype.reset = function () { this.hist = []; };
+
+  var api = { readLcd: readLcd, Voter: Voter, decode: decode, PATTERNS: PATTERNS };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.LinkIQLcd = api;
+})(this);
 
 </script>
 <script>
@@ -14694,7 +15198,7 @@ var qrcode = function() {
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.17';
+  const VERSION = '0.18';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -15364,6 +15868,7 @@ var qrcode = function() {
     $('outcome').replaceChildren(); delete $('outcome').dataset.touched; $('note').value = '';
     showView('align');
     render();
+    renderReadings();
     if (navigator.wakeLock) navigator.wakeLock.request('screen').then((w) => { wakeLock = w; }).catch(() => {});
   }
 
@@ -15515,7 +16020,7 @@ var qrcode = function() {
   // ---------------------------------------------------------------- camera scanning
   // Native BarcodeDetector where the browser has it (Chrome on Android); jsQR otherwise.
   const scanner = (() => {
-    let stream = null, timer = null, onResult = null, detector = null, canvas = null;
+    let stream = null, timer = null, onResult = null, detector = null, canvas = null, frame = 0;
     const loadScript = (src) => new Promise((ok, fail) => {
       const el = document.createElement('script');
       el.src = src; el.onload = ok; el.onerror = () => fail(new Error(T('Nu am putut încărca cititorul de coduri.')));
@@ -15528,7 +16033,7 @@ var qrcode = function() {
       $('scanner').hidden = false;
       try {
         if (!window.isSecureContext || !navigator.mediaDevices) throw new Error(T('Camera live cere o adresă sigură (HTTPS sau localhost). Apasă „Fotografiază codul”.'));
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } }, audio: false });
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 } }, audio: false });
         const v = $('scan-video');
         v.srcObject = stream;
         await v.play();
@@ -15555,11 +16060,20 @@ var qrcode = function() {
             const found = await detector.detect(v);
             if (found.length) text = found[0].rawValue;
           } else {
+            // Alternate the whole frame (small codes anywhere) with the centre square at full
+            // detail (dense codes, such as the registry, held in the middle of the picture).
             canvas = canvas || document.createElement('canvas');
-            const k = Math.min(1, 800 / v.videoWidth);
-            canvas.width = Math.round(v.videoWidth * k); canvas.height = Math.round(v.videoHeight * k);
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
-            ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+            frame++;
+            if (frame % 2) {
+              const k = Math.min(1, 800 / v.videoWidth);
+              canvas.width = Math.round(v.videoWidth * k); canvas.height = Math.round(v.videoHeight * k);
+              ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+            } else {
+              const side = Math.min(v.videoWidth, v.videoHeight), k = Math.min(1, 1100 / side);
+              canvas.width = canvas.height = Math.round(side * k);
+              ctx.drawImage(v, (v.videoWidth - side) / 2, (v.videoHeight - side) / 2, side, side, 0, 0, canvas.width, canvas.height);
+            }
             const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const hit = window.jsQR(img.data, img.width, img.height);
             if (hit && hit.data) text = hit.data;
@@ -16122,6 +16636,8 @@ var qrcode = function() {
       row(T('Locul antenei'), levelText(ins.antennaPlace));
     }
 
+    y = await drawReadings(x, P, W, y, (t) => { section(t); return y; }, font, text);
+
     const mapCanvas = await reportMap(s, W - 2 * P, 620);
     if (mapCanvas) {
       section(T('Hartă'));
@@ -16388,13 +16904,15 @@ var qrcode = function() {
   }
   const reportName = (s) => safeName(s.session.meterSerial) + (s.session.status === 'CHECK' ? '_status' : '');
 
-  $('report-btn').onclick = async () => {
+  $('report-btn').onclick = () => S && askReadings(savePng);
+  async function savePng() {
     if (!S) return;
     await dirReady(true);          // while the tap still counts as a user action
     try { await saveBlob(await canvasBlob(await buildReport(S), 'image/png'), reportName(S) + '.png', 'Raportul a fost salvat ca {0}.'); }
     catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
-  };
-  $('report-pdf-btn').onclick = async () => {
+  }
+  $('report-pdf-btn').onclick = () => S && askReadings(savePdf);
+  async function savePdf() {
     if (!S) return;
     await dirReady(true);
     try {
@@ -16402,7 +16920,7 @@ var qrcode = function() {
       if (lastPhoto && S.session.status !== 'CHECK') pages.push(lastPhoto);
       await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', pages.length > 1 ? 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.' : 'Raportul PDF a fost salvat ca {0}.', null);
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
-  };
+  }
   $('photo-file').onchange = async (ev) => {
     const file = ev.target.files[0];
     ev.target.value = '';
@@ -16413,6 +16931,302 @@ var qrcode = function() {
       await saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + '_antenne.jpg', 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   };
+
+  // ---------------------------------------------------------------- meter readings
+  // Optional: the register values on the meter's own display, read with the camera
+  // (lcd.js, on the phone, offline) and always editable before they go in the report.
+  // A small picture of the display is kept with each value as evidence.
+  const REGS = [
+    { k: 'E1', ro: 'Energie termică', units: ['kWh', 'MWh', 'GJ'], n: 8, main: true },
+    { k: 'V1', ro: 'Volum', units: ['m³'], n: 8, main: true },
+    { k: 'V2', ro: 'Volum 2', units: ['m³'], n: 8, main: true },
+    { k: 'E8', ro: 'm³ × t1 (tur)', units: ['m³·°C'], n: 8, main: true },
+    { k: 'E9', ro: 'm³ × t2 (retur)', units: ['m³·°C'], n: 8, main: true },
+    { k: 'E2', ro: 'Energie de răcire', units: ['kWh', 'MWh', 'GJ'], n: 8 },
+    { k: 'E3', ro: 'Energie E3', units: ['kWh', 'MWh', 'GJ'], n: 8 },
+    { k: 'HR', ro: 'Ore de funcționare', units: ['h'] },
+    { k: 'INFO', ro: 'Cod info', units: [''] },
+    { k: 't1', ro: 'Temperatură tur', units: ['°C'] },
+    { k: 't2', ro: 'Temperatură retur', units: ['°C'] },
+    { k: 't1-t2', ro: 'Diferență de temperatură', units: ['K'] },
+    { k: 'Q', ro: 'Debit', units: ['l/h', 'm³/h'] },
+    { k: 'P', ro: 'Putere', units: ['kW', 'MW'] },
+    { k: 'qp', ro: 'Debit nominal', units: ['m³/h'] },
+    { k: 'P/l', ro: 'Impulsuri pe litru', units: [''] },
+    { k: 'TA2', ro: 'Registru tarifar TA2', units: [''] },
+    { k: 'TA3', ro: 'Registru tarifar TA3', units: [''] },
+    { k: 'A1', ro: 'Registru A1', units: [''] },
+    { k: 'A2', ro: 'Registru A2', units: [''] },
+    { k: '*', ro: 'Alt registru', units: [''] },
+  ];
+  const regOf = (k) => REGS.find((r) => r.k === k) || REGS[REGS.length - 1];
+  const SRC_RO = { camera: 'citit cu camera', edited: 'corectat de montor', manual: 'introdus de montor' };
+
+  function readings() {
+    const meter = S ? S.session.meterSerial : null;
+    if (!Array.isArray(ui.readings) || ui.readingsMeter !== meter) {
+      ui.readings = REGS.filter((r) => r.main).map((r) => ({ k: r.k, unit: r.units[0], value: '' }));
+      ui.readingsMeter = meter;
+    }
+    return ui.readings;
+  }
+  const filledReadings = () => readings().filter((r) => r.value || r.img);
+  const saveReadings = () => store.set('ui', ui);
+  const cleanValue = (v) => String(v || '').replace(/,/g, '.').replace(/[^0-9.\-]/g, '').slice(0, 16);
+
+  function renderReadings() {
+    const list = $('readings-list');
+    list.replaceChildren();
+    readings().forEach((r, i) => {
+      const reg = regOf(r.k), li = document.createElement('li');
+      const head = document.createElement('div'); head.className = 'rk';
+      if (r.k === '*') {
+        const name = document.createElement('input');
+        name.placeholder = T('Numele registrului'); name.value = r.label || ''; name.maxLength = 30;
+        name.onchange = () => { r.label = name.value.trim(); saveReadings(); };
+        head.append(name);
+      } else {
+        const small = document.createElement('small');
+        small.textContent = T(reg.ro);
+        head.append(r.k + ' ', small);
+      }
+      li.append(head);
+      if (!reg.main) {
+        const rm = document.createElement('button');
+        rm.type = 'button'; rm.className = 'rm'; rm.textContent = '✕'; rm.setAttribute('aria-label', T('Șterge'));
+        rm.onclick = () => { readings().splice(i, 1); saveReadings(); renderReadings(); };
+        li.append(rm);
+      } else li.append(document.createElement('span'));
+      const row = document.createElement('div'); row.className = 'rv';
+      const val = document.createElement('input');
+      val.inputMode = 'decimal'; val.autocomplete = 'off'; val.value = r.value || ''; val.placeholder = '–';
+      val.setAttribute('aria-label', r.k);
+      val.onchange = () => {
+        r.value = cleanValue(val.value); val.value = r.value;
+        r.src = r.read ? (r.value === r.read ? 'camera' : 'edited') : (r.value ? 'manual' : null);
+        r.ts = r.ts || new Date().toISOString();
+        saveReadings(); renderReadings();
+      };
+      row.append(val);
+      if (reg.units.length > 1) {
+        const sel = document.createElement('select');
+        for (const u of reg.units) sel.add(new Option(u, u, false, u === r.unit));
+        sel.onchange = () => { r.unit = sel.value; saveReadings(); };
+        row.append(sel);
+      } else if (reg.units[0]) {
+        const u = document.createElement('span'); u.className = 'unit'; u.textContent = reg.units[0]; row.append(u);
+      }
+      const cam = document.createElement('button');
+      cam.type = 'button'; cam.className = 'cam primary'; cam.textContent = '📷';
+      cam.setAttribute('aria-label', T('Citește {0} cu camera', r.k));
+      cam.onclick = () => lcdReader.open(r);
+      row.append(cam);
+      li.append(row);
+      if (r.img || r.src) {
+        const st = document.createElement('div');
+        st.className = 'rs' + (r.src === 'edited' ? ' edited' : '');
+        if (r.img) { const im = document.createElement('img'); im.src = r.img; im.alt = ''; st.append(im); }
+        const t = document.createElement('span');
+        t.textContent = r.src === 'edited' ? T('corectat de montor; camera a citit {0}', r.read) : r.src ? T(SRC_RO[r.src]) : T('doar poza');
+        st.append(t);
+        li.append(st);
+      }
+      list.append(li);
+    });
+    const add = $('readings-add');
+    add.replaceChildren(new Option(T('+ Adaugă alt registru'), ''));
+    for (const reg of REGS.filter((q) => !q.main)) add.add(new Option(reg.k === '*' ? T(reg.ro) : `${reg.k} – ${T(reg.ro)}`, reg.k));
+  }
+  $('readings-add').onchange = (ev) => {
+    const k = ev.target.value;
+    if (!k) return;
+    const reg = regOf(k);
+    readings().push({ k, unit: reg.units[0], value: '' });
+    saveReadings(); renderReadings();
+    lcdReader.open(readings()[readings().length - 1]);
+  };
+
+  // Live camera: the display is held inside a 2:1 frame; each frame is read and a
+  // value is taken once the same text has come back several times.
+  const lcdReader = (() => {
+    let stream = null, timer = null, target = null, voter = null, startedAt = 0, best = null, seenAt = 0;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const digitCount = (t) => (t.match(/\d/g) || []).length;
+
+    function frameRegion(v) {
+      const vw = v.videoWidth, vh = v.videoHeight, vr = v.getBoundingClientRect(), fr = $('lcd-frame').getBoundingClientRect();
+      const k = Math.max(vr.width / vw, vr.height / vh);
+      const dx = (vr.width - vw * k) / 2, dy = (vr.height - vh * k) / 2;
+      let sx = (fr.left - vr.left - dx) / k, sy = (fr.top - vr.top - dy) / k, sw = fr.width / k, sh = fr.height / k;
+      sx = Math.max(0, sx); sy = Math.max(0, sy); sw = Math.min(vw - sx, sw); sh = Math.min(vh - sy, sh);
+      return [sx, sy, sw, sh];
+    }
+    function snapshot(src, region) {
+      const c = document.createElement('canvas'), [sx, sy, sw, sh] = region;
+      const k = Math.min(1, 420 / sw);
+      c.width = Math.round(sw * k); c.height = Math.round(sh * k);
+      c.getContext('2d').drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      return c.toDataURL('image/jpeg', 0.72);
+    }
+    function grab(src, region) {
+      const [sx, sy, sw, sh] = region, k = Math.min(1, 720 / sw);
+      canvas.width = Math.round(sw * k); canvas.height = Math.round(sh * k);
+      ctx.drawImage(src, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+      return window.LinkIQLcd.readLcd(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    }
+    function setUse() {
+      $('lcd-use').textContent = best ? T('Folosește {0}', best.text) : T('Păstrează poza, scriu eu valoarea');
+    }
+    async function open(r) {
+      target = r; best = null; seenAt = 0;
+      const reg = regOf(r.k);
+      voter = new window.LinkIQLcd.Voter(3, 10);
+      $('lcd-title').textContent = `${r.k === '*' ? (r.label || T('Alt registru')) : r.k} · ${T(reg.ro)}`;
+      $('lcd-tip').textContent = T('Arată {0} pe contor și ține tot afișajul în chenar.', r.k === '*' ? T('registrul') : r.k);
+      $('lcd-live').textContent = '…';
+      $('lcd-frame').className = 'lcd-frame';
+      $('lcd-error').hidden = true; $('lcd-torch').hidden = true;
+      setUse();
+      $('lcd-reader').hidden = false;
+      startedAt = Date.now();
+      try {
+        if (!window.isSecureContext || !navigator.mediaDevices) throw new Error(T('Camera live cere o adresă sigură (HTTPS sau localhost). Apasă „Fotografiază”.'));
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+        const v = $('lcd-video');
+        v.srcObject = stream;
+        await v.play();
+        const track = stream.getVideoTracks()[0], caps = track.getCapabilities ? track.getCapabilities() : {};
+        if (caps.torch) $('lcd-torch').hidden = false;
+        if (caps.focusMode && caps.focusMode.includes('continuous')) track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+        loop();
+      } catch (e) {
+        showError('lcd-error', e.name === 'NotAllowedError' ? T('Permite accesul la cameră din setările browserului.') : e.message);
+      }
+    }
+    function loop() {
+      if (!stream) return;
+      const v = $('lcd-video');
+      if (v.readyState >= 2 && v.videoWidth) {
+        try {
+          const region = frameRegion(v), res = grab(v, region);
+          const want = regOf(target.k).n;
+          const ok = res.text && res.text.indexOf('?') < 0;
+          if (res.kind !== 'none') seenAt = Date.now();
+          $('lcd-frame').className = 'lcd-frame' + (ok ? ' seen' : '');
+          $('lcd-live').textContent = res.text || '…';
+          const vote = voter.add(ok ? res : null);
+          if (ok && vote.text === res.text) { best = { text: res.text, img: snapshot(v, region) }; setUse(); }
+          // The main registers show 8 digits; another count is taken only when it is very steady.
+          const need = !want || !vote.text || vote.text === '---' || digitCount(vote.text) === want ? 3 : 6;
+          if (vote.count >= need && best && best.text === vote.text) { finish(best, 'camera'); return; }
+          if (!seenAt && Date.now() - startedAt > 4000) $('lcd-tip').textContent = T('Nu văd cifre. Apropie telefonul; dacă lumina se reflectă în geam, înclină-l puțin sau stinge lanterna.');
+          else if (seenAt && !best && Date.now() - startedAt > 6000) $('lcd-tip').textContent = T('Cifrele nu se citesc sigur. Ține telefonul nemișcat, drept în fața afișajului, fără reflexii.');
+        } catch { /* next frame */ }
+      }
+      timer = setTimeout(loop, 140);
+    }
+    function finish(res, how) {
+      const r = target;
+      close();
+      if (res && res.text) { r.value = cleanValue(res.text); r.read = r.value; r.src = how; }
+      else if (!r.value) r.src = null;
+      if (res && res.img) r.img = res.img;
+      r.ts = new Date().toISOString();
+      saveReadings(); renderReadings();
+      if (navigator.vibrate && res && res.text) navigator.vibrate(80);
+    }
+    function close() {
+      clearTimeout(timer);
+      if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+      $('lcd-video').srcObject = null;
+      $('lcd-reader').hidden = true;
+    }
+    $('lcd-close').onclick = close;
+    $('lcd-use').onclick = () => {
+      if (best) { finish(best, 'camera'); return; }
+      const v = $('lcd-video');
+      finish(v.videoWidth ? { text: '', img: snapshot(v, frameRegion(v)) } : null, 'manual');
+    };
+    $('lcd-torch').onclick = async () => {
+      if (!stream) return;
+      const track = stream.getVideoTracks()[0], on = !track.getSettings().torch;
+      try { await track.applyConstraints({ advanced: [{ torch: on }] }); } catch { /* not supported after all */ }
+    };
+    // Photo from the phone's camera app: try display-sized windows around the centre.
+    $('lcd-photo-btn').onclick = () => $('lcd-photo').click();
+    $('lcd-photo').onchange = async (ev) => {
+      const file = ev.target.files[0];
+      ev.target.value = '';
+      if (!file || !target) return;
+      try {
+        const bmp = await createImageBitmap(file), W = bmp.width, H = bmp.height;
+        let found = null;
+        for (const f of [0.55, 0.7, 0.85, 0.4, 1]) {
+          for (const cy of [0.45, 0.35, 0.55]) {
+            const sw = W * f, sh = Math.min(H, sw / 2), region = [(W - sw) / 2, Math.max(0, Math.min(H - sh, H * cy - sh / 2)), sw, sh];
+            const res = grab(bmp, region);
+            const score = res.text && res.text.indexOf('?') < 0 ? res.quality + digitCount(res.text) / 10 : 0;
+            if (score > (found ? found.score : 0)) found = { score, text: res.text, img: snapshot(bmp, region) };
+          }
+        }
+        if (found) finish(found, 'camera');
+        else {
+          const sw = W * 0.7, sh = Math.min(H, sw / 2);
+          finish({ text: '', img: snapshot(bmp, [(W - sw) / 2, (H - sh) / 2, sw, sh]) }, 'manual');
+          showError('align-error', T('Nu am putut citi cifrele din poză. Poza este păstrată; scrie valoarea de mână.'));
+        }
+      } catch (e) { showError('lcd-error', T('Nu am putut citi fotografia: {0}', e.message)); }
+    };
+    return { open, close };
+  })();
+
+  // Asked once per session before a report is saved, while no value has been entered.
+  function askReadings(then) {
+    if (ui.readingsAsked || filledReadings().length) { then(); return; }
+    ui.readingsAsked = true; saveReadings();
+    $('readings-ask').hidden = false;
+    $('ask-no').onclick = () => { $('readings-ask').hidden = true; then(); };
+    $('ask-yes').onclick = () => {
+      $('readings-ask').hidden = true;
+      const card = $('readings-card');
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+      const first = readings().find((r) => !r.value);
+      if (first) lcdReader.open(first);
+    };
+  }
+
+  /** Report section with the readings and the picture of the display beside each value. */
+  async function drawReadings(x, P, W, y, section, font, text) {
+    const list = filledReadings();
+    if (!list.length) return y;
+    y = section(T('Citirile contorului'));
+    for (const r of list) {
+      const reg = regOf(r.k), top = y + 18;
+      let img = null;
+      if (r.img) { try { img = new Image(); img.src = r.img; await img.decode(); } catch { img = null; } }
+      const ih = 104, iw = img ? Math.round(ih * img.width / img.height) : 0;
+      font(800, 28); text(r.k === '*' ? (r.label || T('Alt registru')) : r.k, P, top + 34);
+      font(500, 20); text(r.k === '*' ? '' : T(reg.ro), P, top + 62, INK.gray);
+      font(800, 40); x.fillStyle = r.src === 'edited' ? INK.amber : INK.ink; x.textAlign = 'left';
+      x.fillText(r.value ? `${r.value} ${r.unit || ''}`.trim() : '–', P + 250, top + 44, W - 2 * P - 250 - (img ? iw + 16 : 0));
+      font(500, 20);
+      const how = r.src === 'edited' ? T('corectat de montor; camera a citit {0}', r.read) : r.src ? T(SRC_RO[r.src]) : T('doar poza');
+      const room = W - 2 * P - 250 - (img ? iw + 16 : 0);
+      x.fillStyle = r.src === 'edited' ? INK.amber : INK.gray; x.textAlign = 'left';
+      x.fillText(how, P + 250, top + 76, room);
+      if (r.ts) x.fillText(fmtTime(r.ts), P + 250, top + 102, room);
+      if (img) {
+        x.drawImage(img, W - P - iw, top, iw, ih);
+        x.strokeStyle = INK.light; x.lineWidth = 2; x.strokeRect(W - P - iw, top, iw, ih);
+      }
+      y = top + ih + 6;
+    }
+    font(500, 19);
+    text(T(list.some((r) => r.img) ? 'Valorile vin de pe afișajul contorului; montorul le-a verificat. Poza afișajului e alături.' : 'Valorile vin de pe afișajul contorului; montorul le-a verificat.'), P, y + 30, INK.gray);
+    return y + 40;
+  }
 
   // ---------------------------------------------------------------- feedback
   // The app has no server of its own, so feedback leaves through the phone's share

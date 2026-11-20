@@ -8,7 +8,7 @@ Aplicație web instalabilă pe telefon (PWA) care ghidează instalatorul la orie
 unui contor de căldură Kamstrup, pe baza măsurătorilor radio reale. Înlocuiește prototipul
 Power Apps, fără nicio licență plătită. Cod deschis, licență MIT.
 
-Stadiu: **v0.2**. Fluxul complet rulează cap-coadă pe simulator și pe răspunsuri Kamstrup
+Stadiu: **v0.18** (documentul complet și actualizat este cel danez: ../../README.md). Fluxul complet rulează cap-coadă pe simulator și pe răspunsuri Kamstrup
 interceptate în browser. Un baleiaj complet pe un contor real încă nu a fost făcut.
 
 ## Două moduri de rulare
@@ -67,7 +67,7 @@ manual ulterior nu este suprascris.
 - **Exportă măsurătorile (CSV)** – toate sesiunile de pe dispozitiv, pentru analiză.
 - **Mod demonstrație** – simulator, pentru instruire fără contor.
 
-Teste: `node --test tests-js/engine.test.js`
+Teste: `node --test tests-js/engine.test.js tests-js/lcd.test.js` (motorul și citirea afișajului)
 
 ## Pornire cu server central
 
@@ -119,6 +119,7 @@ Teste: `pip install -r requirements-dev.txt && pytest`. Cu Docker: `docker compo
 | Poziția fiecărui contor se ține minte pe dispozitiv și se refolosește la verificarea fără CALL | da |
 | Date de montaj obligatorii la salvare, alese din butoane mari fără valori implicite: nivelul contorului, antenă internă/externă, locul antenei; apar în raport, pe fotografie și în exportul CSV | da |
 | Poziția contorului se poate indica sau corecta pe hartă și după măsurătoare, inclusiv la verificarea fără CALL | da |
+| Citirile contorului în raport (opțional): E1, V1, V2, E8, E9 și alte registre citite cu camera de pe afișaj, corectabile, cu poza afișajului lângă valoare | da (testat pe poze cu un MULTICAL 603, încă nu pe teren) |
 | Citirea seriei tipărite cu camera (OCR) | **nu** |
 | Autentificare Microsoft Entra ID | **nu** – cuplare prin cod personal |
 | Coadă offline pentru acțiuni | **nu** – sesiunea se reia după pierderea conexiunii, dar acțiunile nu se pun în coadă |
@@ -168,6 +169,21 @@ instalatorul o alege pe cea corectă. Conținutul exact al QR-ului Kamstrup nu e
 după o scanare reală, regula se poate fixa ca seria să fie aleasă automat.
 
 Citirea seriei tipărite (OCR) nu este implementată.
+
+## Citirile contorului în raport (opțional)
+
+La *Raport* sunt câmpurile **E1, V1, V2, E8 și E9**; alte registre se adaugă din *+ Adaugă alt registru*.
+Înainte de primul raport, aplicația întreabă o dată dacă vrei citirile. Nu e obligatoriu.
+
+1. Afișează registrul pe contor (de ex. E1) și apasă camera de lângă E1.
+2. Ține tot afișajul în chenar. Când aceeași valoare a fost citită de câteva ori la rând, telefonul
+   vibrează și valoarea apare în câmp, cu o poză mică a afișajului.
+3. Verifică cifrele și corectează-le în câmp dacă e nevoie.
+
+Citirea se face pe telefon, fără internet (`frontend/lcd.js`), special pentru afișajul cu 7 segmente
+al MULTICAL 603: prag local contra umbrei și reflexiilor, îndreaptă imaginea înclinată, găsește
+punctul zecimal și votează pe mai multe cadre. În raport apar valoarea, unitatea, sursa (citit cu
+camera / corectat de montor, cu citirea inițială / introdus de montor), ora și poza afișajului.
 
 ## Deschiderea cazului în VVS-dialog (KMD)
 
@@ -231,7 +247,8 @@ frontend/engine.js        toată logica de măsurare, pe dispozitiv (modul făr�
 frontend/app.js           interfața; aceeași în ambele moduri
 frontend/i18n.js          textele în daneză (sursa este în română)
 frontend/                 PWA (HTML + CSS + JavaScript simplu, fără pas de build)
-tests-js/                 18 teste pentru engine.js
+frontend/lcd.js           citirea afișajului cu 7 segmente cu camera
+tests-js/                 21 teste pentru engine.js, 17 pentru lcd.js
 backend/app/              server central opțional: aceleași reguli, în Python
 backend/scripts/          import registru, coduri de cuplare, verificare Kamstrup
 backend/tests/            18 teste

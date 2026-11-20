@@ -1,0 +1,100 @@
+[
+ {
+  "file": "01.gray.z",
+  "w": 360,
+  "h": 192,
+  "expect": "0000000.0",
+  "screen": "E1 kWh"
+ },
+ {
+  "file": "02.gray.z",
+  "w": 360,
+  "h": 192,
+  "expect": "00000.000",
+  "screen": "V1 m3"
+ },
+ {
+  "file": "03.gray.z",
+  "w": 360,
+  "h": 194,
+  "expect": "0057500",
+  "screen": "hour counter"
+ },
+ {
+  "file": "04.gray.z",
+  "w": 360,
+  "h": 190,
+  "expect": "00000000",
+  "screen": "E8"
+ },
+ {
+  "file": "05.gray.z",
+  "w": 360,
+  "h": 194,
+  "expect": "00000000",
+  "screen": "E9"
+ },
+ {
+  "file": "06.gray.z",
+  "w": 360,
+  "h": 198,
+  "expect": "---",
+  "screen": "t1 no sensor"
+ },
+ {
+  "file": "07.gray.z",
+  "w": 360,
+  "h": 190,
+  "expect": "---",
+  "screen": "t2 no sensor"
+ },
+ {
+  "file": "08.gray.z",
+  "w": 360,
+  "h": 190,
+  "expect": "---",
+  "screen": "t1-t2"
+ },
+ {
+  "file": "09.gray.z",
+  "w": 360,
+  "h": 192,
+  "expect": "0",
+  "screen": "flow"
+ },
+ {
+  "file": "10.gray.z",
+  "w": 360,
+  "h": 190,
+  "expect": "0",
+  "screen": "flow 2"
+ },
+ {
+  "file": "11.gray.z",
+  "w": 360,
+  "h": 194,
+  "expect": "---",
+  "screen": "power"
+ },
+ {
+  "file": "12.gray.z",
+  "w": 360,
+  "h": 193,
+  "expect": "01111100",
+  "screen": "info code"
+ },
+ {
+  "file": "13.gray.z",
+  "w": 360,
+  "h": 191,
+  "expect": "1.5",
+  "screen": "qp"
+ },
+ {
+  "file": "14.gray.z",
+  "w": 360,
+  "h": 198,
+  "expect": "100.00",
+  "screen": "pulses per litre"
+ }
+]
