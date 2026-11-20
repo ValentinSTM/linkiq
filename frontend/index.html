@@ -131,7 +131,10 @@
         <h3>Citirile contorului <span class="sub">(opțional)</span></h3>
         <p class="hint">Apasă camera de lângă registru și ține afișajul în chenar. Verifică cifrele: le poți corecta.</p>
         <ul id="readings-list" class="readings"></ul>
-        <select id="readings-add" aria-label="Adaugă alt registru"></select>
+        <details id="readings-more"><summary id="readings-more-sum">Alte registre</summary>
+          <p class="hint">Bifează registrele pe care vrei să le adaugi.</p>
+          <div id="readings-extra" class="checks"></div>
+        </details>
       </div>
       <button type="button" id="report-pdf-btn" class="secondary">Descarcă raportul (PDF)</button>
       <button type="button" id="report-btn" class="secondary">Descarcă raportul (imagine)</button>
@@ -225,7 +228,7 @@
 <div id="readings-ask" hidden>
   <div class="card sheet">
     <h2>Adaugi citirile contorului în raport?</h2>
-    <p class="hint">E1, V1, V2, E8 și E9 se citesc cu camera, direct de pe afișaj. Nu e obligatoriu.</p>
+    <p class="hint">E1, V1, orele de funcționare, E8 și E9 se citesc cu camera, direct de pe afișaj. Nu e obligatoriu.</p>
     <button type="button" id="ask-yes" class="primary">Da, adaug citirile</button>
     <button type="button" id="ask-no" class="secondary">Nu, salvează raportul</button>
   </div>

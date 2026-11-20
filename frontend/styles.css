@@ -215,3 +215,7 @@ ul.readings .rs.edited { color: #b26a00; font-weight: 700; }
 .lcd-row button { flex: 1; }
 .lcd-row button[hidden] { display: none; }
 #lcd-use { min-height: 56px; }
+#readings-more summary { font-weight: 700; min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+.checks { display: grid; grid-template-columns: 1fr; gap: 2px; }
+.checks label { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 17px; }
+.checks input[type=checkbox] { width: 26px; height: 26px; min-height: 0; flex: none; }

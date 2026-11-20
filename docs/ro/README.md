@@ -8,7 +8,7 @@ Aplicație web instalabilă pe telefon (PWA) care ghidează instalatorul la orie
 unui contor de căldură Kamstrup, pe baza măsurătorilor radio reale. Înlocuiește prototipul
 Power Apps, fără nicio licență plătită. Cod deschis, licență MIT.
 
-Stadiu: **v0.18** (documentul complet și actualizat este cel danez: ../../README.md). Fluxul complet rulează cap-coadă pe simulator și pe răspunsuri Kamstrup
+Stadiu: **v0.19** (documentul complet și actualizat este cel danez: ../../README.md). Fluxul complet rulează cap-coadă pe simulator și pe răspunsuri Kamstrup
 interceptate în browser. Un baleiaj complet pe un contor real încă nu a fost făcut.
 
 ## Două moduri de rulare
@@ -119,7 +119,7 @@ Teste: `pip install -r requirements-dev.txt && pytest`. Cu Docker: `docker compo
 | Poziția fiecărui contor se ține minte pe dispozitiv și se refolosește la verificarea fără CALL | da |
 | Date de montaj obligatorii la salvare, alese din butoane mari fără valori implicite: nivelul contorului, antenă internă/externă, locul antenei; apar în raport, pe fotografie și în exportul CSV | da |
 | Poziția contorului se poate indica sau corecta pe hartă și după măsurătoare, inclusiv la verificarea fără CALL | da |
-| Citirile contorului în raport (opțional): E1, V1, V2, E8, E9 și alte registre citite cu camera de pe afișaj, corectabile, cu poza afișajului lângă valoare | da (testat pe poze cu un MULTICAL 603, încă nu pe teren) |
+| Citirile contorului în raport (opțional): E1, V1, ore de funcționare, E8, E9 și alte registre citite cu camera de pe afișaj, corectabile, cu poza afișajului lângă valoare | da (testat pe poze cu un MULTICAL 603, încă nu pe teren) |
 | Citirea seriei tipărite cu camera (OCR) | **nu** |
 | Autentificare Microsoft Entra ID | **nu** – cuplare prin cod personal |
 | Coadă offline pentru acțiuni | **nu** – sesiunea se reia după pierderea conexiunii, dar acțiunile nu se pun în coadă |
@@ -172,7 +172,9 @@ Citirea seriei tipărite (OCR) nu este implementată.
 
 ## Citirile contorului în raport (opțional)
 
-La *Raport* sunt câmpurile **E1, V1, V2, E8 și E9**; alte registre se adaugă din *+ Adaugă alt registru*.
+La *Raport* sunt câmpurile fixe **E1, V1, ore de funcționare, E8 și E9**; alte registre (V2, cod info,
+debit…) se bifează la *Alte registre*, mai multe deodată. Concentratoarele care au auzit contorul ultima
+dată acum peste 9 ore nu intră în raport; raportul spune câte au fost omise.
 Înainte de primul raport, aplicația întreabă o dată dacă vrei citirile. Nu e obligatoriu.
 
 1. Afișează registrul pe contor (de ex. E1) și apasă camera de lângă E1.

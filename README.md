@@ -6,7 +6,7 @@ LinkIQ er en webapp, der kan installeres på telefonen (PWA). Den hjælper mont�
 antennen ind på en Kamstrup-varmemåler ud fra rigtige radiomålinger. Appen erstatter
 Power Apps-prototypen og kræver ingen betalte licenser. Åben kildekode, MIT-licens.
 
-Status: **v0.18**. Hele forløbet kører på simulatoren og på opfangede svar fra Kamstrup i browseren.
+Status: **v0.19**. Hele forløbet kører på simulatoren og på opfangede svar fra Kamstrup i browseren.
 En hurtig bekræftelse er gennemført på en rigtig måler. En fuld rotation på en rigtig måler mangler.
 
 Kort vejledning til montøren: [docs/VEJLEDNING_DA.md](docs/VEJLEDNING_DA.md).
@@ -125,7 +125,7 @@ Test: `pip install -r requirements-dev.txt && pytest`. Med Docker: `docker compo
 | Målerens position kan angives eller rettes på kortet efter målingen, også ved kontrol uden CALL | ja |
 | Feedback fra appen via telefonens deling (Teams, mail) eller udklipsholder | ja |
 | Åbn målerens sag i VVS-dialog (knap + bogmærket `li`) | ja |
-| Målerstande i rapporten (valgfrit): E1, V1, V2, E8, E9 og andre registre aflæses med kameraet fra målerens display, kan rettes, og billedet af displayet står ved værdien | ja (testet på billeder af en MULTICAL 603, endnu ikke i felten) |
+| Målerstande i rapporten (valgfrit): E1, V1, driftstimer, E8, E9 og andre registre aflæses med kameraet fra målerens display, kan rettes, og billedet af displayet står ved værdien | ja (testet på billeder af en MULTICAL 603, endnu ikke i felten) |
 | Aflæsning af det trykte målernummer med kameraet (OCR) | **nej** |
 | Login med Microsoft Entra ID i appen | **nej**: adgangen styres af hostingen (Azure) eller af parringskode (server) |
 | Offline-kø til handlinger | **nej**: sessionen genoptages efter tabt forbindelse, men handlinger sættes ikke i kø |
@@ -178,8 +178,9 @@ Aflæsning af det trykte nummer (OCR) er ikke implementeret.
 
 ## Målerstande i rapporten (valgfrit)
 
-Under *Rapport* står felterne **E1, V1, V2, E8 og E9**. Andre registre (fx driftstimer, infokode,
-flow, temperaturer) tilføjes med *+ Tilføj andet register*. Inden den første rapport gemmes, spørger
+Under *Rapport* står de faste felter **E1, V1, driftstimer, E8 og E9**. Andre registre (fx V2,
+infokode, flow, temperaturer) vælges under *Andre registre*: sæt flueben ved alle dem, du vil have
+med, på én gang. Inden den første rapport gemmes, spørger
 appen én gang, om målerstandene skal med. Svaret er frivilligt.
 
 Sådan læses en værdi:
@@ -194,6 +195,10 @@ lavet til 7-segment-displayet på MULTICAL 603: lokal tærskel mod skygge og gen
 telefon op, finder decimalpunktet og stemmer over flere billeder. Hovedregistrene viser 8 cifre; et
 andet antal accepteres kun, når det er meget stabilt. Kan intet læses, gemmes billedet, og montøren
 skriver værdien selv. Knapperne *Lygte* og *Tag billede* hjælper i mørke rum og på svage kameraer.
+
+Koncentratorer, der sidst hørte måleren for mere end 9 timer siden, kommer ikke med i rapporten
+(hverken i listen eller på kortet). De kan ikke bære timedata, og de kan stamme fra, at måleren var
+tændt under transporten. Rapporten skriver, hvor mange der er udeladt.
 
 I rapporten står hver værdi med enhed, kilden (*aflæst med kameraet*, *rettet af montøren* med den
 oprindelige aflæsning, eller *indtastet af montøren*), tidspunktet og billedet af displayet.
