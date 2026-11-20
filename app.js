@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.18';
+  const VERSION = '0.19';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -1378,7 +1378,15 @@
     return c;
   }
 
+  // Concentrators that last heard the meter more than this long ago are left out of the
+  // report: they cannot carry hourly data, and they may stem from the meter being switched
+  // on before installation (heard on the road or in the van).
+  const REPORT_MAX_AGE_H = 9;
+  const isStale = (q) => q.ageMin !== null && q.ageMin !== undefined && q.ageMin > REPORT_MAX_AGE_H * 60;
+
   async function buildReport(s) {
+    const staleCount = s.receivers.filter(isStale).length;
+    const shown = s.receivers.filter((q) => !isStale(q));
     const W = 1080, P = 56, big = document.createElement('canvas');
     big.width = W; big.height = 4400;
     const x = big.getContext('2d');
@@ -1444,7 +1452,7 @@
 
     y = await drawReadings(x, P, W, y, (t) => { section(t); return y; }, font, text);
 
-    const mapCanvas = await reportMap(s, W - 2 * P, 620);
+    const mapCanvas = await reportMap({ ...s, receivers: shown }, W - 2 * P, 620);
     if (mapCanvas) {
       section(T('Hartă'));
       y += 14;
@@ -1498,14 +1506,14 @@
 
     section(T('Receptoare'));
     const where = (q) => [q.siteName, q.address].filter(Boolean).join(', ');
-    const p1 = s.receivers.find((q) => q.relation === 'PRIMARY');
+    const p1 = shown.find((q) => q.relation === 'PRIMARY');
     row(T('Receptor principal'), p1 ? [p1.serial, dbm(p1.bestRssi), where(p1)].filter(Boolean).join(' · ') : '–');
     const b = s.backup;
     const occasional = b && b.age && b.age !== 'CURRENT';
     row(T('Rezervă'), b ? [b.serial, dbm(b.bestRssi), T(RELATION_RO[b.redundancy] || 'site necunoscut'), b.siteName,
       occasional ? T('doar ocazional – nu contează ca redundanță') : null].filter(Boolean).join(' · ') : T('niciuna'), b && !occasional ? INK.ink : INK.gray);
     y += 16;
-    for (const q of s.receivers.slice(0, 10)) {
+    for (const q of shown.slice(0, 10)) {
       y += 36; font(500, 23);
       const old = q.age === 'OLD', ageCol = q.age === 'CURRENT' ? INK.green : q.age === 'OCCASIONAL' ? INK.amber : INK.gray;
       text(q.serial, P, y, old ? INK.gray : INK.ink); text(dbm(q.bestRssi), P + 250, y, old ? INK.gray : INK.ink, 'right');
@@ -1516,7 +1524,11 @@
       font(500, 21);
       text((wrap(where(q) + (q.distanceM !== null ? ' · ' + meters(q.distanceM) : ''), W - 2 * P - 660)[0] || ''), P + 660, y, INK.gray);
     }
-    if (s.receivers.length > 10) { y += 34; font(500, 20); text(T('… și încă {0}', s.receivers.length - 10), P, y, INK.gray); }
+    if (shown.length > 10) { y += 34; font(500, 20); text(T('… și încă {0}', shown.length - 10), P, y, INK.gray); }
+    if (staleCount) {
+      y += 34; font(500, 20);
+      text(T(staleCount === 1 ? '1 concentrator văzut ultima dată acum peste {1} ore nu este inclus în raport.' : '{0} concentratoare văzute ultima dată acum peste {1} ore nu sunt incluse în raport.', staleCount, REPORT_MAX_AGE_H), P, y, INK.gray);
+    }
     y += 18; font(500, 19);
     for (const l of wrap(limitsText(isCheck), W - 2 * P)) { y += 28; text(l, P, y, INK.gray); }
     if (s.session.note) {
@@ -1745,12 +1757,12 @@
   const REGS = [
     { k: 'E1', ro: 'Energie termică', units: ['kWh', 'MWh', 'GJ'], n: 8, main: true },
     { k: 'V1', ro: 'Volum', units: ['m³'], n: 8, main: true },
-    { k: 'V2', ro: 'Volum 2', units: ['m³'], n: 8, main: true },
+    { k: 'HR', ro: 'Ore de funcționare', units: ['h'], main: true },
     { k: 'E8', ro: 'm³ × t1 (tur)', units: ['m³·°C'], n: 8, main: true },
     { k: 'E9', ro: 'm³ × t2 (retur)', units: ['m³·°C'], n: 8, main: true },
+    { k: 'V2', ro: 'Volum 2', units: ['m³'], n: 8 },
     { k: 'E2', ro: 'Energie de răcire', units: ['kWh', 'MWh', 'GJ'], n: 8 },
     { k: 'E3', ro: 'Energie E3', units: ['kWh', 'MWh', 'GJ'], n: 8 },
-    { k: 'HR', ro: 'Ore de funcționare', units: ['h'] },
     { k: 'INFO', ro: 'Cod info', units: [''] },
     { k: 't1', ro: 'Temperatură tur', units: ['°C'] },
     { k: 't2', ro: 'Temperatură retur', units: ['°C'] },
@@ -1771,9 +1783,13 @@
   function readings() {
     const meter = S ? S.session.meterSerial : null;
     if (!Array.isArray(ui.readings) || ui.readingsMeter !== meter) {
-      ui.readings = REGS.filter((r) => r.main).map((r) => ({ k: r.k, unit: r.units[0], value: '' }));
+      ui.readings = [];
       ui.readingsMeter = meter;
     }
+    // the permanent registers always come first, in their fixed order
+    const mains = REGS.filter((r) => r.main).map((reg) => ui.readings.find((r) => r.k === reg.k) || { k: reg.k, unit: reg.units[0], value: '' });
+    const extras = ui.readings.filter((r) => !regOf(r.k).main);
+    ui.readings = mains.concat(extras);
     return ui.readings;
   }
   const filledReadings = () => readings().filter((r) => r.value || r.img);
@@ -1800,7 +1816,10 @@
       if (!reg.main) {
         const rm = document.createElement('button');
         rm.type = 'button'; rm.className = 'rm'; rm.textContent = '✕'; rm.setAttribute('aria-label', T('Șterge'));
-        rm.onclick = () => { readings().splice(i, 1); saveReadings(); renderReadings(); };
+        rm.onclick = () => {
+          if ((r.value || r.img) && !confirm(T('Ștergi citirea {0} deja introdusă?', r.k === '*' ? (r.label || T('Alt registru')) : r.k))) return;
+          readings().splice(i, 1); saveReadings(); renderReadings();
+        };
         li.append(rm);
       } else li.append(document.createElement('span'));
       const row = document.createElement('div'); row.className = 'rv';
@@ -1839,18 +1858,33 @@
       }
       list.append(li);
     });
-    const add = $('readings-add');
-    add.replaceChildren(new Option(T('+ Adaugă alt registru'), ''));
-    for (const reg of REGS.filter((q) => !q.main)) add.add(new Option(reg.k === '*' ? T(reg.ro) : `${reg.k} – ${T(reg.ro)}`, reg.k));
+    // Optional registers: tick the ones wanted, several at a time.
+    const box = $('readings-extra');
+    box.replaceChildren();
+    const have = new Set(readings().map((r) => r.k));
+    for (const reg of REGS.filter((q) => !q.main)) {
+      const lab = document.createElement('label'), cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = have.has(reg.k);
+      cb.onchange = () => toggleExtra(reg, cb);
+      lab.append(cb, ' ' + (reg.k === '*' ? T(reg.ro) : `${reg.k} – ${T(reg.ro)}`));
+      box.append(lab);
+    }
+    const n = readings().filter((r) => !regOf(r.k).main).length;
+    $('readings-more-sum').textContent = n ? T('Alte registre ({0} alese)', n) : T('Alte registre');
   }
-  $('readings-add').onchange = (ev) => {
-    const k = ev.target.value;
-    if (!k) return;
-    const reg = regOf(k);
-    readings().push({ k, unit: reg.units[0], value: '' });
-    saveReadings(); renderReadings();
-    lcdReader.open(readings()[readings().length - 1]);
-  };
+  function toggleExtra(reg, cb) {
+    const list = readings();
+    if (cb.checked) list.push({ k: reg.k, unit: reg.units[0], value: '' });
+    else {
+      const has = list.filter((r) => r.k === reg.k && (r.value || r.img));
+      if (has.length && !confirm(T('Ștergi citirea {0} deja introdusă?', reg.k === '*' ? T(reg.ro) : reg.k))) { cb.checked = true; return; }
+      ui.readings = list.filter((r) => r.k !== reg.k);
+    }
+    saveReadings();
+    const open = $('readings-more').open;
+    renderReadings();
+    $('readings-more').open = open;
+  }
 
   // Live camera: the display is held inside a 2:1 frame; each frame is read and a
   // value is taken once the same text has come back several times.

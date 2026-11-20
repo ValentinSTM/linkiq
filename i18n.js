@@ -410,7 +410,13 @@ window.LINKIQ_DA = {
  "Lanternă": "Lygte",
  "Fotografiază": "Tag billede",
  "Adaugi citirile contorului în raport?": "Skal målerstandene med i rapporten?",
- "E1, V1, V2, E8 și E9 se citesc cu camera, direct de pe afișaj. Nu e obligatoriu.": "E1, V1, V2, E8 og E9 aflæses med kameraet direkte fra displayet. Det er ikke obligatorisk.",
+ "E1, V1, orele de funcționare, E8 și E9 se citesc cu camera, direct de pe afișaj. Nu e obligatoriu.": "E1, V1, driftstimer, E8 og E9 aflæses med kameraet direkte fra displayet. Det er ikke obligatorisk.",
+ "Alte registre": "Andre registre",
+ "Alte registre ({0} alese)": "Andre registre ({0} valgt)",
+ "Bifează registrele pe care vrei să le adaugi.": "Sæt flueben ved de registre, du vil tilføje.",
+ "Ștergi citirea {0} deja introdusă?": "Slet den indtastede aflæsning af {0}?",
+ "1 concentrator văzut ultima dată acum peste {1} ore nu este inclus în raport.": "1 koncentrator, der sidst hørte måleren for over {1} timer siden, er ikke med i rapporten.",
+ "{0} concentratoare văzute ultima dată acum peste {1} ore nu sunt incluse în raport.": "{0} koncentratorer, der sidst hørte måleren for over {1} timer siden, er ikke med i rapporten.",
  "Da, adaug citirile": "Ja, tilføj målerstande",
  "Nu, salvează raportul": "Nej, gem rapporten"
 };
