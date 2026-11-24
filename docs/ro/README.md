@@ -8,7 +8,7 @@ Aplicație web instalabilă pe telefon (PWA) care ghidează instalatorul la orie
 unui contor de căldură Kamstrup, pe baza măsurătorilor radio reale. Înlocuiește prototipul
 Power Apps, fără nicio licență plătită. Cod deschis, licență MIT.
 
-Stadiu: **v0.19** (documentul complet și actualizat este cel danez: ../../README.md). Fluxul complet rulează cap-coadă pe simulator și pe răspunsuri Kamstrup
+Stadiu: **v0.20** (documentul complet și actualizat este cel danez: ../../README.md). Fluxul complet rulează cap-coadă pe simulator și pe răspunsuri Kamstrup
 interceptate în browser. Un baleiaj complet pe un contor real încă nu a fost făcut.
 
 ## Două moduri de rulare

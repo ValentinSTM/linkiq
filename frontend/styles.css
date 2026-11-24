@@ -219,3 +219,6 @@ ul.readings .rs.edited { color: #b26a00; font-weight: 700; }
 .checks { display: grid; grid-template-columns: 1fr; gap: 2px; }
 .checks label { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 17px; }
 .checks input[type=checkbox] { width: 26px; height: 26px; min-height: 0; flex: none; }
+.allow[hidden] { display: none; }
+#dir-allow { border: 3px solid #ffd23f; background: #fffbea; }
+#dir-allow p { margin-top: 0; }

@@ -6,7 +6,7 @@ The app's screens are in Danish (or Romanian); the button names below are the Da
 
 1. Open the app. Scan the meter's QR code, or type the meter number. Enter your name.
 2. Position is optional: tap **GPS** or **Vælg på kort** (pick on map).
-3. Tap **Start**. Put the antenna in the starting position (sector 1) and press **CALL** on the meter. Confirm in the app when CALL shows on the meter's display.
+3. Tap **Start**. **Internal antenna:** choose **Intern** under *Montage* before CALL – one measurement, no rotation, straight to saving. Put the antenna in the starting position (sector 1) and press **CALL** on the meter. Confirm in the app when CALL shows on the meter's display.
 4. **Vent – flyt ikke antennen** (wait, do not move the antenna) while the app measures. It usually takes 20–40 seconds per sector.
 5. Turn the antenna a quarter turn clockwise when the app asks. Repeat for all four sectors.
 6. **Tilbage til det grønne felt** (back to the green sector). Choose fine-tuning: move the antenna a little at a time and hold it still until the next reading shows (about every 20–30 seconds). If the number gets weaker, go back.
@@ -40,3 +40,10 @@ The app says *Register læst fra QR-koden fra …* with the number of sites and 
 The bookmark only works from the address bar, not from the bookmark list. It searches for the meter number and opens the case that is not *Afsluttet* (finished) or *Lukket* (closed). If there are several open cases, you choose. It does not upload, change or delete anything.
 
 Switch language with the **RO/DA** button at the top.
+
+## Report folder
+
+The browser forgets the folder permission when the app is closed. The app asks once at start-up (yellow
+box at the top, or when you tap **Start**), never while a report is being saved. Without permission the
+report goes straight to **Downloads**, so the app never gets stuck behind a lost prompt. To use no folder
+at all: *Rapportmappe* → **Brug ingen mappe – gem altid i Overførsler**.

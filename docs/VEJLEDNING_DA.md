@@ -2,9 +2,9 @@
 
 **Dansk** · [English](en/GUIDE.md)
 
-1. Åbn appen. Scan målerens QR-kode, eller indtast målernummeret. Skriv dit navn.
+1. Åbn appen. Står der et gult felt øverst, så tryk **Tillad at gemme i mappen** (browseren spørger én gang pr. opstart; ellers spørger den, når du trykker Start). Scan målerens QR-kode, eller indtast målernummeret. Skriv dit navn.
 2. Position er valgfri: tryk **GPS**, eller **Vælg på kort**.
-3. Tryk **Start**. Sæt antennen i startposition (felt 1), og tryk **CALL** på måleren. Bekræft i appen, når CALL vises i displayet.
+3. Tryk **Start**. **Intern antenne:** vælg **Intern** under *Montage* før CALL – så laves én måling uden drejning, og du går direkte til at gemme. Ellers: sæt antennen i startposition (felt 1), og tryk **CALL** på måleren. Bekræft i appen, når CALL vises i displayet.
 4. **Vent – flyt ikke antennen**, mens appen måler. Det tager typisk 20–40 sekunder pr. felt.
 5. Drej antennen en kvart omgang med uret, når appen beder om det. Gentag for alle fire felter.
 6. **Tilbage til det grønne felt.** Vælg finjustering: flyt antennen lidt ad gangen, og hold den stille, indtil næste måling vises (ca. hvert 20.–30. sekund). Er tallet svagere, så gå tilbage.
@@ -38,3 +38,10 @@ Appen skriver *Register læst fra QR-koden fra …* med antal sites og koncentra
 Bogmærket virker kun fra adresselinjen, ikke fra bogmærkelisten. Det søger på målernummeret og åbner den sag, der ikke er *Afsluttet* eller *Lukket*. Er der flere åbne sager, vælger du selv. Det uploader, ændrer og sletter ikke noget.
 
 Sprog skiftes med knappen **RO/DA** øverst.
+
+## Rapportmappen
+
+Browseren glemmer adgangen til rapportmappen, når appen lukkes. Appen spørger derfor én gang ved
+opstart (gult felt øverst, eller når du trykker **Start**) – aldrig midt i, at en rapport gemmes.
+Er der ingen adgang, gemmes rapporten straks i **Overførsler**, så du aldrig sidder fast. Vil du
+slet ikke bruge en mappe: *Rapportmappe* → **Brug ingen mappe – gem altid i Overførsler**.

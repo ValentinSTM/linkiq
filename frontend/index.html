@@ -37,6 +37,10 @@
 
   <!-- Start -->
   <section id="view-start" class="view">
+    <div id="dir-allow" class="card allow" hidden>
+      <p class="hint">Browserul cere o dată la fiecare pornire voie să scrie în dosarul cu rapoarte.</p>
+      <button type="button" class="primary">Permite salvarea în dosar</button>
+    </div>
     <form id="start-form" class="card">
       <label for="meter">Seria contorului</label>
       <div class="with-btn">
@@ -78,7 +82,8 @@
       <h2>Dosarul pentru rapoarte</h2>
       <p id="dir-info" class="hint"></p>
       <button type="button" id="dir-btn" class="secondary">Alege dosarul</button>
-      <button type="button" id="dir-open" class="secondary" hidden>Deschide dosarul</button>
+      <button type="button" id="dir-open" class="secondary" hidden>Permite accesul la dosar</button>
+      <button type="button" id="dir-none" class="link">Nu folosi dosar: salvează mereu în Descărcări</button>
       <ul id="dir-list" class="rows"></ul>
     </div>
     <div id="vvs-card" class="card">
@@ -136,6 +141,7 @@
           <div id="readings-extra" class="checks"></div>
         </details>
       </div>
+      <div id="dir-allow2" class="allow" hidden><button type="button" class="secondary">Permite salvarea în dosar</button></div>
       <button type="button" id="report-pdf-btn" class="secondary">Descarcă raportul (PDF)</button>
       <button type="button" id="report-btn" class="secondary">Descarcă raportul (imagine)</button>
       <p id="dir-info2" class="hint"></p>

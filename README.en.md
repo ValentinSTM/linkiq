@@ -6,7 +6,7 @@ LinkIQ is a web app that can be installed on a phone (PWA). It guides the instal
 antenna of a Kamstrup heat meter, based on real radio measurements. It replaces the Power Apps
 prototype and needs no paid licences. Open source, MIT licence.
 
-Status: **v0.19**. The whole flow runs on the simulator and on Kamstrup responses captured in the
+Status: **v0.20**. The whole flow runs on the simulator and on Kamstrup responses captured in the
 browser. A quick confirmation has been done on a real meter. A full rotation on a real meter is
 still to be done.
 

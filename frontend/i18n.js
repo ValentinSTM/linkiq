@@ -418,5 +418,19 @@ window.LINKIQ_DA = {
  "1 concentrator văzut ultima dată acum peste {1} ore nu este inclus în raport.": "1 koncentrator, der sidst hørte måleren for over {1} timer siden, er ikke med i rapporten.",
  "{0} concentratoare văzute ultima dată acum peste {1} ore nu sunt incluse în raport.": "{0} koncentratorer, der sidst hørte måleren for over {1} timer siden, er ikke med i rapporten.",
  "Da, adaug citirile": "Ja, tilføj målerstande",
- "Nu, salvează raportul": "Nej, gem rapporten"
+ "Nu, salvează raportul": "Nej, gem rapporten",
+ "Antenă internă: nu se rotește, se face o singură măsurătoare. Confirmă abia când CALL apare pe afișajul contorului.": "Intern antenne: den drejes ikke, der laves én måling. Bekræft først, når CALL står i målerens display.",
+ "Antenă internă? Alege „Internă” la montaj, mai jos: atunci nu se mai face rotația.": "Intern antenne? Vælg „Intern“ under montage nedenfor – så springes drejningen over.",
+ "Antenă internă: {0}": "Intern antenne: {0}",
+ "Antena internă nu se poate muta, deci nu se face rotația. Completează montajul și salvează.": "En intern antenne kan ikke flyttes, så der drejes ikke. Udfyld montagen, og gem.",
+ "Fă totuși rotația completă": "Drej alligevel hele vejen rundt",
+ "Antenă internă: o singură măsurătoare, fără rotație și fără confirmare finală": "Intern antenne: én måling, uden drejning og uden slutkontrol",
+ "Permite salvarea în dosarul „{0}”": "Tillad at gemme i mappen „{0}“",
+ "Permite salvarea în dosar": "Tillad at gemme i mappen",
+ "Browserul cere o dată la fiecare pornire voie să scrie în dosarul cu rapoarte.": "Browseren spørger én gang ved hver opstart, om den må skrive i rapportmappen.",
+ "Permite accesul la dosar": "Giv adgang til mappen",
+ "Nu folosi dosar: salvează mereu în Descărcări": "Brug ingen mappe – gem altid i Overførsler",
+ "Fără permisiune pentru dosar: fișierul e în Descărcări.": "Ingen adgang til mappen: filen ligger i Overførsler.",
+ "Măsurătoare": "Måling",
+ "Antenă internă": "Intern antenne"
 };
