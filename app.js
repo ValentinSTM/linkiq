@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.19';
+  const VERSION = '0.21';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -140,13 +140,16 @@
     place: [['meter', 'Lângă contor'], ['basement', 'Subsol'], ['ground', 'Parter'], ['floor', 'Etaj'], ['facade', 'Fațadă, afară'], ['roof', 'Acoperiș']],
   };
   const levelDone = (l) => !!l && ((l.kind !== 'basement' && l.kind !== 'floor') || !!l.n);
-  const installDone = (i) => !!i && levelDone(i.meterLevel) && !!i.antennaType && levelDone(i.antennaPlace);
+  // An internal antenna sits in the meter: no place to give.
+  const installDone = (i) => !!i && levelDone(i.meterLevel) && !!i.antennaType && (i.antennaType === 'internal' || levelDone(i.antennaPlace));
   function levelText(l) {
     if (!l) return '–';
     return { basement: T('Subsol −{0}', l.n), ground: T('Parter'), floor: T('Etaj {0}', l.n), meter: T('lângă contor'), facade: T('fațadă, afară'), roof: T('acoperiș') }[l.kind];
   }
+  const modeText = (i) => (i && i.mode === 'single' ? T('o singură poziție')
+    : T('rotație') + (i && i.excluded && i.excluded.length ? ' (' + T('fără felia {0}', i.excluded.slice().sort().join(', ')) + ')' : ''));
   const typeText = (t) => (t === 'internal' ? T('Internă') : t === 'external' ? T('Externă') : '–');
-  const installShort = (i) => (i ? [T('Contor') + ': ' + levelText(i.meterLevel), T('Antenă') + ' ' + typeText(i.antennaType).toLowerCase() + ', ' + levelText(i.antennaPlace)].join(' · ') : '');
+  const installShort = (i) => (i ? [T('Contor') + ': ' + levelText(i.meterLevel), T('Antenă') + ' ' + typeText(i.antennaType).toLowerCase() + ', ' + (i.antennaType === 'internal' ? T('în contor') : levelText(i.antennaPlace))].join(' · ') : '');
 
   function chipRow(el, options, current, onPick) {
     el.replaceChildren();
@@ -173,12 +176,36 @@
       el.appendChild(more);
     }
   }
+  function syncSetup() {                    // cheap: called on every render
+    const i = ui.install || {}, ready = !!S && S.session.state === 'READY' && S.session.status === 'ACTIVE';
+    $('setup-card').hidden = !ready;
+    $('type-info').hidden = ready || !i.antennaType;
+    $('type-info').textContent = i.antennaType ? T('Antenă') + ': ' + typeText(i.antennaType) + (i.antennaType === 'external' ? ' · ' + modeText(i) : '') : '';
+    $('place-row').hidden = i.antennaType === 'internal';
+  }
   function drawInstall() {
     const i = ui.install = ui.install || { meterLevel: null, antennaType: null, antennaPlace: null };
     const changed = () => { store.set('ui', ui); drawInstall(); };
     chipRow($('ch-meter'), INSTALL.meter.map(([v, l]) => [v, T(l)]), i.meterLevel && i.meterLevel.kind, (k) => { i.meterLevel = { kind: k, n: null }; changed(); });
     levelRow($('ch-meter-n'), i.meterLevel, changed);
-    chipRow($('ch-type'), INSTALL.type.map(([v, l]) => [v, T(l)]), i.antennaType, (t) => { i.antennaType = t; changed(); });
+    // Antenna type and kind of measurement are chosen before the first CALL (setup card).
+    const ready = !!S && S.session.state === 'READY';
+    chipRow($('ch-type'), INSTALL.type.map(([v, l]) => [v, T(l)]), i.antennaType, (t) => {
+      if (!ready) return;
+      i.antennaType = t;
+      if (t === 'external' && !i.mode) i.mode = 'sweep';
+      changed(); if (!busy) render();
+    });
+    $('mode-row').hidden = i.antennaType !== 'external';
+    chipRow($('ch-mode'), [['sweep', T('Rotație ({0} felii)', cfg.coarseSteps)], ['single', T('O singură poziție')]], i.mode, (m) => {
+      if (!ready) return;
+      i.mode = m; changed(); if (!busy) render();
+    });
+    $('mode-hint').textContent = i.antennaType === 'internal' ? T('Antena internă nu se poate muta: o singură măsurătoare, fără rotație.')
+      : !i.antennaType ? '' : i.mode === 'single'
+      ? T('Pentru antena prinsă fix sau locul cerut de inginer: un CALL, o măsurătoare, răspuns imediat.')
+      : T('Atinge o felie ca s-o scoți (de ex. acolo antena ar lovi peretele). În timpul rotației poți sări peste orice felie.');
+    syncSetup();
     chipRow($('ch-place'), INSTALL.place.map(([v, l]) => [v, T(l)]), i.antennaPlace && i.antennaPlace.kind, (k) => { i.antennaPlace = { kind: k, n: null }; changed(); });
     levelRow($('ch-place-n'), i.antennaPlace, changed);
     $('install-ok').textContent = installDone(i) ? '✓' : '';
@@ -196,13 +223,24 @@
     if (cur.phase === 'final') return { kind: 'finish' };
     if (ui.goFinal) return { kind: 'finalCall' };
     if (cur.phase === 'coarse') {
-      if (cur.step === 1 && s.quickConfirmEligible && !ui.fullSweep) return { kind: 'quickChoice' };
-      if (cur.step < cfg.coarseSteps) return { kind: 'move', phase: 'coarse', step: cur.step + 1 };
+      // Internal antenna, screwed-on antenna or the place the site engineer points at: one measurement.
+      if (isSingle()) return { kind: 'finish', single: true };
+      const steps = sweepSteps();
+      if (cur.step === steps[0] && s.quickConfirmEligible && !ui.fullSweep) return { kind: 'quickChoice' };
+      const next = steps.find((k) => k > cur.step);
+      if (next) return { kind: 'move', phase: 'coarse', step: next };
       if (!s.coarseWinner) return { kind: 'finish' };
       return { kind: 'coarseDone' };
     }
     return { kind: 'finalCall' };   // a session from an older version, left in the 5-position fine tune
   }
+
+  const isInternal = () => !!(ui.install && ui.install.antennaType === 'internal');
+  const isSingle = () => isInternal() || !!(ui.install && ui.install.mode === 'single');
+  const excludedSet = () => new Set((ui.install && ui.install.excluded) || []);
+  const sweepSteps = () => { const ex = excludedSet(); return Array.from({ length: cfg.coarseSteps }, (_, k) => k + 1).filter((k) => !ex.has(k)); };
+  const instOf = (s) => s.session.install || ui.install || null;
+  const singleOf = (s) => { const i = instOf(s); return !!i && (i.antennaType === 'internal' || i.mode === 'single'); };
 
   function bestLabel(s) {
     if (!s.best) return '';
@@ -217,8 +255,10 @@
     $('ins-text').textContent = text;
   }
 
-  function setButtons(main, alt) {
-    const m = $('main-btn'), a = $('alt-btn');
+  function setButtons(main, alt, alt2) {
+    const m = $('main-btn'), a = $('alt-btn'), a2 = $('alt2-btn');
+    a2.hidden = !alt2;
+    if (alt2) { a2.textContent = alt2.label; a2.onclick = guarded(alt2.run); }
     m.textContent = main.label;
     m.className = 'primary big ' + (main.cls || '');
     m.disabled = !!main.disabled;
@@ -272,9 +312,16 @@
 
     switch (a.kind) {
       case 'initialCall':
-        setInstruction('blue', T('Apasă CALL pe contor'),
-          T('Pune antena în poziția de start (felia 1). Confirmă abia când CALL apare pe afișajul contorului.'));
-        setButtons({ label: T('CALL este pe afișaj'), run: act('call-confirmed', { phase: 'initial' }) });
+        if (!ui.install || !ui.install.antennaType) {
+          setInstruction('blue', T('Alege tipul antenei'), T('Internă sau externă? Abia apoi apeși CALL pe contor.'));
+          setButtons({ label: T('Alege întâi antena'), disabled: true });
+          break;
+        }
+        setInstruction('blue', T('Apasă CALL pe contor'), isInternal()
+          ? T('Antenă internă: nu se rotește, se face o singură măsurătoare. Confirmă abia când CALL apare pe afișajul contorului.')
+          : isSingle() ? T('O singură poziție: antena rămâne unde este. Confirmă abia când CALL apare pe afișajul contorului.')
+            : T('Pune antena pe felia {0}. Confirmă abia când CALL apare pe afișajul contorului.', sweepSteps()[0]));
+        setButtons({ label: T('CALL este pe afișaj'), run: act('call-confirmed', { phase: 'initial', step: isSingle() ? 1 : sweepSteps()[0] }) });
         break;
       case 'wait': {
         const w = waitSeconds(), slow = w >= cfg.warnAfterS;
@@ -282,8 +329,12 @@
           slow ? T('Durează mai mult decât de obicei. Ține antena nemișcată sau sari peste această poziție.')
                : (S.current.nObs > 0 ? T('Am primit primele citiri. Mai aștept receptorul principal.')
                                      : T('Măsurătoarea vine de obicei în 20–40 de secunde.')));
+        const sweeping = cur.phase === 'coarse' && !isSingle();
         setButtons({ label: T('Aștept măsurătoarea… {0} s', w), cls: 'wait', disabled: true },
-          slow ? { label: T('Sari peste această poziție'), run: act('skip') } : null);
+          S.current.nObs > 0 && w >= 10 ? { label: T('Gata, mergi mai departe cu ce a venit'), run: act('accept') }
+            : sweeping ? { label: T('Sari peste felia {0}', cur.step), run: act('skip') }
+              : slow ? { label: T('Sari peste această poziție'), run: act('skip') } : null,
+          sweeping && S.current.nObs > 0 && w >= 10 ? { label: T('Sari peste felia {0}', cur.step), run: act('skip') } : null);
         break;
       }
       case 'quickChoice':
@@ -327,6 +378,12 @@
         if (f && f.rssi === null) {
           setInstruction('red', T('Receptorul principal nu a răspuns'),
             T('La confirmarea finală nu a mai fost auzit de {0}. Verifică dacă antena s-a mișcat la fixare.', s.primary.serial));
+        } else if (!f && a.single && s.best) {
+          const th = cfg.thresholds || { goodDbm: -95, marginalDbm: -110 };
+          setInstruction(s.best.rssi >= th.goodDbm ? 'green' : s.best.rssi >= th.marginalDbm ? 'yellow' : 'red',
+            T(isInternal() ? 'Antenă internă: {0}' : 'O singură poziție: {0}', dbm(s.best.rssi)),
+            T(isInternal() ? 'Antena internă nu se poate muta, deci nu se face rotația. Completează montajul și salvează.'
+              : 'Măsurătoarea din locul ales. Completează montajul și salvează, sau fă totuși rotația.'));
         } else if (f) {
           setInstruction(f.ok ? 'green' : 'red', T('Confirmare finală: {0}', dbm(f.rssi)),
             T('{0}{1} dB față de cea mai bună măsurătoare ({2}).', f.deltaDb >= 0 ? '+' : '', f.deltaDb, dbm(f.winnerRssi)) +
@@ -344,10 +401,10 @@
         setButtons({ label: T('Salvează rezultatul'), cls: 'go', run: async () => {   // values read at tap time
           if (!installDone(ui.install)) {
             $('install-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
-            throw new Error(T('Completează montajul: nivelul contorului, tipul antenei și locul antenei.'));
+            throw new Error(T(isInternal() ? 'Completează montajul: nivelul contorului.' : 'Completează montajul: nivelul contorului, tipul antenei și locul antenei.'));
           }
           apply(await api(`/api/sessions/${s.session.id}/complete`, 'POST', { outcome: sel.value, note: $('note').value || null, install: ui.install }));
-        } });
+        } }, a.single && !isInternal() ? { label: T('Fă totuși rotația'), run: async () => { ui.install.mode = 'sweep'; store.set('ui', ui); } } : null);
         break;
       }
       case 'check': {
@@ -377,6 +434,7 @@
     if (a.kind === 'check' && s.best) $('st-now').textContent = dbm(s.best.rssi);
     $('st-recv').textContent = s.primary ? s.primary.serial : '–';
     $('restart-btn').hidden = a.kind === 'done' || a.kind === 'check';
+    syncSetup();
     drawPizza(s, a);
     drawFine(s, a);
     drawLive(s, a);
@@ -389,6 +447,30 @@
   function drawPizza(s, a) {
     const svg = $('pizza'), n = cfg.coarseSteps, ns = 'http://www.w3.org/2000/svg';
     svg.replaceChildren();
+    const READY = s.session.state === 'READY';
+    if ((READY && (!ui.install || !ui.install.antennaType)) ) { svg.parentElement.hidden = true; return; }
+    svg.parentElement.hidden = false;
+    if ((READY || s.session.status === 'ACTIVE') ? isSingle() : singleOf(s)) {
+      // one measurement: one circle, no slices
+      const c0 = s.coarse[0], waiting = s.session.state === 'WAIT_RF';
+      const circ = document.createElementNS(ns, 'circle');
+      circ.setAttribute('r', '100');
+      circ.setAttribute('class', READY ? 's-current' : waiting ? 's-waiting' : c0 && c0.measured ? 's-best' : 's-untested');
+      if (c0 && c0.measured && !waiting) circ.style.fill = linkColor(c0.bestRssi);
+      svg.appendChild(circ);
+      const lbl = document.createElementNS(ns, 'text');
+      lbl.setAttribute('y', '-18'); lbl.setAttribute('class', waiting || !c0 ? 't-dark' : 't-light');
+      lbl.textContent = T(isInternal() ? 'Antenă internă' : 'O poziție');
+      lbl.style.fontSize = '17px';
+      svg.appendChild(lbl);
+      const v = document.createElementNS(ns, 'text');
+      v.setAttribute('y', '26'); v.setAttribute('class', 'rssi ' + (waiting || !c0 ? 't-dark' : 't-light'));
+      v.style.fontSize = '38px';
+      v.textContent = c0 && c0.measured ? Math.round(c0.bestRssi) + ' dBm' : waiting ? '…' : '';
+      svg.appendChild(v);
+      return;
+    }
+    const ex = excludedSet(), first = sweepSteps()[0];
     const pt = (deg, r) => [r * Math.sin(deg * Math.PI / 180), -r * Math.cos(deg * Math.PI / 180)];
     const byStep = Object.fromEntries(s.coarse.map((c) => [c.step, c]));
     const cur = s.current;
@@ -404,12 +486,16 @@
       const isCur = cur && cur.phase === 'coarse' && cur.step === k;
       if (isCur && s.session.state === 'WAIT_RF') cls = 'waiting';
       else if (isCur && cls !== 'best' && a.kind !== 'done') cls = 'current';
-      if (target === k || (a.kind === 'initialCall' && k === 1)) cls = 'current';
+      if (target === k || (a.kind === 'initialCall' && k === first)) cls = 'current';
+      if (ex.has(k) && !(c && (c.measured || c.skipped))) cls = 'excluded';
+      // Tap a slice that is still to come to leave it out (or take it back).
+      const open = s.session.status === 'ACTIVE' && !(c && (c.measured || c.skipped)) && !(isCur && s.session.state === 'WAIT_RF') && !s.coarseWinner;
       const path = document.createElementNS(ns, 'path');
       path.setAttribute('d', `M0 0 L${x0.toFixed(2)} ${y0.toFixed(2)} A100 100 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z`);
-      path.setAttribute('class', 's-' + cls);
+      path.setAttribute('class', 's-' + cls + (open ? ' tap' : ''));
+      if (open) path.onclick = () => toggleSlice(k);
       svg.appendChild(path);
-      const tcls = cls === 'untested' || cls === 'waiting' || cls === 'skipped' ? 't-dark' : 't-light';
+      const tcls = cls === 'untested' || cls === 'waiting' || cls === 'skipped' || cls === 'excluded' ? 't-dark' : 't-light';
       const [tx, ty] = pt(mid, 62);
       const num = document.createElementNS(ns, 'text');
       num.setAttribute('x', tx.toFixed(1)); num.setAttribute('y', (ty - 6).toFixed(1));
@@ -418,9 +504,24 @@
       const val = document.createElementNS(ns, 'text');
       val.setAttribute('x', tx.toFixed(1)); val.setAttribute('y', (ty + 9).toFixed(1));
       val.setAttribute('class', 'rssi ' + tcls);
-      val.textContent = c && c.measured ? Math.round(c.bestRssi) : (c && c.skipped ? '—' : '');
+      val.textContent = c && c.measured ? Math.round(c.bestRssi) : (c && c.skipped) || cls === 'excluded' ? '✕' : '';
       svg.appendChild(val);
     }
+  }
+
+  function toggleSlice(k) {
+    if (busy) return;
+    const i = ui.install = ui.install || {};
+    const ex = new Set(i.excluded || []);
+    if (ex.has(k)) ex.delete(k);
+    else {
+      const left = sweepSteps().filter((q) => q !== k);
+      if (!left.length) { showError('align-error', T('Măcar o felie trebuie măsurată.')); return; }
+      ex.add(k);
+    }
+    i.excluded = [...ex].sort();
+    store.set('ui', ui);
+    render();
   }
 
   function drawFine(s, a) {
@@ -451,7 +552,7 @@
   function drawLive(s, a) {
     const on = a.kind === 'live' && !!s.live;
     $('live-panel').hidden = !on;
-    document.querySelector('.pizza-wrap').hidden = on;
+    if (on) document.querySelector('.pizza-wrap').hidden = true;   // drawPizza decides otherwise
     if (!on) return;
     const L = s.live, bars = $('live-bars'), trend = $('live-trend');
     $('live-rssi').textContent = L.lastRssi === null ? '–' : `${L.lastRssi} dBm`;
@@ -1269,7 +1370,17 @@
   const outcomeColor = (o) => (/^(OPTIMAL|GOOD)/.test(o || '') ? INK.green : o === 'MARGINAL' ? INK.amber : INK.red);
   const safeName = (serial) => String(serial).replace(/[^0-9A-Za-z_-]/g, '');
 
+  function singleOnCanvas(x, s, cx, cy, r) {
+    const c0 = s.coarse[0], ok = !!(c0 && c0.measured);
+    x.beginPath(); x.arc(cx, cy, r, 0, 2 * Math.PI);
+    x.fillStyle = ok ? linkColor(c0.bestRssi) : INK.light; x.fill();
+    x.fillStyle = ok ? '#fff' : INK.ink; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = `800 ${Math.round(r * 0.42)}px ${SANS}`; x.fillText(ok ? String(Math.round(c0.bestRssi)) : '–', cx, cy - r * 0.06);
+    x.font = `600 ${Math.round(r * 0.2)}px ${SANS}`; x.fillText('dBm', cx, cy + r * 0.34);
+  }
+
   function pizzaOnCanvas(x, s, cx, cy, r) {
+    if (singleOf(s) && s.coarse.length <= 1) { singleOnCanvas(x, s, cx, cy, r); return; }
     const n = Math.max(cfg.coarseSteps, ...s.coarse.map((c) => c.step));
     const by = Object.fromEntries(s.coarse.map((c) => [c.step, c]));
     for (let k = 1; k <= n; k++) {
@@ -1446,8 +1557,8 @@
     if (ins) {
       section(T('Montaj'));
       row(T('Contor'), levelText(ins.meterLevel));
-      row(T('Antenă'), typeText(ins.antennaType));
-      row(T('Locul antenei'), levelText(ins.antennaPlace));
+      row(T('Antenă'), typeText(ins.antennaType) + (ins.antennaType === 'external' ? ' · ' + modeText(ins) : ''));
+      row(T('Locul antenei'), ins.antennaType === 'internal' ? T('în contor') : levelText(ins.antennaPlace));
     }
 
     y = await drawReadings(x, P, W, y, (t) => { section(t); return y; }, font, text);
@@ -1465,6 +1576,17 @@
     }
 
     if (!isCheck) {
+    const internalOnly = !s.finalCheck && singleOf(s) && s.coarse.length <= 1;
+    if (internalOnly) {
+      section(T('Măsurătoare'));
+      const top = y + 20, r = 90, internal = instOf(s).antennaType === 'internal';
+      singleOnCanvas(x, s, P + r + 10, top + r, r);
+      font(700, 30); text(internal ? T('Antenă internă') : T('O singură poziție'), P + 2 * r + 60, top + 60);
+      font(800, 44); text(s.best ? dbm(s.best.rssi) : '–', P + 2 * r + 60, top + 116, s.best ? linkColor(s.best.rssi) : INK.gray);
+      font(500, 22);
+      text(internal ? T('Contorul și antena nu se pot muta: o singură măsurătoare.') : T('Antena n-a fost rotită: o singură măsurătoare, la locul ales.'), P + 2 * r + 60, top + 156, INK.gray);
+      y = top + 2 * r + 20;
+    } else {
     section(T('Baleiaj'));
     const top = y + 24, r = 170;
     pizzaOnCanvas(x, s, P + r + 10, top + r, r);
@@ -1475,7 +1597,8 @@
       const c = by[k], win = s.coarseWinner && s.coarseWinner.step === k;
       font(win ? 700 : 500, 28);
       text(T('Felia {0}', k), P + 440, ly, win ? INK.green : INK.ink);
-      text(c && c.measured ? dbm(c.bestRssi) + (win ? ' · ' + T('cea mai bună') : '') : T('fără măsurătoare'), P + 600, ly, win ? INK.green : c && c.measured ? INK.ink : INK.gray);
+      const out = !(c && c.measured) && ((instOf(s) && (instOf(s).excluded || []).includes(k)) || (c && c.skipped));
+      text(c && c.measured ? dbm(c.bestRssi) + (win ? ' · ' + T('cea mai bună') : '') : out ? T('sărită') : T('fără măsurătoare'), P + 600, ly, win ? INK.green : c && c.measured ? INK.ink : INK.gray);
       ly += 46;
     }
     y = Math.max(top + 2 * r, ly) + 10;
@@ -1497,11 +1620,13 @@
       row(L.serial, T('{0} citiri · cea mai bună {1} · ultima {2}', L.readings.length, dbm(L.bestRssi), dbm(L.lastRssi)));
     } else row('', T('Fără reglaj fin'), INK.gray);
 
+    }
+    if (!internalOnly) {
     section(T('Confirmare finală'));
     const f = s.finalCheck;
     if (f && f.rssi !== null) row(f.ok ? 'OK' : '!', T('{0} · {1} dB față de cea mai bună măsurătoare ({2})', dbm(f.rssi), (f.deltaDb >= 0 ? '+' : '') + f.deltaDb, dbm(f.winnerRssi)), f.ok ? INK.green : INK.red);
     else row('', f ? T('Receptorul principal nu a răspuns') : T('Fără confirmare finală'), INK.red);
-
+    }
     }
 
     section(T('Receptoare'));
@@ -1604,6 +1729,54 @@
     } catch { return false; }
   }
 
+  // The browser forgets the folder permission when the app is closed. It is asked for with
+  // one tap at the start (banner, or the first "start"), never while a report is being saved,
+  // and a prompt that gets lost behind the app can no longer lock it: after 10 s we go on.
+  let dirPerm = 'none';
+  async function updateDirPerm() {
+    dirPerm = !reportDir ? 'none' : await reportDir.queryPermission({ mode: 'readwrite' }).catch(() => 'prompt');
+    const need = dirPerm === 'prompt' || dirPerm === 'denied';
+    for (const id of ['dir-allow', 'dir-allow2']) {
+      const el = $(id);
+      el.hidden = !need;
+      if (reportDir) el.querySelector('button').textContent = T('Permite salvarea în dosarul „{0}”', reportDir.name);
+    }
+    showPerm();
+    return dirPerm;
+  }
+
+  // Start-up card: what the app needs, asked by the installer's own tap, before any work.
+  let camPerm = 'unknown';
+  async function updateCamPerm() {
+    try {
+      const st = await navigator.permissions.query({ name: 'camera' });
+      camPerm = st.state;
+      st.onchange = () => { camPerm = st.state; showPerm(); };
+    } catch { camPerm = 'unknown'; }
+    showPerm();
+  }
+  function showPerm() {
+    const cam = $('perm-cam'), dir = $('dir-allow');
+    cam.hidden = camPerm === 'granted' || !navigator.mediaDevices;
+    cam.querySelector('button').hidden = camPerm === 'denied';
+    cam.querySelector('.pl').textContent = camPerm === 'denied' ? T('Camera este blocată: permite-o din setările browserului (lacătul de lângă adresă).') : T('Camera');
+    $('perm-card').hidden = cam.hidden && dir.hidden;
+  }
+  $('perm-cam').querySelector('button').onclick = async () => {
+    try {
+      const st = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+      st.getTracks().forEach((t) => t.stop());
+      camPerm = 'granted';
+    } catch (e) { if (e && e.name === 'NotAllowedError') camPerm = 'denied'; }
+    updateCamPerm();
+  };
+  function askDir() {                       // call straight from a tap, before any await
+    if (!reportDir || dirPerm === 'granted') return Promise.resolve(dirPerm === 'granted');
+    const req = reportDir.requestPermission({ mode: 'readwrite' }).catch(() => 'denied');
+    const late = new Promise((ok) => setTimeout(() => ok('timeout'), 10000));
+    return Promise.race([req, late]).then(async () => { await updateDirPerm(); refreshReportDir(); return dirPerm === 'granted'; });
+  }
+
   async function writeToDir(blob, name) {
     let final = name;
     try {                                   // keep an earlier report of the same meter: add date and time
@@ -1630,6 +1803,7 @@
     }
     btn.hidden = false;
     btn.textContent = T(reportDir ? 'Schimbă dosarul' : 'Alege dosarul');
+    $('dir-none').hidden = !reportDir;
     if (!reportDir) {
       info.textContent = T('Alege o dată locul; aplicația creează acolo dosarul „LinkIQ-rapporter” și salvează în el toate rapoartele.');
       $('dir-info2').textContent = T('Acest browser salvează rapoartele în dosarul de descărcări.');
@@ -1637,7 +1811,8 @@
     }
     info.textContent = T('Rapoartele se salvează în dosarul „{0}”.', reportDir.name);
     $('dir-info2').textContent = info.textContent;
-    if (!(await dirReady(false))) { open.hidden = false; return; }     // the browser wants a tap before it shows the folder again
+    await updateDirPerm();
+    if (dirPerm !== 'granted') { open.hidden = false; return; }     // the browser wants a tap before it uses the folder again
     const files = [];
     try {
       for await (const [name, h] of reportDir.entries()) {
@@ -1668,13 +1843,21 @@
     } catch (e) { if (e.name !== 'AbortError') showError('start-error', T('Nu am putut folosi dosarul ales: {0}', e.message)); }
     refreshReportDir();
   };
-  $('dir-open').onclick = async () => { await dirReady(true); refreshReportDir(); };
+  $('dir-open').onclick = () => askDir();
+  $('dir-allow').querySelector('button').onclick = () => askDir();
+  $('dir-allow2').querySelector('button').onclick = () => askDir();
+  $('dir-none').onclick = async () => {
+    reportDir = null;
+    try { await kv.set('reportDir', null); } catch { /* nothing kept */ }
+    await updateDirPerm(); refreshReportDir();
+  };
 
   async function saveBlob(blob, name, doneKey, previewUrl) {
     const msg = $('report-msg'), img = $('report-preview');
     const url = URL.createObjectURL(blob);
     let saved = null;
     if (await dirReady(false)) { try { saved = await writeToDir(blob, name); } catch { saved = null; } }
+    const noPerm = !saved && reportDir && dirPerm !== 'granted';
     if (!saved) {                           // no folder chosen, or the browser cannot write there: normal download
       const a = document.createElement('a');
       a.href = url; a.download = name;
@@ -1682,7 +1865,8 @@
     }
     if (previewUrl !== null) { img.src = previewUrl || url; img.alt = name; img.hidden = false; }   // also shown, so it can be saved by long-press
     msg.textContent = saved ? T('Salvat în dosarul „{0}” ca {1}.', reportDir.name, saved)
-      : T(doneKey, name) + (previewUrl !== null ? ' ' + T('Dacă descărcarea nu pornește, ține apăsat pe imagine și alege „Salvează”.') : '');
+      : T(doneKey, name) + (noPerm ? ' ' + T('Fără permisiune pentru dosar: fișierul e în Descărcări.') : '')
+        + (previewUrl !== null ? ' ' + T('Dacă descărcarea nu pornește, ține apăsat pe imagine și alege „Salvează”.') : '');
     msg.hidden = false;
     if (saved) refreshReportDir();
   }
@@ -1725,14 +1909,12 @@
   $('report-btn').onclick = () => S && askReadings(savePng);
   async function savePng() {
     if (!S) return;
-    await dirReady(true);          // while the tap still counts as a user action
     try { await saveBlob(await canvasBlob(await buildReport(S), 'image/png'), reportName(S) + '.png', 'Raportul a fost salvat ca {0}.'); }
     catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   }
   $('report-pdf-btn').onclick = () => S && askReadings(savePdf);
   async function savePdf() {
     if (!S) return;
-    await dirReady(true);
     try {
       const pages = [await buildReport(S)];
       if (lastPhoto && S.session.status !== 'CHECK') pages.push(lastPhoto);
@@ -1744,7 +1926,6 @@
     ev.target.value = '';
     if (!file || !S) return;
     try {
-      await dirReady(true);
       lastPhoto = await stampPhoto(file, S);
       await saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + '_antenne.jpg', 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
@@ -2169,6 +2350,7 @@
     translatePage();
     try { reportDir = (await kv.get('reportDir')) || null; } catch { /* no storage: ask again when needed */ }
     refreshReportDir();
+    updateCamPerm();
     $('tech').value = store.get('tech', '') || '';
     if (!(await serverAnswers())) await startStandalone();
     // Pairing link: https://host/#pair=CODE. The fragment never reaches the server.

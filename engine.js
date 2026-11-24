@@ -396,14 +396,15 @@
       return this.summary(s.id);
     }
 
-    async callConfirmed(sid, phase = 'initial') {
+    async callConfirmed(sid, phase = 'initial', step = 1) {
       if (phase !== 'initial' && phase !== 'final') throw new EngineError(422, 'BAD_PHASE', 'phase must be initial or final');
       const s = this._session(sid);
       if (phase === 'initial') {
         if (s.state !== 'READY') throw new EngineError(409, 'BAD_STATE', 'CALL-ul inițial a fost deja confirmat');
         await this._ingest(s, true);              // baseline: nothing seen so far may be reused
         if (s.demo) this.sim.notifyCall(s.meterSerial);
-        this._newSample(s, 'coarse', 1, null, 'initialCallMs');
+        const first = Number.isInteger(step) && step >= 1 && step <= this.cfg.coarseSteps ? step : 1;   // slices may be left out
+        this._newSample(s, 'coarse', first, null, 'initialCallMs');
       } else {
         if (s.state === 'READY') throw new EngineError(409, 'BAD_STATE', 'Confirmă întâi CALL-ul inițial');
         await this._ingest(s);                    // anything pending belongs to the previous position
@@ -420,6 +421,17 @@
       if (s.state !== 'MEASURED') throw new EngineError(409, 'BAD_STATE', 'Așteaptă măsurătoarea (sau sari peste) înainte de a muta antena');
       await this._ingest(s);
       this._newSample(s, phase, step, heading);
+      return this.summary(sid);
+    }
+
+    /** The installer goes on with what has arrived (at least one of our receivers reported). */
+    accept(sid) {
+      const s = this._session(sid);
+      if (s.state !== 'WAIT_RF') throw new EngineError(409, 'BAD_STATE', 'Nu se așteaptă nicio măsurătoare');
+      const cur = s.samples[s.samples.length - 1];
+      if (!s.obs.some((o) => o.sampleId === cur.id && o.kind === 'fresh' && o.owned)) throw new EngineError(409, 'NO_DATA', 'Nu a venit încă nicio citire');
+      s.state = 'MEASURED';
+      this.save();
       return this.summary(sid);
     }
 
@@ -509,6 +521,14 @@
       }
       const ref = Object.values(groups).sort((a, b) => b.sum / b.n - a.sum / a.n)[0];
       if (ref && here.some((o) => o.serial === ref.serial)) return true;
+      if (!ref) {
+        // No earlier position to compare with (first position): done as soon as every receiver of
+        // ours that heard the meter regularly before the CALL has reported again.
+        const t0 = s.initialCallMs || sample.movedMs, maxAge = this.cfg.contactCurrentMaxMin * 60000;
+        const expected = new Set(s.obs.filter((o) => o.kind === 'baseline' && o.owned && o.observedMs !== null && t0 - o.observedMs <= maxAge).map((o) => o.serial));
+        const got = new Set(here.map((o) => o.serial));
+        if (expected.size && [...expected].every((x) => got.has(x))) return true;
+      }
       const windowMs = this.cfg.measureWindowS * 1000 / (s.demo ? this.sim.speed : 1);   // the demo runs faster
       return now - Math.min(...here.map((o) => o.receivedMs)) >= windowMs;
     }
@@ -811,7 +831,8 @@
       if (route === '/api/check' && method === 'POST') return this.check(body.meterSerial, body.gps || null, body.technician || '');
       if (route === '/api/sessions' && method === 'POST') return this.createSession(body.meterSerial, body.technician, body.gps || null);
       if (m && !m[2]) return this.summary(m[1]);
-      if (m && m[2] === 'call-confirmed') return this.callConfirmed(m[1], body.phase || 'initial');
+      if (m && m[2] === 'call-confirmed') return this.callConfirmed(m[1], body.phase || 'initial', body.step === undefined ? 1 : body.step);
+      if (m && m[2] === 'accept') return this.accept(m[1]);
       if (m && m[2] === 'position-marked') return this.positionMarked(m[1], body.phase, body.step, body.headingDeg === undefined ? null : body.headingDeg);
       if (m && m[2] === 'skip') return this.skip(m[1]);
       if (m && m[2] === 'poll') return this.poll(m[1]);

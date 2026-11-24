@@ -37,6 +37,12 @@
 
   <!-- Start -->
   <section id="view-start" class="view">
+    <div id="perm-card" class="card allow" hidden>
+      <h2>Înainte de lucru</h2>
+      <p class="hint">Aplicația are nevoie de cameră (codul QR, citirile contorului) și, dacă ai ales un dosar, de voie să scrie rapoartele acolo. Browserul întreabă o singură dată; dosarul, la fiecare pornire.</p>
+      <div id="perm-cam" class="perm-row"><span class="pl">Camera</span><button type="button" class="primary">Permite camera</button><span class="ok" hidden>✓</span></div>
+      <div id="dir-allow" class="perm-row" hidden><span class="pl">Dosarul de rapoarte</span><button type="button" class="primary">Permite salvarea în dosar</button><span class="ok" hidden>✓</span></div>
+    </div>
     <form id="start-form" class="card">
       <label for="meter">Seria contorului</label>
       <div class="with-btn">
@@ -78,7 +84,8 @@
       <h2>Dosarul pentru rapoarte</h2>
       <p id="dir-info" class="hint"></p>
       <button type="button" id="dir-btn" class="secondary">Alege dosarul</button>
-      <button type="button" id="dir-open" class="secondary" hidden>Deschide dosarul</button>
+      <button type="button" id="dir-open" class="secondary" hidden>Permite accesul la dosar</button>
+      <button type="button" id="dir-none" class="link">Nu folosi dosar: salvează mereu în Descărcări</button>
       <ul id="dir-list" class="rows"></ul>
     </div>
     <div id="vvs-card" class="card">
@@ -102,6 +109,15 @@
     <div id="instruction" class="instruction blue">
       <strong id="ins-title"></strong>
       <span id="ins-text"></span>
+    </div>
+    <div id="setup-card" class="card" hidden>
+      <p class="q">Antenă</p>
+      <div class="chips" id="ch-type"></div>
+      <div id="mode-row" hidden>
+        <p class="q">Măsurare</p>
+        <div class="chips" id="ch-mode"></div>
+      </div>
+      <p id="mode-hint" class="hint"></p>
     </div>
     <div class="pizza-wrap">
       <svg id="pizza" viewBox="-110 -110 220 220" role="img" aria-label="Sectoarele antenei"></svg>
@@ -136,6 +152,7 @@
           <div id="readings-extra" class="checks"></div>
         </details>
       </div>
+      <div id="dir-allow2" class="allow" hidden><button type="button" class="secondary">Permite salvarea în dosar</button></div>
       <button type="button" id="report-pdf-btn" class="secondary">Descarcă raportul (PDF)</button>
       <button type="button" id="report-btn" class="secondary">Descarcă raportul (imagine)</button>
       <p id="dir-info2" class="hint"></p>
@@ -148,16 +165,18 @@
     </div>
     <button id="main-btn" class="primary big"></button>
     <button id="alt-btn" class="secondary" hidden></button>
+    <button id="alt2-btn" class="secondary" hidden></button>
     <div id="install-card" class="card" hidden>
       <h2>Montaj <span id="install-ok"></span></h2>
       <p class="q">Contorul este la</p>
       <div class="chips" id="ch-meter"></div>
       <div class="chips sub" id="ch-meter-n" hidden></div>
-      <p class="q">Antenă</p>
-      <div class="chips" id="ch-type"></div>
-      <p class="q">Antena este montată</p>
-      <div class="chips" id="ch-place"></div>
-      <div class="chips sub" id="ch-place-n" hidden></div>
+      <p id="type-info" class="hint" hidden></p>
+      <div id="place-row">
+        <p class="q">Antena este montată</p>
+        <div class="chips" id="ch-place"></div>
+        <div class="chips sub" id="ch-place-n" hidden></div>
+      </div>
     </div>
     <p id="align-error" class="error" hidden></p>
     <div id="pos-card" class="card" hidden>
