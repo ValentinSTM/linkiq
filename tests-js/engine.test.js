@@ -360,3 +360,34 @@ test('replaceRegistry swaps the whole registry, and refuses files that are not a
   assert.equal(eng.restoreRegistry(copy), true);
   assert.equal(eng.registryInfo().concentrators, 3);
 });
+
+test('first position: done as soon as every receiver that heard the meter regularly has reported', async () => {
+  const links = {};
+  const link = (serial, ms, rssi) => { links[serial] = { SerialNumber: serial, TimestampUtcToDevice: new Date(ms).toISOString(), RssiToDevice: rssi }; };
+  const live = () => ({ SerialNumber: METER, Links: Object.values(links) });
+  const { eng, clock } = make({ live });
+  link('70000001', clock.now - 20 * 60000, -95);       // heard 20 min ago: regular
+  link('70000003', clock.now - 40 * 60000, -101);      // heard 40 min ago: regular
+  link('70000002', clock.now - 5 * 3600000, -110);     // 5 h ago: occasional, not waited for
+  const sid = start(eng);
+  await eng.callConfirmed(sid, 'initial', 3);
+  assert.equal(eng.summary(sid).current.step, 3, 'the sweep can start on another slice');
+  clock.tick(10); link('70000001', clock.now - 1000, -90);
+  assert.equal((await eng.poll(sid)).summary.session.state, 'WAIT_RF');
+  clock.tick(10); link('70000003', clock.now - 1000, -99);
+  assert.equal((await eng.poll(sid)).summary.session.state, 'MEASURED', 'no need to wait the full 35 s');
+});
+
+test('the installer can go on with what has arrived, but not before anything arrived', async () => {
+  const links = {};
+  const live = () => ({ SerialNumber: METER, Links: Object.values(links) });
+  const { eng, clock } = make({ live });
+  const sid = start(eng);                                // new meter: no history, so the full window applies
+  await eng.callConfirmed(sid, 'initial');
+  assert.throws(() => eng.accept(sid), (e) => e instanceof EngineError && e.code === 'NO_DATA');
+  clock.tick(10); links.a = { SerialNumber: '70000002', TimestampUtcToDevice: new Date(clock.now - 1000).toISOString(), RssiToDevice: -97 };
+  assert.equal((await eng.poll(sid)).summary.session.state, 'WAIT_RF');
+  const r = eng.accept(sid);
+  assert.equal(r.session.state, 'MEASURED');
+  assert.equal(r.best.rssi, -97);
+});

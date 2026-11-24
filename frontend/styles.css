@@ -220,5 +220,13 @@ ul.readings .rs.edited { color: #b26a00; font-weight: 700; }
 .checks label { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 17px; }
 .checks input[type=checkbox] { width: 26px; height: 26px; min-height: 0; flex: none; }
 .allow[hidden] { display: none; }
-#dir-allow { border: 3px solid #ffd23f; background: #fffbea; }
-#dir-allow p { margin-top: 0; }
+#perm-card { border: 3px solid #ffd23f; background: #fffbea; }
+#perm-card h2 { margin: 0 0 4px; }
+.perm-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid #f0e2a8; }
+.perm-row[hidden] { display: none; }
+.perm-row .pl { font-weight: 700; flex: 1 1 140px; }
+.perm-row button { flex: 1 1 180px; }
+.perm-row .ok { color: var(--green); font-weight: 800; font-size: 22px; }
+#setup-card[hidden], #mode-row[hidden], #place-row[hidden], #alt2-btn[hidden] { display: none; }
+.s-excluded { fill: #fff; stroke: #c3cbd1; stroke-dasharray: 6 5; }
+#pizza path.tap { cursor: pointer; }

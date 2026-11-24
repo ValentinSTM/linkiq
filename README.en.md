@@ -6,7 +6,7 @@ LinkIQ is a web app that can be installed on a phone (PWA). It guides the instal
 antenna of a Kamstrup heat meter, based on real radio measurements. It replaces the Power Apps
 prototype and needs no paid licences. Open source, MIT licence.
 
-Status: **v0.20**. The whole flow runs on the simulator and on Kamstrup responses captured in the
+Status: **v0.21**. The whole flow runs on the simulator and on Kamstrup responses captured in the
 browser. A quick confirmation has been done on a real meter. A full rotation on a real meter is
 still to be done.
 
@@ -99,6 +99,9 @@ Tests: `pip install -r requirements-dev.txt && pytest`. With Docker: `docker com
 | New observation = unseen fingerprint `serial\|timestamp\|rssi`; baseline at CALL | yes |
 | Observations older than the positioning are not credited to the new position; missing timestamps handled explicitly | yes |
 | Coarse sweep in 4 sectors (configurable), warning after 60 s without failing, skip a position | yes |
+| Antenna type chosen before CALL; internal antenna and "one position" (screwed-on antenna, the engineer's spot) = one CALL, one measurement, shown as one circle | yes |
+| Sectors can be left out before the start (tap the sector) and skipped on the way | yes |
+| The first measurement ends as soon as the concentrators that regularly hear the meter have answered; "go on with what has arrived" | yes |
 | A position counts as measured when the reference (strongest) receiver has answered, not at the first weak reading; late readings go to the position where they were taken | yes |
 | All own receivers stored, weak ones included; foreign ones only in the log | yes |
 | Pie with coloured sectors (blue / yellow / green / grey / light grey) | yes |

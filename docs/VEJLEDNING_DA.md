@@ -2,14 +2,14 @@
 
 **Dansk** · [English](en/GUIDE.md)
 
-1. Åbn appen. Står der et gult felt øverst, så tryk **Tillad at gemme i mappen** (browseren spørger én gang pr. opstart; ellers spørger den, når du trykker Start). Scan målerens QR-kode, eller indtast målernummeret. Skriv dit navn.
+1. Åbn appen. Står der et gult felt **Før du går i gang** øverst, så tryk **Tillad kamera** og/eller **Tillad at gemme i mappen** (kameraet spørges der om én gang; mappen ved hver opstart). Scan målerens QR-kode, eller indtast målernummeret. Skriv dit navn.
 2. Position er valgfri: tryk **GPS**, eller **Vælg på kort**.
-3. Tryk **Start**. **Intern antenne:** vælg **Intern** under *Montage* før CALL – så laves én måling uden drejning, og du går direkte til at gemme. Ellers: sæt antennen i startposition (felt 1), og tryk **CALL** på måleren. Bekræft i appen, når CALL vises i displayet.
-4. **Vent – flyt ikke antennen**, mens appen måler. Det tager typisk 20–40 sekunder pr. felt.
-5. Drej antennen en kvart omgang med uret, når appen beder om det. Gentag for alle fire felter.
+3. Tryk **Start**, og vælg **Antenne: Intern eller Ekstern** – CALL-knappen er låst, indtil du har valgt. **Intern:** én måling, ingen drejning (vises som én cirkel). **Ekstern:** vælg **Drejning (4 felter)** eller **Én position** (fastskruet antenne, eller stedet ingeniøren peger på: ét CALL og svar med det samme). Ved drejning: tryk på et felt for at springe det over, fx hvis antennen ville ramme væggen. Tryk derefter **CALL** på måleren, og bekræft i appen, når CALL vises i displayet.
+4. **Vent – flyt ikke antennen**, mens appen måler. Appen går videre, så snart de koncentratorer, der plejer at høre måleren, har svaret (ellers efter én cyklus på ca. 35 s). Er der kommet en måling, kan du trykke **Videre med det, der er kommet**. Under drejningen kan du altid trykke **Spring felt X over**.
+5. Drej antennen til næste felt, når appen beder om det (felter, du har sprunget over, springes over).
 6. **Tilbage til det grønne felt.** Vælg finjustering: flyt antennen lidt ad gangen, og hold den stille, indtil næste måling vises (ca. hvert 20.–30. sekund). Er tallet svagere, så gå tilbage.
 7. Fastgør antennen, tryk **CALL** igen, og bekræft. Appen sammenligner slutmålingen med den bedste måling.
-8. Udfyld **Montage** (kan gøres, mens appen måler): hvor måleren sidder, intern eller ekstern antenne, og hvor antennen sidder. Vælg kælder eller etage først, derefter niveauet.
+8. Udfyld **Montage** (kan gøres, mens appen måler): hvor måleren sidder, og – for en ekstern antenne – hvor antennen sidder. Vælg kælder eller etage først, derefter niveauet.
 9. Vælg resultat, skriv eventuelle bemærkninger, og tryk **Gem resultatet**.
 10. Valgfrit: **Målerstande**. Vis E1 på måleren, tryk på kameraet ved E1, og hold hele displayet inde i rammen. Når tallet er læst sikkert, vibrerer telefonen, og værdien står i feltet. Kontrollér tallet mod displayet, og ret det, hvis det er forkert. Gentag for V1, driftstimer, E8 og E9. Andre registre: åbn **Andre registre**, og sæt flueben ved dem, du vil have med. Ved genskin: vip telefonen lidt. I mørke: tryk **Lygte**, men undgå, at lyset spejler sig i glasset. Kan tallet ikke læses: tryk **Gem billedet, jeg skriver selv værdien**.
 11. Tryk **Fotografér antennen** først (gemmes som `<målernummer>_antenne.jpg` med måledata på billedet), og derefter **Hent rapporten (PDF)** (gemmes som `<målernummer>.pdf`, med fotoet på side 2). Inden den første rapport spørger appen én gang, om målerstandene skal med.
@@ -41,7 +41,8 @@ Sprog skiftes med knappen **RO/DA** øverst.
 
 ## Rapportmappen
 
-Browseren glemmer adgangen til rapportmappen, når appen lukkes. Appen spørger derfor én gang ved
-opstart (gult felt øverst, eller når du trykker **Start**) – aldrig midt i, at en rapport gemmes.
-Er der ingen adgang, gemmes rapporten straks i **Overførsler**, så du aldrig sidder fast. Vil du
-slet ikke bruge en mappe: *Rapportmappe* → **Brug ingen mappe – gem altid i Overførsler**.
+Browseren glemmer adgangen til rapportmappen, når appen lukkes. Appen spørger derfor kun, når du selv
+trykker på knappen i det gule felt ved opstart (eller i rapportboksen) – aldrig af sig selv og aldrig
+midt i, at en rapport gemmes. Er der ingen adgang, gemmes rapporten straks i **Overførsler**. Tilbyder
+Chrome „Tillad ved hvert besøg“, så vælg det. Vil du slet ikke bruge en mappe: *Rapportmappe* →
+**Brug ingen mappe – gem altid i Overførsler**.

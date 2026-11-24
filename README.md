@@ -6,7 +6,7 @@ LinkIQ er en webapp, der kan installeres på telefonen (PWA). Den hjælper mont�
 antennen ind på en Kamstrup-varmemåler ud fra rigtige radiomålinger. Appen erstatter
 Power Apps-prototypen og kræver ingen betalte licenser. Åben kildekode, MIT-licens.
 
-Status: **v0.20**. Hele forløbet kører på simulatoren og på opfangede svar fra Kamstrup i browseren.
+Status: **v0.21**. Hele forløbet kører på simulatoren og på opfangede svar fra Kamstrup i browseren.
 En hurtig bekræftelse er gennemført på en rigtig måler. En fuld rotation på en rigtig måler mangler.
 
 Kort vejledning til montøren: [docs/VEJLEDNING_DA.md](docs/VEJLEDNING_DA.md).
@@ -97,6 +97,9 @@ Test: `pip install -r requirements-dev.txt && pytest`. Med Docker: `docker compo
 | Ny observation = ukendt fingeraftryk `serial\|timestamp\|rssi`; baseline ved CALL | ja |
 | Observationer ældre end positioneringen tilskrives ikke den nye position; manglende tidsstempel håndteres eksplicit | ja |
 | Grov rotation i 4 felter (antallet kan ændres), advarsel efter 60 s uden at fejle, spring position over | ja |
+| Antennetype vælges før CALL; intern antenne og „Én position“ (fastskruet antenne, ingeniørens sted) = ét CALL, én måling, vist som én cirkel | ja |
+| Felter kan fravælges før start (tryk på feltet) og springes over undervejs | ja |
+| Første måling slutter, så snart koncentratorerne, der plejer at høre måleren, har svaret; „Videre med det, der er kommet“ | ja |
 | En position er målt, når referencemodtageren (den stærkeste) har svaret, ikke ved første svage måling; sene målinger tilskrives den position, de blev taget i | ja |
 | Alle egne modtagere gemmes, også de svage; fremmede kun i loggen | ja |
 | Lagkage med farvede felter (blå / gul / grøn / grå / lysegrå) | ja |
