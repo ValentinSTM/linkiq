@@ -113,7 +113,9 @@ Teste: `pip install -r requirements-dev.txt && pytest`. Cu Docker: `docker compo
 | Raport la finalul sesiunii: imagine `<seria>.png` cu baleiajul, reglajul fin, confirmarea finală și receptoarele | da |
 | Fotografie a antenei cu rezultatul scris pe ea: `<seria>_antenne.jpg` | da |
 | Hartă cu linii contor–site, semnal și distanță; aceeași hartă în raport | da |
-| Raport și ca PDF (`<seria>.pdf`), cu fotografia antenei pe pagina a doua | da |
+| Raport și ca PDF (`<seria>.pdf`), cu fotografia antenei și pozele instalației pe paginile următoare | da |
+| Poze cu instalația la montaj și la punerea în funcțiune (până la 6, cu seria și ora), la fiecare instalație | da |
+| Rapoartele din dosar sau din fișiere pot fi adăugate în lista VVS, ca o zi uitată să nu se piardă | da |
 | Verificarea unui contor fără sesiune și fără CALL: cine îl aude acum și de când (`<seria>_status.pdf`) | da, doar în varianta fără server |
 | Dosar ales de montor pentru rapoarte (creat ca `LinkIQ-rapporter`), cu lista rapoartelor salvate; fără suport în browser, se folosește descărcarea obișnuită | da |
 | Poziția fiecărui contor se ține minte pe dispozitiv și se refolosește la verificarea fără CALL | da |

@@ -196,6 +196,16 @@
         <div class="chips sub" id="ch-place-n" hidden></div>
       </div>
     </div>
+    <div id="iphoto-card" class="card" hidden>
+      <h3>Poze cu instalația <span id="iphoto-n" class="sub"></span></h3>
+      <p class="hint" id="iphoto-hint">Fotografiază toată instalația la montaj și la punerea în funcțiune: contorul, țevile, antena și ce e în jur. Pozele intră în raportul PDF, ca istoric și dovadă a montajului corect.</p>
+      <div class="two">
+        <label class="file-btn"><span>La montaj</span><input type="file" id="iphoto-mount" accept="image/*" capture="environment" hidden></label>
+        <label class="file-btn"><span>La punerea în funcțiune</span><input type="file" id="iphoto-start" accept="image/*" capture="environment" hidden></label>
+      </div>
+      <ul id="iphoto-list" class="iphotos"></ul>
+      <p id="iphoto-msg" class="hint" hidden></p>
+    </div>
     <p id="align-error" class="error" hidden></p>
     <div id="pos-card" class="card" hidden>
       <p id="pos-text" class="hint"></p>
@@ -225,6 +235,10 @@
       <h2>Sincronizare cu VVS-dialog</h2>
       <p class="hint">Fiecare raport salvat așteaptă aici până când li îl pune pe caz: fișierele, textul din Ny aktivitet și statusul. Un singur li le trimite pe toate cele care așteaptă.</p>
       <p id="sync-sum" class="sync-sum"></p>
+      <button type="button" id="sync-import" class="secondary">Adaugă rapoarte din fișiere</button>
+      <button type="button" id="sync-import2" class="link" hidden>sau alege fișierele</button>
+      <input type="file" id="sync-files" accept=".pdf,.png,application/pdf,image/png" multiple hidden>
+      <p id="sync-import-msg" class="hint" hidden></p>
       <button type="button" id="vvsq-send" class="primary" hidden>Trimite cele care așteaptă</button>
       <button type="button" id="sync-clean" class="secondary" hidden>Șterge fișierele care sunt deja pe caz</button>
       <p id="sync-clean-msg" class="hint" hidden></p>
@@ -309,6 +323,25 @@
     </ol>
     <button type="button" id="regqr-save" class="primary">Salvează imaginea</button>
     <button type="button" id="regqr-close" class="secondary">Închide</button>
+  </div>
+</div>
+
+<div id="iphoto-ask" hidden>
+  <div class="card sheet">
+    <h2>Nu ai nicio poză cu instalația</h2>
+    <p class="hint">Pozele de la montaj și de la punerea în funcțiune arată cum a fost lăsată instalația. Fă cel puțin una înainte de raport.</p>
+    <button type="button" id="iask-yes" class="primary">Fac poze acum</button>
+    <button type="button" id="iask-no" class="secondary">Salvează raportul fără poze</button>
+  </div>
+</div>
+
+<div id="import-sheet" hidden>
+  <div class="card sheet">
+    <h2>Rapoarte găsite</h2>
+    <p class="hint" id="import-hint">Bifează rapoartele care trebuie să ajungă pe caz. Cele bifate intră în listă și le trimite li.</p>
+    <div id="import-list" class="checks"></div>
+    <button type="button" id="import-ok" class="primary">Adaugă în listă</button>
+    <button type="button" id="import-cancel" class="secondary">Renunță</button>
   </div>
 </div>
 

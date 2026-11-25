@@ -121,7 +121,9 @@ Tests: `pip install -r requirements-dev.txt && pytest`. With Docker: `docker com
 | Report at the end: image `<meter>.png` with sweep, fine-tuning, final check and receivers | yes |
 | Photo of the antenna with the result written on it: `<meter>_antenne.jpg` | yes |
 | Map with meter–site lines, signal and distance; the same map in the report | yes |
-| Report also as PDF (`<meter>.pdf`) with the antenna photo on page 2 | yes |
+| Report also as PDF (`<meter>.pdf`) with the antenna photo and the installation photos on the following pages | yes |
+| Installation photos at mounting and commissioning (up to 6, with meter number and time), at every installation | yes |
+| Reports from the folder or from files can be added to the VVS list, so a forgotten day is not lost | yes |
 | Checking a meter without a session and without CALL: who hears it now, and since when (`<meter>_status.pdf`) | yes, without a server only |
 | Status check: each concentrator once; last contact within the last hour (≤ 75 min), occasional (≤ 8 h) or older (does not count); verdict on hourly data and redundancy; signal and contact limits written in the report | yes |
 | Folder chosen by the installer for reports (created as `LinkIQ-rapporter`), with a list of saved reports; plain download where the browser lacks support | yes |

@@ -119,7 +119,9 @@ Test: `pip install -r requirements-dev.txt && pytest`. Med Docker: `docker compo
 | Rapport ved afslutning: billede `<målernummer>.png` med rotation, finjustering, slutbekræftelse og modtagere | ja |
 | Foto af antennen med resultatet skrevet på: `<målernummer>_antenne.jpg` | ja |
 | Kort med linjer måler–site, signal og afstand; samme kort i rapporten | ja |
-| Rapport også som PDF (`<målernummer>.pdf`) med antennefotoet på side 2 | ja |
+| Rapport også som PDF (`<målernummer>.pdf`) med antennefotoet og installationsbillederne på de følgende sider | ja |
+| Billeder af installationen ved montage og idriftsættelse (op til 6, med målernummer og tidspunkt), ved hver installation | ja |
+| Rapporter fra mappen eller fra filer kan føjes til VVS-listen, så en glemt dag ikke går tabt | ja |
 | Kontrol af en måler uden session og uden CALL: hvem hører den nu, og siden hvornår (`<målernummer>_status.pdf`) | ja, kun uden server |
 | Statuskontrol: hver koncentrator én gang; seneste kontakt inden for den seneste time (≤ 75 min), lejlighedsvis (≤ 8 t) eller ældre (tæller ikke); dom om timedata og redundans; grænser for signal og kontakt skrevet i rapporten | ja |
 | Mappe valgt af montøren til rapporter (oprettes som `LinkIQ-rapporter`) med liste over gemte rapporter; uden browserunderstøttelse bruges almindelig download | ja |
