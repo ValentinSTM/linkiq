@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.23';
+  const VERSION = '0.24';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -295,6 +295,7 @@
     const inMeter = !!(ui.install && ui.install.antennaType === 'internal');
     $('photo-label').hidden = a.kind === 'check' || inMeter;
     $('photo-hint').hidden = a.kind === 'check' || inMeter;
+    $('photo-gal').hidden = a.kind === 'check' || inMeter;
     $('photo-txt').textContent = T('Fotografiază antena');
     $('photo-hint').textContent = T('Fotografiază antena cu datele măsurătorii; pozele cu instalația se fac mai jos. PDF-ul le include pe toate.');
     instPhotos.place(s, a.kind);
@@ -900,17 +901,54 @@
     endPick();
     showCandidates();
   };
-  $('pick-coords').onchange = (ev) => {
-    // "56.1234, 10.1234", "56,1234 10,1234" or a pasted maps link containing lat,lon
-    const t = ev.target.value.trim();
+  // One field: coordinates ("56.1234, 10.1234", "56,1234 10,1234", a pasted maps link) or an
+  // address, looked up in OpenStreetMap (Nominatim) only when the installer asks for it.
+  function parseCoords(t) {
     let m = t.match(/(-?\d{1,2}\.\d{3,})[^\d-]+(-?\d{1,3}\.\d{3,})/);
     if (!m) {                                           // decimal commas
       const c = t.match(/(-?\d{1,2}),(\d{3,})[^\d-]+(-?\d{1,3}),(\d{3,})/);
       if (c) m = [t, `${c[1]}.${c[2]}`, `${c[3]}.${c[4]}`];
     }
-    if (!m || Math.abs(+m[1]) > 90 || Math.abs(+m[2]) > 180) { $('pick-info').textContent = T('Nu am recunoscut coordonatele. Exemplu: 56.1234, 10.1234'); return; }
-    if (ensureMap()) setPick(+m[1], +m[2], true);
+    return m && Math.abs(+m[1]) <= 90 && Math.abs(+m[2]) <= 180 ? [+m[1], +m[2]] : null;
+  }
+  let lastSearch = '';
+  async function searchAddress(t) {
+    const list = $('pick-results'), info = $('pick-info');
+    list.replaceChildren(); list.hidden = true;
+    info.textContent = T('Caut adresa…');
+    const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=0&limit=5&countrycodes=dk&accept-language=da'
+      + '&viewbox=9.4,56.5,10.9,55.8&q=' + encodeURIComponent(t);
+    let res;
+    try {
+      const r = await fetch(u, { referrerPolicy: 'strict-origin-when-cross-origin', headers: { Accept: 'application/json' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      res = await r.json();
+    } catch (e) { info.textContent = T('Căutarea adresei nu merge acum ({0}). Atinge harta sau folosește GPS.', e.message); return; }
+    if (!res.length) { info.textContent = T('Nu am găsit adresa. Scrie strada, numărul și orașul, de ex. Søndergade 1, 8000 Aarhus C.'); return; }
+    const pick = (x) => { list.hidden = true; if (ensureMap()) setPick(+x.lat, +x.lon, true); $('pick-info').textContent = x.display_name.split(', ').slice(0, 4).join(', ') + ' · ' + T('verifică pe hartă și mută punctul dacă e nevoie.'); };
+    if (res.length === 1) { pick(res[0]); return; }
+    for (const x of res) {
+      const li = document.createElement('li'), b = document.createElement('button');
+      b.type = 'button'; b.className = 'secondary'; b.textContent = x.display_name.split(', ').slice(0, 5).join(', ');
+      b.onclick = () => pick(x);
+      li.append(b); list.append(li);
+    }
+    list.hidden = false;
+    info.textContent = T('Alege adresa potrivită.');
+  }
+  $('pick-form').onsubmit = (ev) => {
+    ev.preventDefault();
+    const t = $('pick-coords').value.trim();
+    if (!t) return;
+    const c = parseCoords(t);
+    if (c) { $('pick-results').hidden = true; if (ensureMap()) setPick(c[0], c[1], true); return; }
+    if (t.length < 4) { $('pick-info').textContent = T('Scrie adresa întreagă sau coordonatele.'); return; }
+    if (t === lastSearch && !$('pick-results').hidden) return;
+    lastSearch = t;
+    $('pick-coords').blur();
+    searchAddress(t);
   };
+  $('pick-coords').onchange = () => { if (parseCoords($('pick-coords').value.trim())) $('pick-form').requestSubmit(); };
 
   $('start-form').onsubmit = async (ev) => {
     ev.preventDefault();
@@ -1950,6 +1988,17 @@
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   };
 
+  // Every photo button can also take a picture from the gallery: in poor light the phone's own
+  // camera app (flash, night mode) often does better, and the picture is then picked here.
+  document.querySelectorAll('[data-gallery]').forEach((b) => {
+    b.onclick = () => {
+      const target = $(b.dataset.gallery), inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'image/*';
+      inp.onchange = () => { if (inp.files[0] && target.onchange) target.onchange({ target: inp }); };
+      inp.click();
+    };
+  });
+
   // ---------------------------------------------------------------- installation photos
   // Every installation, whatever the antenna: photos taken at mounting and at commissioning,
   // stamped with meter, moment, time and place, kept with the session (IndexedDB) until the
@@ -1981,7 +2030,7 @@
       const gps = s.session.gps && s.session.gps.lat !== null ? `${s.session.gps.lat.toFixed(5)}, ${s.session.gps.lon.toFixed(5)}` : null;
       const lines = [
         [`700 ${Math.round(u * 1.45)}px ${SANS}`, `${s.session.meterSerial} · ${T(STAGES[stage])}`],
-        [`500 ${u}px ${SANS}`, [fmtTime(new Date().toISOString()), s.session.technician].filter(Boolean).join(' · ')],
+        [`500 ${u}px ${SANS}`, [fmtTime(new Date(file.lastModified || Date.now()).toISOString()), s.session.technician].filter(Boolean).join(' · ')],
         [`400 ${Math.round(u * 0.8)}px ${SANS}`, [s.session.install ? installShort(s.session.install) : null, gps, `LinkIQ v${VERSION}`].filter(Boolean).join(' · ')],
       ];
       x.textAlign = 'left'; x.textBaseline = 'alphabetic'; x.fillStyle = '#fff';
@@ -2016,7 +2065,7 @@
       try {
         const blob = await stamp(file, S, stage);
         const n = list.filter((p) => p.stage === stage).length + 1;
-        list.push({ stage, at: new Date().toISOString(), blob });
+        list.push({ stage, at: new Date(file.lastModified || Date.now()).toISOString(), blob });
         await keep(); draw();
         let saved = null;                    // a copy in the report folder, when there is one; never a pile of downloads
         if (await dirReady(false)) { try { saved = await writeToDir(blob, `${safeName(S.session.meterSerial)}_${FILE[stage]}_${n}.jpg`); refreshReportDir(); } catch { saved = null; } }
@@ -2252,7 +2301,7 @@
       $('lcd-tip').textContent = T('Arată {0} pe contor și ține tot afișajul în chenar.', r.k === '*' ? T('registrul') : r.k);
       $('lcd-live').textContent = '…';
       $('lcd-frame').className = 'lcd-frame';
-      $('lcd-error').hidden = true; $('lcd-torch').hidden = true;
+      $('lcd-error').hidden = true; $('lcd-torch').hidden = true; $('lcd-bright').hidden = true; $('lcd-dark').hidden = true;
       setUse();
       $('lcd-reader').hidden = false;
       startedAt = Date.now();
@@ -2264,6 +2313,11 @@
         await v.play();
         const track = stream.getVideoTracks()[0], caps = track.getCapabilities ? track.getCapabilities() : {};
         if (caps.torch) $('lcd-torch').hidden = false;
+        // brighter / darker picture where the camera allows it (dim cellars, or glare on the glass)
+        if (caps.exposureCompensation && caps.exposureCompensation.max > caps.exposureCompensation.min) {
+          $('lcd-bright').hidden = false; $('lcd-dark').hidden = false;
+          if (caps.exposureMode && caps.exposureMode.includes('continuous')) track.applyConstraints({ advanced: [{ exposureMode: 'continuous' }] }).catch(() => {});
+        }
         if (caps.focusMode && caps.focusMode.includes('continuous')) track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
         loop();
       } catch (e) {
@@ -2314,6 +2368,16 @@
       const v = $('lcd-video');
       finish(v.videoWidth ? { text: '', img: snapshot(v, frameRegion(v)) } : null, 'manual');
     };
+    async function exposure(dir) {
+      if (!stream) return;
+      const track = stream.getVideoTracks()[0], c = track.getCapabilities().exposureCompensation;
+      const now = track.getSettings().exposureCompensation || 0, step = Math.max(c.step || 0, (c.max - c.min) / 8);
+      const next = Math.min(c.max, Math.max(c.min, now + dir * step));
+      try { await track.applyConstraints({ advanced: [{ exposureCompensation: next }] }); } catch { /* not supported after all */ }
+      voter = new window.LinkIQLcd.Voter(3, 10); best = null; setUse();   // start counting again with the new picture
+    }
+    $('lcd-bright').onclick = () => exposure(1);
+    $('lcd-dark').onclick = () => exposure(-1);
     $('lcd-torch').onclick = async () => {
       if (!stream) return;
       const track = stream.getVideoTracks()[0], on = !track.getSettings().torch;
@@ -2774,7 +2838,7 @@
   // The work for li travels three ways: window.opener (with the files), the tab name, and the
   // address (?liq=…). On Android the installed app would open VVS-dialog in a small in-app
   // browser without bookmarks; an intent: address opens it straight in Chrome instead.
-  const isAndroidApp = () => /Android/i.test(navigator.userAgent) && window.matchMedia('(display-mode: standalone)').matches;
+  const isAndroidApp = () => /Android/i.test(navigator.userAgent) && !/EdgA\//.test(navigator.userAgent) && window.matchMedia('(display-mode: standalone)').matches;
   // How the installed app on Android hands VVS-dialog to the real Chrome (with address bar and
   // bookmarks). Phones differ, so the installer can try the ways in the li sheet; the one that
   // works is remembered.

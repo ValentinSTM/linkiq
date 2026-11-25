@@ -145,6 +145,7 @@
       <h2>Raport</h2>
       <p class="hint" id="photo-hint">Fotografiază întâi antena, apoi descarcă raportul: PDF-ul include și fotografia.</p>
       <label class="file-btn" id="photo-label"><span id="photo-txt">Fotografiază antena</span><input type="file" id="photo-file" accept="image/*" capture="environment" hidden></label>
+      <p class="hint gal" id="photo-gal"><button type="button" class="link" data-gallery="photo-file">sau alege o poză din galerie</button></p>
       <div id="readings-card">
         <h3>Citirile contorului <span class="sub">(opțional)</span></h3>
         <p class="hint">Apasă camera de lângă registru și ține afișajul în chenar. Verifică cifrele: le poți corecta.</p>
@@ -203,6 +204,9 @@
         <label class="file-btn"><span>La montaj</span><input type="file" id="iphoto-mount" accept="image/*" capture="environment" hidden></label>
         <label class="file-btn"><span>La punerea în funcțiune</span><input type="file" id="iphoto-start" accept="image/*" capture="environment" hidden></label>
       </div>
+      <p class="hint gal">Lumină slabă? Fă poza cu aplicația Cameră a telefonului (blitz sau mod noapte), apoi alege-o din galerie:
+        <button type="button" class="link" data-gallery="iphoto-mount">la montaj</button> ·
+        <button type="button" class="link" data-gallery="iphoto-start">la punerea în funcțiune</button></p>
       <ul id="iphoto-list" class="iphotos"></ul>
       <p id="iphoto-msg" class="hint" hidden></p>
     </div>
@@ -249,7 +253,11 @@
   <section id="view-map" class="view" hidden>
     <div id="pick-bar" class="card" hidden>
       <h2>Atinge harta în dreptul contorului</h2>
-      <input id="pick-coords" inputmode="text" autocomplete="off" placeholder="sau lipește coordonate: 56.1234, 10.1234">
+      <form id="pick-form" class="search-row">
+        <input id="pick-coords" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" placeholder="Adresă sau coordonate">
+        <button type="submit" id="pick-search" class="secondary">Caută</button>
+      </form>
+      <ul id="pick-results" class="rows" hidden></ul>
       <p id="pick-info" class="hint">Nicio poziție aleasă.</p>
       <div class="two">
         <button type="button" id="pick-cancel" class="secondary">Înapoi</button>
@@ -279,11 +287,16 @@
   <div class="scan-bottom">
     <div id="lcd-live" class="lcd-live">…</div>
     <button type="button" id="lcd-use" class="primary">Păstrează poza, scriu eu valoarea</button>
-    <div class="lcd-row">
+    <div class="lcd-row" id="lcd-light">
+      <button type="button" id="lcd-dark" class="secondary" hidden aria-label="Mai întunecat">☀ −</button>
+      <button type="button" id="lcd-bright" class="secondary" hidden aria-label="Mai luminos">☀ +</button>
       <button type="button" id="lcd-torch" class="secondary" hidden>Lanternă</button>
+    </div>
+    <div class="lcd-row">
       <button type="button" id="lcd-photo-btn" class="secondary">Fotografiază</button>
       <button type="button" id="lcd-close" class="secondary">Închide</button>
     </div>
+    <button type="button" class="link lcd-gal" data-gallery="lcd-photo">Alege o poză din galerie</button>
     <input type="file" id="lcd-photo" accept="image/*" capture="environment" hidden>
   </div>
 </div>
