@@ -4,6 +4,7 @@
 // LinkIQ). The real code therefore updates itself with every LinkIQ version.
 (function () {
   var K = 'linkiq-li-code', o = window.opener, done = 0;
+  var MSG = 'LinkIQ: Åbn VVS-dialog med „Send til VVS-dialog“ i LinkIQ, og tryk på li der. (Eller: LinkIQ › Opret bogmærket li › „Kopiér hele koden til VVS-dialog“, og tryk så på li igen.)';
   function run(c) { done = 1; try { localStorage.setItem(K, c); } catch (e) { /* */ } try { (0, eval)(c); } catch (e) { alert('LinkIQ: ' + e.message); } }
   function local() {
     if (done) { return; }
@@ -13,9 +14,18 @@
     if (navigator.clipboard && navigator.clipboard.readText) {
       navigator.clipboard.readText().then(function (t) {
         t = String(t || '');
-        if (t.indexOf('LIQCODE:') === 0) { run(t.slice(8)); } else { alert('LinkIQ: Kopiér li-koden i LinkIQ (Opret bogmærket li) og tryk på li igen.'); }
-      }, function () { alert('LinkIQ: Kopiér li-koden i LinkIQ (Opret bogmærket li) og tryk på li igen.'); });
+        if (t.indexOf('LIQCODE:') === 0) { run(t.slice(8)); } else { alert(MSG); }
+      }, function () { alert(MSG); });
     }
+  }
+  // LinkIQ puts the code into the tab name when it opens VVS-dialog (Android freezes the LinkIQ tab,
+  // so it cannot answer); the rest of the name is the work for li.
+  var n = String(window.name || ''), at = n.indexOf('|LIQCODE:');
+  if (at > 0) {
+    var code = decodeURIComponent(n.slice(at + 9));
+    window.name = n.slice(0, at);
+    run(code);
+    return;
   }
   if (o) {
     addEventListener('message', function f(ev) {

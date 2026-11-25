@@ -88,19 +88,34 @@
       setTimeout(function () { if (!done) { ok(null); } }, 2500);
     });
   }
-  function tell(msg) { try { if (window.opener) { window.opener.postMessage(msg, '*'); } } catch (e) { /* LinkIQ closed */ } }
+  var back = null, sent = [];               // where LinkIQ is, and what to report there
+  function tell(msg) {
+    if (msg.id) { sent.push({ id: msg.id, ok: msg.ok, cc: msg.cc, msg: msg.msg }); } try { if (window.opener) { window.opener.postMessage(msg, '*'); } } catch (e) { /* LinkIQ closed */ } }
+  function unb64(s) { return atob(s.replace(/-/g, '+').replace(/_/g, '/')); }
   function fromName(clip) {
-    var n = String(window.name || '');
-    var j = n.match(/^linkiq_j([\w-]+)$/) || (location.search.match(/[?&]liq=([\w-]+)/) || null) ||
+    var n = String(window.name || '').split('|LIQCODE:')[0];
+    var bk = n.split('|LIQBACK:');
+    if (bk[1]) { back = decodeURIComponent(bk[1]); n = bk[0]; }
+    var parts = n.split('|LIQFILES:'), fileMap = {};
+    if (parts[1]) {                       // the report files, put in the tab name by LinkIQ
+      try { fileMap = JSON.parse(decodeURIComponent(escape(unb64(parts[1])))); } catch (e) { fileMap = {}; }
+    }
+    var j = parts[0].match(/^linkiq_j([\w-]+)$/) || (location.search.match(/[?&]liq=([\w-]+)/) || null) ||
       (String(clip || '').trim().match(/^LIQ1:([\w-]+)$/) || null);
     if (j) {
       try {
-        var b = atob(j[1].replace(/-/g, '+').replace(/_/g, '/'));
-        var d = JSON.parse(decodeURIComponent(escape(b)));
-        return (Array.isArray(d) ? d : [d]).map(function (x) { return { id: x.id, meter: x.m, status: x.s, text: x.t, files: [] }; });
+        var d = JSON.parse(decodeURIComponent(escape(unb64(j[1]))));
+        return (Array.isArray(d) ? d : [d]).map(function (x) {
+          var fs = (fileMap[x.id] || []).map(function (f) {
+            var bin = atob(f.d), u = new Uint8Array(bin.length);
+            for (var i = 0; i < bin.length; i++) { u[i] = bin.charCodeAt(i); }
+            return { name: f.n, blob: new Blob([u], { type: f.t || 'application/octet-stream' }) };
+          });
+          return { id: x.id, meter: x.m, status: x.s, text: x.t, files: fs };
+        });
       } catch (e) { /* fall through */ }
     }
-    var m = (location.hash.match(/linkiq=(\d+)/) || [])[1] || (n.match(/^linkiq_(\d+)$/) || [])[1];
+    var m = (location.hash.match(/linkiq=(\d+)/) || [])[1] || (parts[0].match(/^linkiq_(\d+)$/) || [])[1];
     return m ? [{ meter: m, files: [] }] : null;
   }
 
@@ -355,10 +370,14 @@
     if (/^linkiq_j/.test(String(window.name || ''))) { window.name = ''; }   // done: the next page must not start it again
     reset('LinkIQ: færdig');
     results.forEach(function (r) { line(r); });
-    if (items.length === 1 && lastCc && results[0].charAt(0) === '✓') {   // one case, all well: show it
+    var noLink = back && sent.length && !window.opener;
+    if (noLink) {                              // LinkIQ could not hear us: take the results back there
+      var b64 = btoa(unescape(encodeURIComponent(JSON.stringify(sent)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      button('Tilbage til LinkIQ', function () { location.href = back + '#liqdone=' + b64; }, true);
+    } else if (items.length === 1 && lastCc && results[0].charAt(0) === '✓') {   // one case, all well: show it
       setTimeout(function () { location.href = '/Cases/ShowCase.aspx?cc=' + lastCc; }, 2500);
     }
-    if (lastCc) { button('Vis sagen', function () { location.href = '/Cases/ShowCase.aspx?cc=' + lastCc; }, true); }
+    if (lastCc) { button('Vis sagen', function () { location.href = '/Cases/ShowCase.aspx?cc=' + lastCc; }, !noLink); }
     closeBtn();
   } catch (err) {
     reset('LinkIQ: Fejl – ' + (err && err.message ? err.message : err));

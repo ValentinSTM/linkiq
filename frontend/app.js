@@ -2545,7 +2545,25 @@
       copyText('LIQ1:' + work);                                // also for li after a login (the address is lost then)
       return;
     }
-    vvsWin = window.open(VVS_ORIGIN + '/' + path + '#linkiq=' + first.meter, 'linkiq_j' + work);
+    // Android freezes the LinkIQ tab while VVS-dialog is shown, so li cannot ask it for anything:
+    // the report files and li's own code travel in the tab name (read quickly, the tap still counts).
+    let files = '';
+    try {
+      const map = {}; let size = 0;
+      for (const e of items) {
+        for (const f of e.files || []) {
+          const blob = await kv.get('vvsf:' + e.id + ':' + f);
+          if (!blob || (size += blob.size) > 6e6) continue;
+          const bytes = new Uint8Array(await blob.arrayBuffer());
+          let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+          (map[e.id] = map[e.id] || []).push({ n: f, t: blob.type || '', d: btoa(bin) });
+        }
+      }
+      if (Object.keys(map).length) files = '|LIQFILES:' + b64url(new TextEncoder().encode(JSON.stringify(map)));
+    } catch { files = ''; }
+    vvsWin = window.open(VVS_ORIGIN + '/' + path + '#linkiq=' + first.meter,
+      'linkiq_j' + work + files + '|LIQBACK:' + encodeURIComponent(location.origin + location.pathname) +
+      '|LIQCODE:' + encodeURIComponent(window.LINKIQ_VVS_CODE || ''));   // the short li finds its code here
   }
   window.addEventListener('message', async (ev) => {
     if (ev.origin !== VVS_ORIGIN || !ev.data || typeof ev.data !== 'object' || !ev.data.liq) return;
@@ -2571,6 +2589,22 @@
       await vqSave(q);
     }
   });
+  // li could not reach LinkIQ (Android freezes the tab): it sends the installer back here with the results.
+  async function vvsResultsFromAddress() {
+    const m = location.hash.match(/liqdone=([\w-]+)/);
+    if (!m) return;
+    history.replaceState(null, '', location.pathname + location.search);
+    let res = [];
+    try { res = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)))); } catch { return; }
+    const q = await vqLoad();
+    for (const r of res) {
+      const e = q.find((x) => x.id === r.id);
+      if (!e) continue;
+      e.state = r.ok ? 'sent' : 'error'; e.msg = r.msg || ''; e.cc = r.cc || e.cc; e.updated = new Date().toISOString();
+    }
+    await vqSave(q);
+    showView('sync');
+  }
   $('vvsq-send').onclick = async () => {
     const q = await vqLoad(), waiting = q.filter((e) => e.state !== 'sent');
     if (waiting.length) openVvs(waiting);
@@ -2630,6 +2664,7 @@
     refreshReportDir();
     updateCamPerm();
     vqPrune();
+    vvsResultsFromAddress();
     $('tech').value = store.get('tech', '') || '';
     if (!(await serverAnswers())) await startStandalone();
     // Pairing link: https://host/#pair=CODE. The fragment never reaches the server.
