@@ -122,7 +122,6 @@ Test: `pip install -r requirements-dev.txt && pytest`. Med Docker: `docker compo
 | Rapport også som PDF (`<målernummer>.pdf`) med antennefotoet og installationsbillederne på de følgende sider | ja |
 | Billeder af installationen ved montage og idriftsættelse (op til 6, med målernummer og tidspunkt), ved hver installation | ja |
 | Adressesøgning på kortet (OpenStreetMap, kun på installatørens tryk) | ja |
-| QR-kode til kolleger, der åbner trinene til bogmærket li (siden hedder allerede li) | ja |
 | Rapporter fra mappen eller fra filer kan føjes til VVS-listen, så en glemt dag ikke går tabt | ja |
 | Kontrol af en måler uden session og uden CALL: hvem hører den nu, og siden hvornår (`<målernummer>_status.pdf`) | ja, kun uden server |
 | Statuskontrol: hver koncentrator én gang; seneste kontakt inden for den seneste time (≤ 75 min), lejlighedsvis (≤ 8 t) eller ældre (tæller ikke); dom om timedata og redundans; grænser for signal og kontakt skrevet i rapporten | ja |

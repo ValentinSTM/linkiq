@@ -4,6 +4,8 @@
 // @version      0.24
 // @description  Lægger LinkIQ-rapporten på sagen: filer, Ny aktivitet med faste ord og status.
 // @match        https://vvsdialog.kmd.dk/*
+// @downloadURL  https://valentinstm.github.io/linkiq/linkiq-vvs.user.js
+// @updateURL    https://valentinstm.github.io/linkiq/linkiq-vvs.user.js
 // @grant        none
 // @run-at       document-idle
 // ==/UserScript==

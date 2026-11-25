@@ -124,7 +124,6 @@ Tests: `pip install -r requirements-dev.txt && pytest`. With Docker: `docker com
 | Report also as PDF (`<meter>.pdf`) with the antenna photo and the installation photos on the following pages | yes |
 | Installation photos at mounting and commissioning (up to 6, with meter number and time), at every installation | yes |
 | Address search on the map (OpenStreetMap, only when the installer taps Search) | yes |
-| QR code for colleagues that opens the steps for the li bookmark (the page is already named li) | yes |
 | Reports from the folder or from files can be added to the VVS list, so a forgotten day is not lost | yes |
 | Checking a meter without a session and without CALL: who hears it now, and since when (`<meter>_status.pdf`) | yes, without a server only |
 | Status check: each concentrator once; last contact within the last hour (≤ 75 min), occasional (≤ 8 h) or older (does not count); verdict on hourly data and redundancy; signal and contact limits written in the report | yes |

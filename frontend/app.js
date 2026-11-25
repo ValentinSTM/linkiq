@@ -2811,7 +2811,7 @@
   // The work for li travels three ways: window.opener (with the files), the tab name, and the
   // address (?liq=…). On Android the installed app would open VVS-dialog in a small in-app
   // browser without bookmarks; an intent: address opens it straight in Chrome instead.
-  const isAndroidApp = () => /Android/i.test(navigator.userAgent) && window.matchMedia('(display-mode: standalone)').matches;
+  const isAndroidApp = () => /Android/i.test(navigator.userAgent) && !/EdgA\//.test(navigator.userAgent) && window.matchMedia('(display-mode: standalone)').matches;
   // How the installed app on Android hands VVS-dialog to the real Chrome (with address bar and
   // bookmarks). Phones differ, so the installer can try the ways in the li sheet; the one that
   // works is remembered.
@@ -2936,45 +2936,15 @@
   };
   // The bookmark itself is short (Android Chrome cuts long ones); it gets the real code from LinkIQ.
   const vvsCode = window.LINKIQ_VVS_LOADER || window.LINKIQ_VVS_BOOKMARK || '';
-  // Link for colleagues: LinkIQ opens straight at the li steps, and the page title is "li", so
-  // the star in Chrome already gives the bookmark its name: only the code has to be pasted.
-  const LI_NAME = 'li', liLink = () => location.origin + location.pathname + '#li';
-  let liQrBlob = null, appTitle = document.title;
   function openVvsSetup() {
     $('vvs-code').value = vvsCode;
     $('vvs-drag').href = vvsCode || '#';
     $('vvs-setup-msg').hidden = true;
     $('vvs-setup').hidden = false;
-    document.title = LI_NAME;
   }
-  window.addEventListener('hashchange', () => { if (location.hash === '#li') openVvsSetup(); });
-  $('li-share').ontoggle = async () => {
-    if (!$('li-share').open || liQrBlob) return;
-    try {
-      if (!window.qrcode) await scanner.loadScript('vendor/qrcode.js');
-      const qr = window.qrcode(0, 'M'); qr.addData(liLink(), 'Byte'); qr.make();
-      const n = qr.getModuleCount(), cell = 12, size = (n + 8) * cell;
-      const c = document.createElement('canvas'); c.width = size; c.height = size + 60;
-      const x = c.getContext('2d');
-      x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.fillStyle = '#000';
-      for (let r = 0; r < n; r++) for (let q = 0; q < n; q++) if (qr.isDark(r, q)) x.fillRect((q + 4) * cell, (r + 4) * cell, cell, cell);
-      x.font = `600 24px ${SANS}`; x.textAlign = 'center'; x.fillStyle = '#0b1f2a';
-      x.fillText(T('LinkIQ: bookmark-ul li pentru VVS-dialog'), size / 2, size + 34);
-      liQrBlob = await new Promise((ok) => c.toBlob(ok, 'image/png'));
-      $('li-qr').src = URL.createObjectURL(liQrBlob);
-    } catch (e) { $('vvs-setup-msg').textContent = T('Nu am putut face codul QR: {0}', e.message); $('vvs-setup-msg').hidden = false; }
-  };
-  $('li-qr-save').onclick = () => {             // a plain download: not a report, never in the VVS list
-    if (!liQrBlob) return;
-    const a = document.createElement('a'); a.href = $('li-qr').src; a.download = 'linkiq-li-qr.png';
-    document.body.appendChild(a); a.click(); a.remove();
-  };
   $('vvs-setup-open').onclick = openVvsSetup;
   $('vvs-setup-open2').onclick = openVvsSetup;
-  $('vvs-setup-close').onclick = () => {
-    $('vvs-setup').hidden = true; document.title = appTitle;
-    if (location.hash === '#li') history.replaceState(null, '', location.pathname + location.search);
-  };
+  $('vvs-setup-close').onclick = () => { $('vvs-setup').hidden = true; };
   $('vvs-drag').onclick = (e) => e.preventDefault();          // it is for dragging to the bookmarks bar
   $('vvs-copy2').onclick = async () => {
     const ok = await copyText('LIQCODE:' + (window.LINKIQ_VVS_CODE || ''));
@@ -2995,8 +2965,7 @@
     refreshReportDir();
     updateCamPerm();
     vqPrune();
-    const back = vvsResultsFromAddress();
-    if (location.hash === '#li') openVvsSetup();   // QR code from a colleague: straight to the li steps       // results from li: the sync page is shown once boot is done
+    const back = vvsResultsFromAddress();       // results from li: the sync page is shown once boot is done
     $('tech').value = store.get('tech', '') || '';
     if (!(await serverAnswers())) await startStandalone();
     // Pairing link: https://host/#pair=CODE. The fragment never reaches the server.

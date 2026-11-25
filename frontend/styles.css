@@ -259,8 +259,6 @@ ul.vvsq .st.err { color: var(--red); }
 .search-row button { width: auto; flex: none; }
 #pick-results[hidden] { display: none; }
 #pick-results button { width: 100%; text-align: left; font-weight: 500; }
-#li-qr { display: block; width: 100%; max-width: 320px; margin: 8px auto; image-rendering: pixelated; }
-#li-qr:not([src]) { display: none; }
 
 /* installation photos */
 #iphoto-card h3 { margin: 0 0 4px; }

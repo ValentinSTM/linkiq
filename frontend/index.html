@@ -355,17 +355,11 @@
     <ol class="steps">
       <li>Apasă „Copiază codul”.</li>
       <li>În Chrome: deschide o pagină oarecare, apasă ⋮ și steluța.</li>
-      <li>Apasă „Editează”. Numele trebuie să fie li (deschis din codul QR, e deja). Șterge adresa și lipește codul.</li>
+      <li>Apasă „Editează”. Nume: li. Șterge adresa și lipește codul.</li>
       <li>Verifică dacă adresa începe cu javascript: – dacă nu, scrie-l în față.</li>
       <li>Folosire: în VVS-dialog scrie li în bara de adrese și alege rândul cu steluță. Din lista de bookmark-uri nu pornește.</li>
     </ol>
     <button type="button" id="vvs-copy" class="primary">Copiază codul</button>
-    <details id="li-share">
-      <summary>Cod QR pentru colegi</summary>
-      <p class="hint">Colegul scanează codul cu camera telefonului. Se deschide LinkIQ direct la acești pași, iar pagina se numește deja li: la steluță trebuie doar lipit codul în locul adresei.</p>
-      <img id="li-qr" alt="Cod QR pentru bookmark-ul li">
-      <button type="button" id="li-qr-save" class="secondary">Salvează codul QR</button>
-    </details>
     <p class="hint">Bookmark-ul e scurt și ia codul întreg din LinkIQ. Prima dată, dacă VVS-dialog nu e deschis din LinkIQ: apasă butonul de mai jos, apoi li în VVS-dialog.</p>
     <button type="button" id="vvs-copy2" class="secondary">Copiază codul complet pentru VVS-dialog (o dată)</button>
     <p id="vvs-setup-msg" class="hint" hidden></p>
@@ -381,8 +375,8 @@
       <button type="button" id="open-d" class="secondary">D</button>
     </div>
     <p id="open-msg" class="hint" hidden></p>
-    <h3>Mai simplu: butonul LinkIQ pe pagina VVS-dialog</h3>
-    <p class="hint">Cu o extensie de scripturi, VVS-dialog are mereu un buton galben „LinkIQ” jos în dreapta, iar când e deschis din LinkIQ pornește singur. PC: Chrome/Edge + Tampermonkey. Android: Firefox + Tampermonkey. iPhone: Safari + aplicația Userscripts. Doar cu acordul IT.</p>
+    <h3>Fără bookmark: butonul LinkIQ pe pagina VVS-dialog</h3>
+    <p class="hint">Cu extensia Tampermonkey, VVS-dialog are mereu un buton galben „LinkIQ” jos în dreapta, iar când e deschis din LinkIQ pornește singur. Se instalează o dată și se actualizează singur. Android: Microsoft Edge (meniu › Extensii › Tampermonkey), iar LinkIQ se deschide tot din Edge. PC: Chrome/Edge + Tampermonkey. iPhone: Safari + aplicația Userscripts. Doar cu acordul IT.</p>
     <a id="vvs-userscript" class="file-btn" href="linkiq-vvs.user.js" target="_blank" rel="noopener">Instalează butonul LinkIQ</a>
     <button type="button" id="vvs-setup-close" class="secondary">Închide</button>
   </div>

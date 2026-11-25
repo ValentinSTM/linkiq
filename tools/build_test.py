@@ -38,5 +38,9 @@ m.update(name="LinkIQ TEST", short_name="LinkIQ TEST", theme_color="#b34700", ba
          display="browser")
 (OUT / "manifest.webmanifest").write_text(json.dumps(m, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 edit("index.html", [("<title>", "<title>TEST · ")])
+edit("linkiq-vvs.user.js", [("@name         LinkIQ til VVS-dialog", "@name         LinkIQ TEST til VVS-dialog"),
+    ("@namespace    linkiq", "@namespace    linkiq-test"),
+    ("https://valentinstm.github.io/linkiq/linkiq-vvs.user.js\n// @updateURL    https://valentinstm.github.io/linkiq/",
+     "https://valentinstm.github.io/linkiq-test/linkiq-vvs.user.js\n// @updateURL    https://valentinstm.github.io/linkiq-test/")])
 (OUT / "styles.css").open("a", encoding="utf-8").write("\n/* test copy */\nheader { background: #b34700 !important; }\n")
 print(f"{OUT.relative_to(ROOT)}: test copy ready")
