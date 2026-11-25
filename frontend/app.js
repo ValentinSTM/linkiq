@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.21';
+  const VERSION = '0.22';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -776,6 +776,7 @@
     showView('align');
     render();
     renderReadings();
+    renderVvs();
     if (navigator.wakeLock) navigator.wakeLock.request('screen').then((w) => { wakeLock = w; }).catch(() => {});
   }
 
@@ -1562,6 +1563,7 @@
     }
 
     y = await drawReadings(x, P, W, y, (t) => { section(t); return y; }, font, text);
+    y = drawVvsSection(x, P, W, y, (t) => { section(t); return y; }, font, text);
 
     const mapCanvas = await reportMap({ ...s, receivers: shown }, W - 2 * P, 620);
     if (mapCanvas) {
@@ -1869,6 +1871,7 @@
         + (previewUrl !== null ? ' ' + T('Dacă descărcarea nu pornește, ține apăsat pe imagine și alege „Salvează”.') : '');
     msg.hidden = false;
     if (saved) refreshReportDir();
+    if (S && /\.(pdf|png)$/i.test(name)) vqUpsert(saved || name, blob);
   }
   const canvasBlob = (canvas, type) => new Promise((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail(new Error('canvas'))), type, 0.9));
 
@@ -2312,15 +2315,181 @@
     $('fb-msg').textContent = T('Text copiat. Lipește-l în grupul de Teams.'); $('fb-msg').hidden = false;
   };
 
+  // ---------------------------------------------------------------- result for VVS-dialog
+  // The installer chooses fixed words once, in the report; the "li" bookmark writes exactly
+  // these words to "Ny aktivitet" and picks the case status. Words: vvstext.js (RPA reads them).
+  const VT = window.LINKIQ_VVS_TEXT || { results: [], faults: [], faultPrefix: 'Fejl ', commentPrefix: '', statuses: [] };
+  function vvsState() {
+    const meter = S ? S.session.meterSerial : null;
+    if (!ui.vvs || ui.vvs.meter !== meter) ui.vvs = { meter, result: null, faults: [], status: VT.statuses[0] || null, comment: '' };
+    return ui.vvs;
+  }
+  function vvsText(v) {
+    const lines = [];
+    if (v.result && !(v.result === 'Fejl' && v.faults.length)) lines.push(v.result);
+    for (const f of VT.faults) if (v.faults.includes(f)) lines.push(VT.faultPrefix + f);
+    if (v.comment && v.comment.trim()) lines.push(VT.commentPrefix + v.comment.trim().replace(/\s+/g, ' '));
+    return lines.join('\n');
+  }
+  const vvsReady = (v) => !!(v.result || v.faults.length) && !!v.status;
+  function renderVvs() {
+    const v = vvsState(), save = () => { store.set('ui', ui); renderVvs(); vvsQueueTouch(); };
+    chipRow($('ch-vres'), VT.results.map((r) => [r, r]), v.result, (r) => {
+      v.result = v.result === r ? null : r;
+      if (v.result === VT.results[0]) v.faults = [];          // "all OK" excludes faults
+      save();
+    });
+    $('vfault-row').hidden = v.result === VT.results[0];
+    const fr = $('ch-vfault');
+    fr.replaceChildren();
+    for (const f of VT.faults) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = f;
+      const on = v.faults.includes(f);
+      b.className = on ? 'on' : ''; b.setAttribute('aria-pressed', String(on));
+      b.onclick = () => { v.faults = on ? v.faults.filter((x) => x !== f) : v.faults.concat(f); save(); };
+      fr.appendChild(b);
+    }
+    chipRow($('ch-vstat'), VT.statuses.map((s) => [s, s]), v.status, (s) => { v.status = s; save(); });
+    if (document.activeElement !== $('vvs-comment')) $('vvs-comment').value = v.comment || '';
+    $('vvs-preview').textContent = vvsText(v) || T('Alege rezultatul.');
+  }
+  $('vvs-comment').oninput = () => {
+    const v = vvsState(); v.comment = $('vvs-comment').value; store.set('ui', ui);
+    $('vvs-preview').textContent = vvsText(v) || T('Alege rezultatul.');
+  };
+  $('vvs-comment').onchange = () => vvsQueueTouch();
+
+  /** Report section: the exact text and status that go to the case. */
+  function drawVvsSection(x, P, W, y, section, font, text) {
+    const v = vvsState(), t = vvsText(v);
+    if (!t) return y;
+    y = section(T('Pentru VVS-dialog'));
+    font(500, 22); text(T('Statusul cazului'), P, y + 34, INK.gray);
+    font(700, 24); text(v.status || '–', P + 300, y + 34);
+    y += 40;
+    font(500, 22); text(T('Text pentru Ny aktivitet'), P, y + 34, INK.gray);
+    font(700, 24);
+    for (const line of t.split('\n')) {
+      // long comments wrap
+      const words = line.split(' '); let cur = '';
+      for (const wd of words) {
+        if (x.measureText(cur + ' ' + wd).width > W - 2 * P - 300 && cur) { text(cur, P + 300, y + 34); y += 32; cur = wd; }
+        else cur = cur ? cur + ' ' + wd : wd;
+      }
+      text(cur, P + 300, y + 34); y += 32;
+    }
+    return y + 10;
+  }
+
+  // ---------------------------------------------------------------- queue for VVS-dialog
+  // Every saved report waits here until "li" has put it on the case. The list on the start
+  // page shows what has arrived and what is still waiting; files are kept in IndexedDB.
+  const VQ_KEEP_DAYS = 7;
+  async function vqLoad() { try { return (await kv.get('vvsq')) || []; } catch { return []; } }
+  async function vqSave(q) { try { await kv.set('vvsq', q); } catch { /* no storage */ } renderVq(q); }
+  const vqId = () => (S ? (S.session.id || 'chk-' + S.session.meterSerial + '-' + new Date().toISOString().slice(0, 10)) : null);
+  async function vqUpsert(fileName, blob) {
+    if (!S) return;
+    const id = vqId(), v = vvsState(), q = await vqLoad();
+    let e = q.find((x) => x.id === id);
+    if (!e) { e = { id, meter: String(S.session.meterSerial), created: new Date().toISOString(), files: [], state: 'pending' }; q.unshift(e); }
+    if (e.state === 'sent' && (fileName || vvsText(v) !== e.text || v.status !== e.status)) e.state = 'pending';   // changed after sending
+    e.text = vvsText(v); e.status = v.status; e.updated = new Date().toISOString();
+    if (fileName && blob) {
+      const ext = (fileName.match(/\.[a-z0-9]+$/i) || [''])[0].toLowerCase();
+      const old = e.files.find((f) => f.toLowerCase().endsWith(ext));
+      if (old) { e.files = e.files.filter((f) => f !== old); try { await kv.set('vvsf:' + id + ':' + old, null); } catch { /* */ } }
+      e.files.push(fileName);
+      try { await kv.set('vvsf:' + id + ':' + fileName, blob); } catch { /* */ }
+    }
+    await vqSave(q);
+  }
+  async function vvsQueueTouch() {                 // text/status changed after a report was saved
+    if (!S) return;
+    const q = await vqLoad();
+    if (q.some((x) => x.id === vqId())) await vqUpsert();
+  }
+  async function vqPrune() {
+    const q = await vqLoad(), limit = Date.now() - VQ_KEEP_DAYS * 864e5, keep = [];
+    for (const e of q) {
+      if (e.state === 'sent' && Date.parse(e.updated || e.created) < limit) {
+        for (const f of e.files) { try { await kv.set('vvsf:' + e.id + ':' + f, null); } catch { /* */ } }
+      } else keep.push(e);
+    }
+    await vqSave(keep);
+  }
+  function renderVq(q) {
+    const list = $('vvsq-list');
+    list.replaceChildren();
+    const today = new Date().toISOString().slice(0, 10);
+    const shown = q.filter((e) => e.state !== 'sent' || (e.updated || e.created).slice(0, 10) === today);
+    for (const e of shown) {
+      const li = document.createElement('li'), a = document.createElement('span'), st = document.createElement('span');
+      a.textContent = `${e.meter} · ${fmtTime(e.updated || e.created)}`;
+      st.className = 'st ' + (e.state === 'sent' ? 'ok' : e.state === 'error' ? 'err' : 'wait');
+      st.textContent = e.state === 'sent' ? T('✓ pe caz {0}', e.cc || '') : e.state === 'error' ? T('eroare: {0}', e.msg || '') : T('așteaptă');
+      li.append(a, st); list.append(li);
+    }
+    if (!shown.length) { const li = document.createElement('li'); li.className = 'hint'; li.textContent = T('Nimic azi.'); list.append(li); }
+    const waiting = q.filter((e) => e.state !== 'sent').length;
+    $('vvsq-send').hidden = !waiting;
+    $('vvsq-send').textContent = T('Trimite cele care așteaptă ({0})', waiting);
+  }
+
+  // Hand-over to "li": LinkIQ opens VVS-dialog itself, so the page there can ask LinkIQ
+  // (window.opener) for the waiting reports and answer with the result of each one.
+  // When that link is lost (phone apps), the meter, text and status travel in the tab name,
+  // and the installer picks the files in the panel.
+  const VVS_ORIGIN = 'https://vvsdialog.kmd.dk';
+  let vvsWin = null, vvsOffer = [];
+  async function openVvs(items) {
+    vvsOffer = items.map((e) => e.id);
+    const first = items[0];
+    const name = 'linkiq_j' + b64url(new TextEncoder().encode(JSON.stringify({ m: first.meter, s: first.status || '', t: first.text || '', id: first.id })));
+    vvsWin = window.open(VVS_HOME + '#linkiq=' + first.meter, name);
+  }
+  window.addEventListener('message', async (ev) => {
+    if (ev.origin !== VVS_ORIGIN || !ev.data || typeof ev.data !== 'object' || !ev.data.liq) return;
+    if (vvsWin && ev.source !== vvsWin) return;
+    const q = await vqLoad();
+    if (ev.data.liq === 'hello') {
+      const items = [];
+      for (const e of q.filter((x) => vvsOffer.includes(x.id))) {
+        const files = [];
+        for (const f of e.files) { try { const b = await kv.get('vvsf:' + e.id + ':' + f); if (b) files.push({ name: f, blob: b }); } catch { /* */ } }
+        items.push({ id: e.id, meter: e.meter, status: e.status, text: e.text, files });
+      }
+      ev.source.postMessage({ liq: 'items', items }, VVS_ORIGIN);
+    } else if (ev.data.liq === 'result') {
+      const e = q.find((x) => x.id === ev.data.id);
+      if (!e) return;
+      e.state = ev.data.ok ? 'sent' : 'error'; e.msg = ev.data.msg || ''; e.cc = ev.data.cc || e.cc;
+      e.updated = new Date().toISOString();
+      await vqSave(q);
+    }
+  });
+  $('vvsq-send').onclick = async () => {
+    const q = await vqLoad(), waiting = q.filter((e) => e.state !== 'sent');
+    if (waiting.length) openVvs(waiting);
+  };
+
   // ---------------------------------------------------------------- VVS-dialog
   // LinkIQ cannot act inside VVS-dialog (another site, the installer's own login).
   // It hands over the meter number three ways - in the address, as the name of the
   // new tab, and on the clipboard - and the installer starts the "li" bookmark there.
   const VVS_HOME = 'https://vvsdialog.kmd.dk/Home.aspx';
-  $('vvs-btn').onclick = () => {
+  $('vvs-btn').onclick = async () => {
     const m = S ? String(S.session.meterSerial).replace(/\D/g, '') : '';
     if (!m) return;
-    window.open(VVS_HOME + '#linkiq=' + m, 'linkiq_' + m);   // first, while the tap still counts
+    const v = vvsState();
+    if (!vvsReady(v)) { showError('align-error', T('Alege întâi rezultatul și statusul pentru VVS-dialog.')); $('vvsres-card').scrollIntoView({ behavior: 'smooth' }); return; }
+    const q = await vqLoad(), id = vqId();
+    let e = q.find((x) => x.id === id);
+    const entry = e || { id, meter: m, status: v.status, text: vvsText(v), files: [] };
+    openVvs([entry]);                                          // first, while the tap still counts
+    if (!e) vqUpsert(); else vvsQueueTouch();
+    if (!entry.files.length) $('vvs-msg').textContent = T('Raportul nu e salvat încă: pe caz ajung doar textul și statusul. Salvează raportul și trimite din nou.');
     copyText(m).then((ok) => {
       $('vvs-msg').textContent = ok
         ? T('Seria {0} este copiată. În VVS-dialog scrie li în bara de adrese și alege bookmark-ul cu steluță.', m)
@@ -2351,6 +2520,7 @@
     try { reportDir = (await kv.get('reportDir')) || null; } catch { /* no storage: ask again when needed */ }
     refreshReportDir();
     updateCamPerm();
+    vqPrune();
     $('tech').value = store.get('tech', '') || '';
     if (!(await serverAnswers())) await startStandalone();
     // Pairing link: https://host/#pair=CODE. The fragment never reaches the server.

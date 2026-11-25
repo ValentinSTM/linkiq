@@ -230,3 +230,13 @@ ul.readings .rs.edited { color: #b26a00; font-weight: 700; }
 #setup-card[hidden], #mode-row[hidden], #place-row[hidden], #alt2-btn[hidden] { display: none; }
 .s-excluded { fill: #fff; stroke: #c3cbd1; stroke-dasharray: 6 5; }
 #pizza path.tap { cursor: pointer; }
+#vvsres-card { display: flex; flex-direction: column; gap: 6px; border-top: 2px solid var(--light); padding-top: 10px; }
+#vvsres-card h3 { margin: 0; }
+#vvsres-card .q { margin: 6px 0 0; }
+#vfault-row[hidden] { display: none; }
+.vvs-preview { margin: 0; padding: 10px; background: #f3f6f8; border: 2px solid var(--light); border-radius: 10px; font: 600 16px/1.4 ui-monospace, monospace; white-space: pre-wrap; min-height: 1.4em; }
+ul.vvsq li { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+ul.vvsq .st { font-weight: 700; white-space: nowrap; }
+ul.vvsq .st.ok { color: var(--green); }
+ul.vvsq .st.wait { color: #b26a00; }
+ul.vvsq .st.err { color: var(--red); }

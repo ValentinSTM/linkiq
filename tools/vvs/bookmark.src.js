@@ -1,28 +1,17 @@
+// LinkIQ "li" bookmark for VVS-dialog (runs on vvsdialog.kmd.dk, as the installer who is logged in).
+// 1. Gets the work from LinkIQ: the waiting reports (files, text, status) through window.opener,
+//    or meter, text and status from the tab name; otherwise it asks for the meter number.
+// 2. Finds the open case of the meter (not "Afsluttet"/"Lukket"); several open: the installer picks.
+// 3. Uploads the report files that are not on the case yet, writes "Ny aktivitet" with the fixed
+//    text and the chosen case status (VVS-dialog's own "Gem" in its status window).
+// 4. Reports the result back to LinkIQ and shows the case.
 (async function () {
   var CLOSED = ['afsluttet', 'lukket'];
   var HOST = 'vvsdialog.kmd.dk';
-  if (location.hostname !== HOST) {
-    alert('LinkIQ: Åbn VVS-dialog og log ind først.');
-    return;
-  }
-  var m = (location.hash.match(/linkiq=(\d+)/) || [])[1] ||
-    (String(window.name || '').match(/^linkiq_(\d+)$/) || [])[1];
-  if (!m) {
-    var clip = '';
-    try {
-      if (navigator.clipboard && navigator.clipboard.readText) {
-        clip = await Promise.race([
-          navigator.clipboard.readText(),
-          new Promise(function (ok) { setTimeout(function () { ok(''); }, 4000); })
-        ]);
-      }
-    } catch (e) { clip = ''; }
-    clip = String(clip || '').trim();
-    m = prompt('LinkIQ: Målernummer?', /^\d{6,12}$/.test(clip) ? clip : '');
-  }
-  m = (m || '').replace(/\D/g, '');
-  if (!m) { return; }
+  var NEW_LOG = 'ctl00$DefaultContent$CaseNewLogUC$';
+  if (location.hostname !== HOST) { alert('LinkIQ: Åbn VVS-dialog og log ind først.'); return; }
 
+  // ---------- panel
   var old = document.getElementById('linkiq-box');
   if (old) { old.remove(); }
   var box = document.createElement('div');
@@ -32,99 +21,257 @@
   document.body.appendChild(box);
   function line(t, bold) {
     var p = document.createElement('div');
-    p.textContent = t;
-    p.style.margin = '0 0 8px';
+    p.textContent = t; p.style.margin = '0 0 8px'; p.style.whiteSpace = 'pre-wrap';
     if (bold) { p.style.fontWeight = 'bold'; }
-    box.appendChild(p);
-    return p;
+    box.appendChild(p); return p;
   }
-  function button(t, fn) {
+  function button(t, fn, main) {
     var b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = t;
-    b.style.cssText = 'display:block;width:100%;margin:0 0 8px;padding:12px;font:16px Arial,sans-serif;' +
-      'text-align:left;background:#fff;color:#111;border:0;border-radius:6px';
-    b.onclick = fn;
-    box.appendChild(b);
-    return b;
+    b.type = 'button'; b.textContent = t;
+    b.style.cssText = 'display:block;width:100%;margin:0 0 8px;padding:12px;font:16px Arial,sans-serif;text-align:left;border:0;border-radius:6px;' +
+      (main ? 'background:#ffd23f;color:#111;font-weight:bold' : 'background:#fff;color:#111');
+    b.onclick = fn; box.appendChild(b); return b;
   }
   function reset(t) { box.textContent = ''; line(t, true); }
   function closeBtn() { button('Luk', function () { box.remove(); }); }
-
-  try {
-    reset('LinkIQ: søger måler ' + m + ' …');
-    var parser = new DOMParser();
-    var res = await fetch('/Home.aspx', { credentials: 'same-origin' });
-    var doc = parser.parseFromString(await res.text(), 'text/html');
-    var form = doc.querySelector('form');
-    var inputs = form ? Array.prototype.slice.call(form.querySelectorAll('input')) : [];
-    var meterInput = inputs.find(function (i) { return /meternumber/i.test(i.name || ''); });
-    var searchBtn = inputs.find(function (i) {
-      return (i.type || '').toLowerCase() === 'submit' && (i.value || '').trim() === 'Søg';
+  function choose(title, options) {          // options: [{label, value}] -> Promise(value)
+    return new Promise(function (ok) {
+      reset(title);
+      options.forEach(function (o) { button(o.label, function () { ok(o.value); }, o.main); });
     });
-    if (!meterInput || !searchBtn) {
-      reset('LinkIQ: Log ind i VVS-dialog først, og tryk derefter på li igen.');
-      closeBtn();
-      return;
+  }
+  var parser = new DOMParser();
+  var wait = function (ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); };
+  async function retry(fn) {                // poor mobile connections: try three times
+    var last;
+    for (var i = 0; i < 3; i++) {
+      try { return await fn(); } catch (e) { last = e; await wait(1500 * (i + 1)); }
     }
-
+    throw last;
+  }
+  async function page(url, opts) {
+    var r = await retry(function () { return fetch(url, Object.assign({ credentials: 'same-origin' }, opts || {})); });
+    var html = await r.text();
+    return { res: r, url: r.url, html: html, doc: parser.parseFromString(html, 'text/html') };
+  }
+  function loggedOut(p) { return !p.doc.querySelector('form') || /login|logon|signin/i.test(p.url); }
+  // All fields of an ASP.NET form, as the browser would send them, without any submit button.
+  function formFields(form, change) {
     var q = new URLSearchParams();
     Array.prototype.forEach.call(form.querySelectorAll('input,select,textarea'), function (e) {
       if (!e.name || e.disabled) { return; }
       var t = (e.type || '').toLowerCase();
       if (t === 'submit' || t === 'button' || t === 'image' || t === 'file' || t === 'reset') { return; }
-      if ((t === 'checkbox' || t === 'radio') && !e.checked) { return; }
-      q.append(e.name, e === meterInput ? m : (e.value || ''));
+      if (change && Object.prototype.hasOwnProperty.call(change, e.name)) { return; }
+      if ((t === 'checkbox' || t === 'radio') && !e.hasAttribute('checked')) { return; }
+      if (e.tagName === 'SELECT') {
+        var o = e.querySelector('option[selected]') || e.querySelector('option');
+        if (o) { q.append(e.name, o.getAttribute('value') !== null ? o.getAttribute('value') : o.textContent); }
+        return;
+      }
+      q.append(e.name, e.tagName === 'TEXTAREA' ? e.textContent : (e.getAttribute('value') || ''));
     });
-    q.append(searchBtn.name, searchBtn.value);
+    Object.keys(change || {}).forEach(function (k) { if (change[k] !== null) { q.append(k, change[k]); } });
+    return q;
+  }
 
-    var action = new URL(form.getAttribute('action') || 'Home.aspx', location.origin + '/Home.aspx');
-    res = await fetch(action.href, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: q.toString()
+  // ---------- 1. the work
+  async function fromOpener() {
+    if (!window.opener) { return null; }
+    return new Promise(function (ok) {
+      var done = false;
+      window.addEventListener('message', function on(ev) {
+        if (ev.source !== window.opener || !ev.data || ev.data.liq !== 'items') { return; }
+        done = true; window.removeEventListener('message', on); ok(ev.data.items || []);
+      });
+      try { window.opener.postMessage({ liq: 'hello', v: 2 }, '*'); } catch (e) { ok(null); return; }
+      setTimeout(function () { if (!done) { ok(null); } }, 2500);
     });
-    var customerUrl = res.url;
-    var html = await res.text();
-    if (!/ShowCustomer\.aspx/i.test(customerUrl)) {
-      reset('LinkIQ: Måler ' + m + ' blev ikke fundet entydigt. Søg manuelt på forsiden.');
-      closeBtn();
-      return;
+  }
+  function tell(msg) { try { if (window.opener) { window.opener.postMessage(msg, '*'); } } catch (e) { /* LinkIQ closed */ } }
+  function fromName() {
+    var n = String(window.name || '');
+    var j = n.match(/^linkiq_j([\w-]+)$/);
+    if (j) {
+      try {
+        var b = atob(j[1].replace(/-/g, '+').replace(/_/g, '/'));
+        var d = JSON.parse(decodeURIComponent(escape(b)));
+        return [{ id: d.id, meter: d.m, status: d.s, text: d.t, files: [] }];
+      } catch (e) { /* fall through */ }
     }
+    var m = (location.hash.match(/linkiq=(\d+)/) || [])[1] || (n.match(/^linkiq_(\d+)$/) || [])[1];
+    return m ? [{ meter: m, files: [] }] : null;
+  }
 
-    doc = parser.parseFromString(html, 'text/html');
-    var seen = {};
-    var cases = [];
-    Array.prototype.forEach.call(doc.querySelectorAll('[onclick*="ShowCase.aspx"]'), function (e) {
+  // ---------- 2. the open case of a meter
+  async function findCase(m) {
+    var here = location.pathname.match(/ShowCase\.aspx/i) && new URLSearchParams(location.search).get('cc');
+    if (here && document.body.innerText.indexOf(m) >= 0) { return here; }
+    var home = await page('/Home.aspx');
+    var form = home.doc.querySelector('form');
+    var inputs = form ? Array.prototype.slice.call(form.querySelectorAll('input')) : [];
+    var meterInput = inputs.find(function (i) { return /meternumber/i.test(i.name || ''); });
+    var searchBtn = inputs.find(function (i) { return (i.type || '').toLowerCase() === 'submit' && (i.value || '').trim() === 'Søg'; });
+    if (!meterInput || !searchBtn) { throw new Error('LOGIN'); }
+    var ch = {}; ch[meterInput.name] = m; ch[searchBtn.name] = searchBtn.value;
+    var action = new URL(form.getAttribute('action') || 'Home.aspx', location.origin + '/Home.aspx');
+    var r = await page(action.href, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formFields(form, ch).toString() });
+    if (!/ShowCustomer\.aspx/i.test(r.url)) { throw new Error('Måler ' + m + ' blev ikke fundet entydigt.'); }
+    var seen = {}, cases = [];
+    Array.prototype.forEach.call(r.doc.querySelectorAll('[onclick*="ShowCase.aspx"]'), function (e) {
       var cc = ((e.getAttribute('onclick') || '').match(/cc=(\d+)/) || [])[1];
       if (!cc || seen[cc]) { return; }
       seen[cc] = 1;
       function cell(s) { var x = e.querySelector(s); return x ? x.textContent.trim() : ''; }
       var status = cell('.ucCHCol2');
       if (CLOSED.indexOf(status.toLowerCase()) >= 0) { return; }
-      cases.push({
-        cc: cc, date: cell('.ucCHCol1'), status: status, type: cell('.ucCHCol3'),
-        own: e.textContent.indexOf(m) >= 0
-      });
+      cases.push({ cc: cc, date: cell('.ucCHCol1'), status: status, type: cell('.ucCHCol3'), own: e.textContent.indexOf(m) >= 0 });
     });
+    if (cases.length === 1) { return cases[0].cc; }
+    if (!cases.length) { throw new Error('Ingen åben sag for måler ' + m + '.'); }
+    return choose('LinkIQ: ' + cases.length + ' åbne sager for måler ' + m + '. Vælg sag:', cases.map(function (c) {
+      return { label: c.date + ' · ' + c.status + ' · ' + c.type + (c.own ? ' · måler nævnt' : ''), value: c.cc };
+    }).concat([{ label: 'Spring over', value: null }]));
+  }
 
-    function open(cc) {
-      reset('LinkIQ: åbner sagen …');
-      location.href = '/Cases/ShowCase.aspx?cc=' + cc;
-    }
-    if (cases.length === 1) { open(cases[0].cc); return; }
-    if (!cases.length) {
-      reset('LinkIQ: Ingen åben sag for måler ' + m + '.');
-      button('Åbn kundesiden', function () { location.href = customerUrl; });
-      closeBtn();
-      return;
-    }
-    reset('LinkIQ: ' + cases.length + ' åbne sager for måler ' + m + '. Vælg sag:');
-    cases.forEach(function (c) {
-      button(c.date + ' · ' + c.status + ' · ' + c.type + (c.own ? ' · måler nævnt' : ''),
-        function () { open(c.cc); });
+  // ---------- 3a. files: only those not on the case yet
+  async function upload(cc, files) {
+    if (!files.length) { return []; }
+    var have = {};
+    try {
+      var g = await retry(function () { return fetch('/Handlers/GetFiles.ashx?caseId=' + cc, { credentials: 'same-origin' }); });
+      (await g.json()).files.forEach(function (f) { have[f.name] = 1; });
+    } catch (e) { /* list unknown: upload anyway */ }
+    var todo = files.filter(function (f) { return !have[f.name]; });
+    if (!todo.length) { return []; }
+    var fd = new FormData();
+    todo.forEach(function (f) { fd.append('files', f.blob, f.name); });
+    fd.append('caseId', cc);
+    var r = await retry(function () {
+      return fetch('/Handlers/FileHandler.ashx', { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
     });
+    var j = r.ok ? await r.json().catch(function () { return null; }) : null;
+    if (!j || !j.files) { throw new Error('Upload fejlede (HTTP ' + r.status + ')'); }
+    return j.files.map(function (f) { return f.name; });
+  }
+
+  // ---------- 3b. Ny aktivitet + status, as VVS-dialog's own "Gem" in the status window
+  function radioFor(doc, status) {
+    var want = String(status || '').trim().toLowerCase(), hit = null;
+    Array.prototype.forEach.call(doc.querySelectorAll('input[type=radio]'), function (r) {
+      var lab = r.id ? doc.querySelector('label[for="' + r.id + '"]') : null;
+      var t = lab ? lab.textContent : (r.nextSibling ? r.nextSibling.textContent : (r.parentNode ? r.parentNode.textContent : ''));
+      if (!hit && String(t || '').trim().toLowerCase() === want) { hit = r; }
+    });
+    return hit;
+  }
+  async function writeLog(cc, text, status) {
+    var url = '/Cases/ShowCase.aspx?cc=' + cc;
+    var p = await page(url);
+    if (loggedOut(p)) { throw new Error('LOGIN'); }
+    var form = p.doc.querySelector('form');
+    var ta = p.doc.querySelector('textarea[name="' + NEW_LOG + 'LogTextTextArea"]');
+    var save = p.doc.querySelector('input[name="' + NEW_LOG + 'SaveLogButton"]');
+    if (!form || !ta || !save) { throw new Error('Fandt ikke feltet Ny aktivitet'); }
+    var norm = function (t) { return String(t || '').replace(/\s+/g, ''); };   // line breaks may show as <br>
+    if (norm(p.doc.body.textContent).indexOf(norm(text)) >= 0) { return 'exists'; }   // li pressed twice
+    var ch = {};
+    ch[ta.name] = text;
+    ch[save.name] = save.getAttribute('value') || 'Gem';
+    if (status) {
+      var radio = radioFor(p.doc, status);
+      if (!radio) { throw new Error('Status „' + status + '“ findes ikke i VVS-dialog'); }
+      Array.prototype.forEach.call(p.doc.querySelectorAll('input[type=radio][name="' + radio.name + '"]'), function (r) { r.removeAttribute('checked'); });
+      ch[radio.name] = radio.getAttribute('value');
+    }
+    var action = new URL(form.getAttribute('action') || url, location.origin + url);
+    var r = await page(action.href, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formFields(form, ch).toString() });
+    var first = text.split('\n')[0].trim().slice(0, 40);
+    var check = r.doc.body ? r.doc.body.textContent.replace(/\s+/g, ' ') : '';
+    if (first && check.indexOf(first.replace(/\s+/g, ' ')) < 0) { throw new Error('Aktiviteten blev ikke fundet efter Gem'); }
+  }
+
+  // ---------- 3c. files chosen by hand (no link to LinkIQ)
+  function pickFiles(m) {
+    return new Promise(function (ok) {
+      reset('LinkIQ: måler ' + m + ' – vælg rapporten (PDF/PNG) fra mappen');
+      var inp = document.createElement('input');
+      inp.type = 'file'; inp.multiple = true; inp.accept = '.pdf,.png,.jpg,application/pdf,image/*';
+      inp.style.cssText = 'display:block;margin:0 0 10px;color:#fff';
+      box.appendChild(inp);
+      var list = line(''), go = button('Send til sagen', function () {
+        var fs = Array.prototype.slice.call(inp.files || []).filter(function (f, i) { return box.querySelector('[data-i="' + i + '"]').checked; });
+        ok(fs.map(function (f) { return { name: f.name, blob: f }; }));
+      }, true);
+      go.disabled = true;
+      button('Send uden filer', function () { ok([]); });
+      inp.onchange = function () {
+        list.textContent = '';
+        Array.prototype.forEach.call(inp.files, function (f, i) {
+          var l = document.createElement('label'), c = document.createElement('input');
+          c.type = 'checkbox'; c.dataset.i = i; c.checked = f.name.indexOf(m) >= 0;
+          l.style.display = 'block'; l.appendChild(c);
+          l.appendChild(document.createTextNode(' ' + f.name + (f.name.indexOf(m) >= 0 ? '' : '  (ikke denne måler!)')));
+          list.appendChild(l);
+        });
+        go.disabled = false;
+      };
+    });
+  }
+
+  // ---------- run
+  try {
+    reset('LinkIQ: henter opgaver …');
+    var items = await fromOpener();
+    var linked = !!items;
+    if (!items || !items.length) { items = fromName(); linked = false; }
+    if (!items) {
+      var clip = '';
+      try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          clip = await Promise.race([navigator.clipboard.readText(), wait(4000).then(function () { return ''; })]);
+        }
+      } catch (e) { clip = ''; }
+      clip = String(clip || '').trim();
+      var m0 = (prompt('LinkIQ: Målernummer?', /^\d{6,12}$/.test(clip) ? clip : '') || '').replace(/\D/g, '');
+      if (!m0) { box.remove(); return; }
+      items = [{ meter: m0, files: [] }];
+    }
+    var results = [], lastCc = null;
+    for (var k = 0; k < items.length; k++) {
+      var it = items[k], tag = (items.length > 1 ? '(' + (k + 1) + '/' + items.length + ') ' : '');
+      try {
+        reset('LinkIQ: ' + tag + 'søger måler ' + it.meter + ' …');
+        var cc = await findCase(String(it.meter));
+        if (!cc) { results.push(it.meter + ': sprunget over'); continue; }
+        var files = it.files || [];
+        if (!linked && !files.length && it.text !== undefined) { files = await pickFiles(it.meter); }
+        reset('LinkIQ: ' + tag + 'sag ' + cc + ' – uploader …');
+        var up = await upload(cc, files);
+        var w = null;
+        if (it.text) {
+          reset('LinkIQ: ' + tag + 'sag ' + cc + ' – skriver Ny aktivitet og status …');
+          w = await writeLog(cc, it.text, it.status);
+        }
+        lastCc = cc;
+        var what = (up.length ? up.length + ' fil(er)' : 'ingen nye filer') +
+          (it.text ? (w === 'exists' ? ', aktiviteten fandtes allerede' : ', aktivitet' + (it.status ? ' + ' + it.status : '')) : '');
+        results.push('✓ ' + it.meter + ' → sag ' + cc + ': ' + what);
+        tell({ liq: 'result', id: it.id, ok: true, cc: cc, msg: what });
+        if (!it.text && !files.length && items.length === 1) { location.href = '/Cases/ShowCase.aspx?cc=' + cc; return; }
+      } catch (e) {
+        var msg = e && e.message === 'LOGIN' ? 'Log ind i VVS-dialog (Chrome udfylder selv), og tryk på li igen.' : (e && e.message ? e.message : String(e));
+        results.push('✗ ' + it.meter + ': ' + msg);
+        tell({ liq: 'result', id: it.id, ok: false, msg: msg });
+        if (e && e.message === 'LOGIN') { break; }
+      }
+    }
+    reset('LinkIQ: færdig');
+    results.forEach(function (r) { line(r); });
+    if (items.length === 1 && lastCc && results[0].charAt(0) === '✓') {   // one case, all well: show it
+      setTimeout(function () { location.href = '/Cases/ShowCase.aspx?cc=' + lastCc; }, 2500);
+    }
+    if (lastCc) { button('Vis sagen', function () { location.href = '/Cases/ShowCase.aspx?cc=' + lastCc; }, true); }
     closeBtn();
   } catch (err) {
     reset('LinkIQ: Fejl – ' + (err && err.message ? err.message : err));

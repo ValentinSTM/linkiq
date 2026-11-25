@@ -92,6 +92,9 @@
       <h2>VVS-dialog</h2>
       <p class="hint">După raport, aplicația deschide VVS-dialog, iar bookmark-ul li găsește cazul deschis al contorului. Bookmark-ul se creează o singură dată în Chrome.</p>
       <button type="button" id="vvs-setup-open" class="secondary">Creează bookmark-ul li</button>
+      <h3 id="vvsq-title">Trimise la VVS-dialog</h3>
+      <ul id="vvsq-list" class="rows vvsq"></ul>
+      <button type="button" id="vvsq-send" class="primary" hidden>Trimite cele care așteaptă</button>
     </div>
     <div id="fb-card" class="card">
       <h2>Feedback și propuneri</h2>
@@ -152,14 +155,30 @@
           <div id="readings-extra" class="checks"></div>
         </details>
       </div>
+      <div id="vvsres-card">
+        <h3>Pentru VVS-dialog</h3>
+        <p class="hint">Textul se scrie singur în „Ny aktivitet” pe caz, cu cuvinte fixe.</p>
+        <p class="q">Rezultat</p>
+        <div class="chips" id="ch-vres"></div>
+        <div id="vfault-row">
+          <p class="q">Erori</p>
+          <div class="chips" id="ch-vfault"></div>
+        </div>
+        <p class="q">Statusul cazului</p>
+        <div class="chips" id="ch-vstat"></div>
+        <p class="q">Comentariu (opțional)</p>
+        <textarea id="vvs-comment" rows="2" maxlength="500"></textarea>
+        <p class="q">Text pentru Ny aktivitet</p>
+        <pre id="vvs-preview" class="vvs-preview"></pre>
+      </div>
       <div id="dir-allow2" class="allow" hidden><button type="button" class="secondary">Permite salvarea în dosar</button></div>
       <button type="button" id="report-pdf-btn" class="secondary">Descarcă raportul (PDF)</button>
       <button type="button" id="report-btn" class="secondary">Descarcă raportul (imagine)</button>
       <p id="dir-info2" class="hint"></p>
       <p id="report-msg" class="hint" hidden></p>
       <img id="report-preview" alt="" hidden>
-      <button type="button" id="vvs-btn" class="secondary">Deschide VVS-dialog</button>
-      <p id="vvs-msg" class="hint">Copiază seria contorului și deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță.</p>
+      <button type="button" id="vvs-btn" class="primary">Trimite la VVS-dialog</button>
+      <p id="vvs-msg" class="hint">Deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță: raportul, textul și statusul ajung singure pe caz.</p>
       <p class="hint">Se deschide fără bară de adrese? Apasă ⋮ și alege „Deschide în Chrome”.</p>
       <p class="hint"><button type="button" id="vvs-setup-open2" class="link">Prima dată: creează bookmark-ul li</button></p>
     </div>
@@ -310,6 +329,7 @@
 <script src="vendor/leaflet.js"></script>
 <script src="i18n.js"></script>
 <script src="vvs.js"></script>
+<script src="vvstext.js"></script>
 <script src="lcd.js"></script>
 <script src="engine.js"></script>
 <script src="app.js"></script>

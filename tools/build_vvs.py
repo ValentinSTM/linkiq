@@ -1,8 +1,10 @@
 """Build frontend/vvs.js from tools/vvs/bookmark.src.js.
 
 The bookmark ("li") runs inside VVS-dialog, started by the installer from the
-address bar. It finds the open case for a meter number and opens it; it never
-uploads or changes anything. Needs Node (npx terser) once, at build time.
+address bar, as the logged-in installer. It finds the open case for a meter and
+puts the LinkIQ report on it: uploads the files that are missing, writes the
+fixed text to "Ny aktivitet" and sets the case status chosen in LinkIQ.
+Needs Node (npx terser) once, at build time.
 
     python tools/build_vvs.py
 """
