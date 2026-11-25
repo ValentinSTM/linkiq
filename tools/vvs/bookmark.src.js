@@ -174,7 +174,11 @@
     var save = p.doc.querySelector('input[name="' + NEW_LOG + 'SaveLogButton"]');
     if (!form || !ta || !save) { throw new Error('Fandt ikke feltet Ny aktivitet'); }
     var norm = function (t) { return String(t || '').replace(/\s+/g, ''); };   // line breaks may show as <br>
-    if (norm(p.doc.body.textContent).indexOf(norm(text)) >= 0) { return 'exists'; }   // li pressed twice
+    var body = norm(p.doc.body.textContent), want = norm(text), at = body.indexOf(want);
+    while (at >= 0) {                                         // li pressed twice; deleted ones do not count
+      if (body.substr(at + want.length, 9) !== '(slettet)') { return 'exists'; }
+      at = body.indexOf(want, at + 1);
+    }
     var ch = {};
     ch[ta.name] = text;
     ch[save.name] = save.getAttribute('value') || 'Gem';
