@@ -1241,6 +1241,15 @@ ul.vvsq .st.err { color: var(--red); }
     <textarea id="vvs-code" rows="3" readonly></textarea>
     <p class="hint">Pe PC: trage butonul de mai jos pe bara de bookmark-uri.</p>
     <a id="vvs-drag" class="drag" href="#">li</a>
+    <h3>Android: cum se deschide VVS-dialog</h3>
+    <p class="hint">Aplicația instalată deschide VVS-dialog într-o fereastră mică, fără bară de adrese, unde li nu merge. Încearcă pe rând A, B, C: cea care deschide Chrome cu bara de adrese rămâne salvată.</p>
+    <div class="lcd-row">
+      <button type="button" id="open-a" class="secondary">A</button>
+      <button type="button" id="open-b" class="secondary">B</button>
+      <button type="button" id="open-c" class="secondary">C</button>
+      <button type="button" id="open-d" class="secondary">D</button>
+    </div>
+    <p id="open-msg" class="hint" hidden></p>
     <h3>Mai simplu: butonul LinkIQ pe pagina VVS-dialog</h3>
     <p class="hint">Cu o extensie de scripturi, VVS-dialog are mereu un buton galben „LinkIQ” jos în dreapta, iar când e deschis din LinkIQ pornește singur. PC: Chrome/Edge + Tampermonkey. Android: Firefox + Tampermonkey. iPhone: Safari + aplicația Userscripts. Doar cu acordul IT.</p>
     <a id="vvs-userscript" class="file-btn" href="linkiq-vvs.user.js" target="_blank" rel="noopener">Instalează butonul LinkIQ</a>
@@ -1777,7 +1786,10 @@ window.LINKIQ_DA = {
  "Raportul PDF, cu fotografia instalației, a fost salvat ca {0}.": "PDF-rapporten med billedet af installationen er gemt som {0}.",
  "Mai simplu: butonul LinkIQ pe pagina VVS-dialog": "Nemmere: LinkIQ-knappen på VVS-dialog-siden",
  "Cu o extensie de scripturi, VVS-dialog are mereu un buton galben „LinkIQ” jos în dreapta, iar când e deschis din LinkIQ pornește singur. PC: Chrome/Edge + Tampermonkey. Android: Firefox + Tampermonkey. iPhone: Safari + aplicația Userscripts. Doar cu acordul IT.": "Med en script-udvidelse har VVS-dialog altid en gul „LinkIQ“-knap nederst til højre, og når siden åbnes fra LinkIQ, starter den af sig selv. PC: Chrome/Edge + Tampermonkey. Android: Firefox + Tampermonkey. iPhone: Safari + appen Userscripts. Kun efter aftale med IT.",
- "Instalează butonul LinkIQ": "Installér LinkIQ-knappen"
+ "Instalează butonul LinkIQ": "Installér LinkIQ-knappen",
+ "Android: cum se deschide VVS-dialog": "Android: sådan åbnes VVS-dialog",
+ "Aplicația instalată deschide VVS-dialog într-o fereastră mică, fără bară de adrese, unde li nu merge. Încearcă pe rând A, B, C: cea care deschide Chrome cu bara de adrese rămâne salvată.": "Den installerede app åbner VVS-dialog i et lille vindue uden adresselinje, hvor li ikke virker. Prøv A, B og C efter tur: den, der åbner Chrome med adresselinje, bliver gemt.",
+ "Metoda {0} e salvată. Ai acum Chrome cu bara de adrese?": "Metode {0} er gemt. Har du nu Chrome med adresselinje?"
 };
 
 </script>
@@ -17939,14 +17951,34 @@ var qrcode = function() {
   // address (?liq=…). On Android the installed app would open VVS-dialog in a small in-app
   // browser without bookmarks; an intent: address opens it straight in Chrome instead.
   const isAndroidApp = () => /Android/i.test(navigator.userAgent) && window.matchMedia('(display-mode: standalone)').matches;
+  // How the installed app on Android hands VVS-dialog to the real Chrome (with address bar and
+  // bookmarks). Phones differ, so the installer can try the ways in the li sheet; the one that
+  // works is remembered.
+  const openWay = () => store.get('vvsOpen', 'intent');
+  function androidUrl(way, url) {
+    const u = new URL(url), rest = u.host + u.pathname + u.search;
+    if (way === 'gc') return 'googlechrome://navigate?url=' + encodeURIComponent(url);
+    if (way === 'intent2') return 'intent://' + rest + '#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;launchFlags=0x10000000;end';
+    return 'intent://' + rest + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
+  }
+  for (const [id, way] of [['open-a', 'intent'], ['open-b', 'intent2'], ['open-c', 'gc'], ['open-d', 'tab']]) {
+    const b = $(id);
+    if (!b) continue;
+    b.onclick = () => {
+      store.set('vvsOpen', way);
+      $('open-msg').textContent = T('Metoda {0} e salvată. Ai acum Chrome cu bara de adrese?', b.textContent.trim());
+      $('open-msg').hidden = false;
+      if (way === 'tab') window.open(VVS_HOME, '_blank'); else location.href = androidUrl(way, VVS_HOME);
+    };
+  }
+
   async function openVvs(items) {
     vvsOffer = items.map((e) => e.id);
     const first = items[0];
     const work = b64url(new TextEncoder().encode(JSON.stringify(items.slice(0, 30).map((e) => ({ m: e.meter, s: e.status || '', t: e.text || '', id: e.id })))));
     const path = 'Home.aspx?liq=' + work;
-    if (isAndroidApp()) {
-      location.href = 'intent://vvsdialog.kmd.dk/' + path + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' +
-        encodeURIComponent(VVS_ORIGIN + '/' + path) + ';end';
+    if (isAndroidApp() && openWay() !== 'tab') {
+      location.href = androidUrl(openWay(), VVS_ORIGIN + '/' + path);
       copyText('LIQ1:' + work);                                // also for li after a login (the address is lost then)
       return;
     }

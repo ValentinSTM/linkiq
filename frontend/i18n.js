@@ -511,5 +511,8 @@ window.LINKIQ_DA = {
  "Raportul PDF, cu fotografia instalației, a fost salvat ca {0}.": "PDF-rapporten med billedet af installationen er gemt som {0}.",
  "Mai simplu: butonul LinkIQ pe pagina VVS-dialog": "Nemmere: LinkIQ-knappen på VVS-dialog-siden",
  "Cu o extensie de scripturi, VVS-dialog are mereu un buton galben „LinkIQ” jos în dreapta, iar când e deschis din LinkIQ pornește singur. PC: Chrome/Edge + Tampermonkey. Android: Firefox + Tampermonkey. iPhone: Safari + aplicația Userscripts. Doar cu acordul IT.": "Med en script-udvidelse har VVS-dialog altid en gul „LinkIQ“-knap nederst til højre, og når siden åbnes fra LinkIQ, starter den af sig selv. PC: Chrome/Edge + Tampermonkey. Android: Firefox + Tampermonkey. iPhone: Safari + appen Userscripts. Kun efter aftale med IT.",
- "Instalează butonul LinkIQ": "Installér LinkIQ-knappen"
+ "Instalează butonul LinkIQ": "Installér LinkIQ-knappen",
+ "Android: cum se deschide VVS-dialog": "Android: sådan åbnes VVS-dialog",
+ "Aplicația instalată deschide VVS-dialog într-o fereastră mică, fără bară de adrese, unde li nu merge. Încearcă pe rând A, B, C: cea care deschide Chrome cu bara de adrese rămâne salvată.": "Den installerede app åbner VVS-dialog i et lille vindue uden adresselinje, hvor li ikke virker. Prøv A, B og C efter tur: den, der åbner Chrome med adresselinje, bliver gemt.",
+ "Metoda {0} e salvată. Ai acum Chrome cu bara de adrese?": "Metode {0} er gemt. Har du nu Chrome med adresselinje?"
 };

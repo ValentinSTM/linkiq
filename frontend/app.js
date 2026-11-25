@@ -2514,14 +2514,34 @@
   // address (?liq=…). On Android the installed app would open VVS-dialog in a small in-app
   // browser without bookmarks; an intent: address opens it straight in Chrome instead.
   const isAndroidApp = () => /Android/i.test(navigator.userAgent) && window.matchMedia('(display-mode: standalone)').matches;
+  // How the installed app on Android hands VVS-dialog to the real Chrome (with address bar and
+  // bookmarks). Phones differ, so the installer can try the ways in the li sheet; the one that
+  // works is remembered.
+  const openWay = () => store.get('vvsOpen', 'intent');
+  function androidUrl(way, url) {
+    const u = new URL(url), rest = u.host + u.pathname + u.search;
+    if (way === 'gc') return 'googlechrome://navigate?url=' + encodeURIComponent(url);
+    if (way === 'intent2') return 'intent://' + rest + '#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;launchFlags=0x10000000;end';
+    return 'intent://' + rest + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
+  }
+  for (const [id, way] of [['open-a', 'intent'], ['open-b', 'intent2'], ['open-c', 'gc'], ['open-d', 'tab']]) {
+    const b = $(id);
+    if (!b) continue;
+    b.onclick = () => {
+      store.set('vvsOpen', way);
+      $('open-msg').textContent = T('Metoda {0} e salvată. Ai acum Chrome cu bara de adrese?', b.textContent.trim());
+      $('open-msg').hidden = false;
+      if (way === 'tab') window.open(VVS_HOME, '_blank'); else location.href = androidUrl(way, VVS_HOME);
+    };
+  }
+
   async function openVvs(items) {
     vvsOffer = items.map((e) => e.id);
     const first = items[0];
     const work = b64url(new TextEncoder().encode(JSON.stringify(items.slice(0, 30).map((e) => ({ m: e.meter, s: e.status || '', t: e.text || '', id: e.id })))));
     const path = 'Home.aspx?liq=' + work;
-    if (isAndroidApp()) {
-      location.href = 'intent://vvsdialog.kmd.dk/' + path + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' +
-        encodeURIComponent(VVS_ORIGIN + '/' + path) + ';end';
+    if (isAndroidApp() && openWay() !== 'tab') {
+      location.href = androidUrl(openWay(), VVS_ORIGIN + '/' + path);
       copyText('LIQ1:' + work);                                // also for li after a login (the address is lost then)
       return;
     }
