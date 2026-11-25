@@ -89,9 +89,9 @@ ul.rows .val { font-weight: 700; font-variant-numeric: tabular-nums; }
 
 #map { height: 58vh; border-radius: 12px; border: 1px solid var(--line); z-index: 0; }
 
-nav { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+nav { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
 nav[hidden] { display: none; }
-nav button { background: none; border-radius: 0; color: var(--gray); min-height: 56px; border-top: 4px solid transparent; }
+nav button { background: none; border-radius: 0; color: var(--gray); min-height: 56px; padding: 0 4px; font-size: 15px; border-top: 4px solid transparent; }
 nav button.on { color: var(--blue); border-top-color: var(--blue); }
 
 .with-btn { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
@@ -169,9 +169,9 @@ ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
 button.link.armed { color: var(--red); font-weight: 800; }
 button.link[hidden] { display: none; }
 
-#feedback, #vvs-setup, #regqr-sheet, #readings-ask { position: fixed; inset: 0; background: rgba(11, 31, 42, .6); z-index: 900; display: flex; align-items: flex-end; justify-content: center; }
-#feedback[hidden], #vvs-setup[hidden], #regqr-sheet[hidden], #readings-ask[hidden] { display: none; }
-#feedback .sheet, #vvs-setup .sheet, #regqr-sheet .sheet, #readings-ask .sheet { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+#feedback, #vvs-setup, #regqr-sheet, #readings-ask, #iphoto-ask, #import-sheet { position: fixed; inset: 0; background: rgba(11, 31, 42, .6); z-index: 900; display: flex; align-items: flex-end; justify-content: center; }
+#feedback[hidden], #vvs-setup[hidden], #regqr-sheet[hidden], #readings-ask[hidden], #iphoto-ask[hidden], #import-sheet[hidden] { display: none; }
+#feedback .sheet, #vvs-setup .sheet, #regqr-sheet .sheet, #readings-ask .sheet, #iphoto-ask .sheet, #import-sheet .sheet { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
 #fb-card { display: flex; flex-direction: column; gap: 8px; }
 .hint.center { text-align: center; }
 ol.steps { margin: 0; padding-left: 22px; }
@@ -187,7 +187,7 @@ ul.rows li.legend { display: block; font-size: 13px; color: var(--gray); border-
 #readings-card { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--light); padding-top: 10px; }
 #readings-card h3 { margin: 0; }
 #readings-card .sub { font-weight: 500; color: var(--gray); font-size: 15px; }
-#readings-card.flash { animation: flash 1.2s ease-out 2; }
+#readings-card.flash, #iphoto-card.flash { animation: flash 1.2s ease-out 2; }
 @keyframes flash { 0% { background: #fff6d6; } 100% { background: transparent; } }
 ul.readings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 ul.readings li { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; align-items: center; border: 2px solid var(--light); border-radius: 12px; padding: 8px; }
@@ -230,3 +230,42 @@ ul.readings .rs.edited { color: #b26a00; font-weight: 700; }
 #setup-card[hidden], #mode-row[hidden], #place-row[hidden], #alt2-btn[hidden] { display: none; }
 .s-excluded { fill: #fff; stroke: #c3cbd1; stroke-dasharray: 6 5; }
 #pizza path.tap { cursor: pointer; }
+#vvsres-card { display: flex; flex-direction: column; gap: 6px; border-top: 2px solid var(--light); padding-top: 10px; }
+#vvsres-card h3 { margin: 0; }
+#vvsres-card .q { margin: 6px 0 0; }
+#vfault-row[hidden] { display: none; }
+.vvs-preview { margin: 0; padding: 10px; background: #f3f6f8; border: 2px solid var(--light); border-radius: 10px; font: 600 16px/1.4 ui-monospace, monospace; white-space: pre-wrap; min-height: 1.4em; }
+ul.vvsq li { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+ul.vvsq .st { font-weight: 700; white-space: nowrap; }
+ul.vvsq .st.ok { color: var(--green); }
+ul.vvsq .st.wait { color: #b26a00; }
+ul.vvsq .st.err { color: var(--red); }
+.sync-sum { font-weight: 700; font-size: 18px; margin: 4px 0; }
+.sync-day { margin: 14px 4px 6px; font-weight: 800; color: var(--gray); }
+.sync-item { border-left: 6px solid #b26a00; }
+.sync-item.ok { border-left-color: var(--green); }
+.sync-item.err { border-left-color: var(--red); }
+.sync-item .top { display: flex; justify-content: space-between; gap: 8px; font-weight: 800; font-size: 18px; }
+.sync-item .st { white-space: nowrap; }
+.sync-item.ok .st { color: var(--green); } .sync-item.err .st { color: var(--red); } .sync-item .st.wait { color: #b26a00; }
+.sync-item pre { margin: 6px 0; padding: 8px; background: #f3f6f8; border-radius: 8px; font: 600 15px/1.35 ui-monospace, monospace; white-space: pre-wrap; }
+.sync-item .meta { font-size: 14px; color: var(--gray); }
+.sync-item .acts { display: flex; gap: 8px; margin-top: 8px; }
+.sync-item .acts button { flex: 1; min-height: 44px; }
+
+/* installation photos */
+#iphoto-card h3 { margin: 0 0 4px; }
+.iphotos { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.iphotos li { position: relative; }
+.iphotos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; display: block; }
+.iphotos small { display: block; font-size: 12px; color: var(--gray, #5a6b75); margin-top: 2px; }
+.iphotos button { position: absolute; top: 4px; right: 4px; width: 32px; min-height: 32px; height: 32px; padding: 0; border-radius: 16px; background: rgba(0,0,0,.6); color: #fff; border: 0; font-size: 18px; }
+#iphoto-card.need { border: 3px solid #ffd23f; }
+#import-list label small { display: block; color: #5a6b75; font-size: 13px; }
+#import-list label.known { opacity: .65; }
+.sync-item .mini { margin-top: 6px; }
+.sync-item .mini .chips button { min-height: 38px; padding: 4px 10px; font-size: 15px; }
+.sync-item .mini input { width: 100%; }
+.file-btn.disabled { opacity: .45; pointer-events: none; }
+#iphoto-card.inside { margin: 10px 0; padding: 10px 0 0; border: 0; box-shadow: none; border-top: 1px solid #dde5ea; border-radius: 0; }
+#iphoto-card.inside.need { border: 3px solid #ffd23f; border-radius: 12px; padding: 10px; }

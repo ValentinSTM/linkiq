@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.21';
+  const VERSION = '0.23';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -291,7 +291,13 @@
     const choose = (patch) => async () => { ui = { ...ui, ...patch }; store.set('ui', ui); };
     $('finish-box').hidden = true;
     $('report-box').hidden = a.kind !== 'done' && a.kind !== 'check';
-    $('photo-label').hidden = a.kind === 'check';
+    // an internal antenna sits in the meter: the installation photos show it, no separate antenna photo
+    const inMeter = !!(ui.install && ui.install.antennaType === 'internal');
+    $('photo-label').hidden = a.kind === 'check' || inMeter;
+    $('photo-hint').hidden = a.kind === 'check' || inMeter;
+    $('photo-txt').textContent = T('Fotografiază antena');
+    $('photo-hint').textContent = T('Fotografiază antena cu datele măsurătorii; pozele cu instalația se fac mai jos. PDF-ul le include pe toate.');
+    instPhotos.place(s, a.kind);
     // installation card: under the buttons while measuring, above "save" at the end
     const card = $('install-card'), active = s.session.status === 'ACTIVE';
     card.hidden = !active;
@@ -758,8 +764,11 @@
     }
   }
 
+  let lastView = 'start';
   function showView(name) {
-    for (const v of ['pair', 'start', 'align', 'recv', 'map']) $('view-' + v).hidden = v !== name;
+    for (const v of ['pair', 'start', 'align', 'recv', 'map', 'sync']) $('view-' + v).hidden = v !== name;
+    if (name !== 'sync') lastView = name;
+    if (name === 'sync') vqLoad().then(renderVq);
     $('tabs').hidden = name === 'start' || name === 'pair' || picking;
     $('pick-bar').hidden = !(picking && name === 'map');
     $('map-info').hidden = picking;
@@ -776,6 +785,7 @@
     showView('align');
     render();
     renderReadings();
+    renderVvs();
     if (navigator.wakeLock) navigator.wakeLock.request('screen').then((w) => { wakeLock = w; }).catch(() => {});
   }
 
@@ -786,7 +796,7 @@
     if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
     $('meter').value = '';
     $('scan-info').hidden = true; $('scan-chips').hidden = true;
-    $('report-msg').hidden = true; $('report-preview').hidden = true; lastPhoto = null;
+    $('report-msg').hidden = true; $('report-preview').hidden = true; lastPhoto = null; instPhotos.forget();
     $('vvs-msg').textContent = T('Copiază seria contorului și deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță.');
     refreshData();
     showView('start');
@@ -1562,6 +1572,7 @@
     }
 
     y = await drawReadings(x, P, W, y, (t) => { section(t); return y; }, font, text);
+    y = drawVvsSection(x, P, W, y, (t) => { section(t); return y; }, font, text);
 
     const mapCanvas = await reportMap({ ...s, receivers: shown }, W - 2 * P, 620);
     if (mapCanvas) {
@@ -1656,6 +1667,10 @@
     }
     y += 18; font(500, 19);
     for (const l of wrap(limitsText(isCheck), W - 2 * P)) { y += 28; text(l, P, y, INK.gray); }
+    if (instPhotos.count()) {
+      section(T('Poze cu instalația'));
+      row('', T('{0} poze în paginile următoare: montaj și punere în funcțiune', instPhotos.count()));
+    }
     if (s.session.note) {
       section(T('Observații'));
       font(500, 26);
@@ -1869,6 +1884,7 @@
         + (previewUrl !== null ? ' ' + T('Dacă descărcarea nu pornește, ține apăsat pe imagine și alege „Salvează”.') : '');
     msg.hidden = false;
     if (saved) refreshReportDir();
+    if (S && /\.(pdf|png)$/i.test(name)) vqUpsert(saved || name, blob);
   }
   const canvasBlob = (canvas, type) => new Promise((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail(new Error('canvas'))), type, 0.9));
 
@@ -1906,19 +1922,22 @@
   }
   const reportName = (s) => safeName(s.session.meterSerial) + (s.session.status === 'CHECK' ? '_status' : '');
 
-  $('report-btn').onclick = () => S && askReadings(savePng);
+  $('report-btn').onclick = () => S && instPhotos.ask(() => askReadings(savePng));
   async function savePng() {
     if (!S) return;
     try { await saveBlob(await canvasBlob(await buildReport(S), 'image/png'), reportName(S) + '.png', 'Raportul a fost salvat ca {0}.'); }
     catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   }
-  $('report-pdf-btn').onclick = () => S && askReadings(savePdf);
+  $('report-pdf-btn').onclick = () => S && instPhotos.ask(() => askReadings(savePdf));
   async function savePdf() {
     if (!S) return;
     try {
       const pages = [await buildReport(S)];
-      if (lastPhoto && S.session.status !== 'CHECK') pages.push(lastPhoto);
-      await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', pages.length > 1 ? 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.' : 'Raportul PDF a fost salvat ca {0}.', null);
+      const internal = ui.install && ui.install.antennaType === 'internal';
+      if (lastPhoto && S.session.status !== 'CHECK' && !internal) pages.push(lastPhoto);
+      const inst = await instPhotos.pages();
+      pages.push(...inst);
+      await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', inst.length ? 'Raportul PDF, cu pozele instalației, a fost salvat ca {0}.' : pages.length > 1 ? 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.' : 'Raportul PDF a fost salvat ca {0}.', null);
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   }
   $('photo-file').onchange = async (ev) => {
@@ -1930,6 +1949,132 @@
       await saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + '_antenne.jpg', 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   };
+
+  // ---------------------------------------------------------------- installation photos
+  // Every installation, whatever the antenna: photos taken at mounting and at commissioning,
+  // stamped with meter, moment, time and place, kept with the session (IndexedDB) until the
+  // report is made, and added to the PDF as history and proof of a correct installation.
+  const instPhotos = (() => {
+    const MAX = 6, STAGES = { mount: 'La montaj', start: 'La punerea în funcțiune' }, FILE = { mount: 'montage', start: 'idrift' };
+    let key = null, list = [], loading = null, asked = false;
+    const keyOf = (s) => 'iph:' + (s.session.id || s.session.meterSerial);
+    async function sync() {
+      if (!S) return;
+      const k = keyOf(S);
+      if (k === key) return loading;
+      key = k; list = []; asked = false;
+      loading = kv.get(k).then((v) => { if (key === k) { list = Array.isArray(v) ? v : []; draw(); } }).catch(() => {});
+      return loading;
+    }
+    const keep = () => kv.set(key, list.map((p) => ({ stage: p.stage, at: p.at, blob: p.blob }))).catch(() => {});
+    async function stamp(file, s, stage) {
+      const bmp = await createImageBitmap(file);
+      const k = Math.min(1, 1400 / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+      const x = c.getContext('2d'), W = c.width, H = c.height;
+      x.drawImage(bmp, 0, 0, W, H);
+      const u = Math.max(14, Math.round(W / 46)), bh = Math.round(u * 5.6);
+      const g = x.createLinearGradient(0, H - bh * 1.4, 0, H);
+      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.35, 'rgba(0,0,0,0.7)'); g.addColorStop(1, 'rgba(0,0,0,0.85)');
+      x.fillStyle = g; x.fillRect(0, H - bh * 1.4, W, bh * 1.4);
+      const gps = s.session.gps && s.session.gps.lat !== null ? `${s.session.gps.lat.toFixed(5)}, ${s.session.gps.lon.toFixed(5)}` : null;
+      const lines = [
+        [`700 ${Math.round(u * 1.45)}px ${SANS}`, `${s.session.meterSerial} · ${T(STAGES[stage])}`],
+        [`500 ${u}px ${SANS}`, [fmtTime(new Date().toISOString()), s.session.technician].filter(Boolean).join(' · ')],
+        [`400 ${Math.round(u * 0.8)}px ${SANS}`, [s.session.install ? installShort(s.session.install) : null, gps, `LinkIQ v${VERSION}`].filter(Boolean).join(' · ')],
+      ];
+      x.textAlign = 'left'; x.textBaseline = 'alphabetic'; x.fillStyle = '#fff';
+      x.shadowColor = 'rgba(0,0,0,0.8)'; x.shadowBlur = u * 0.3;
+      let y = H - bh + u * 1.2;
+      for (const [f, t] of lines) { x.font = f; x.fillText(t, u, y, W - 2 * u); y += u * 1.75; }
+      return canvasBlob(c, 'image/jpeg');
+    }
+    function draw() {
+      const ul = $('iphoto-list');
+      if (!ul) return;
+      ul.replaceChildren();
+      list.forEach((p, i) => {
+        const li = document.createElement('li');
+        const img = document.createElement('img');
+        img.src = p.url || (p.url = URL.createObjectURL(p.blob)); img.alt = T(STAGES[p.stage]);
+        const cap = document.createElement('small'); cap.textContent = T(STAGES[p.stage]) + ' · ' + fmtTime(p.at).split(' ').pop();
+        const del = document.createElement('button'); del.type = 'button'; del.textContent = '×'; del.setAttribute('aria-label', T('Șterge poza'));
+        del.onclick = () => { if (!confirm(T('Ștergi poza?'))) return; URL.revokeObjectURL(p.url); list.splice(i, 1); keep(); draw(); };
+        li.append(img, cap, del); ul.append(li);
+      });
+      const nm = list.filter((p) => p.stage === 'mount').length, ns = list.length - nm;
+      $('iphoto-n').textContent = list.length ? T('({0} la montaj, {1} la punerea în funcțiune)', nm, ns) : '';
+      $('iphoto-card').classList.toggle('need', !list.length && !!S && S.session.status !== 'CHECK' && S.session.status !== 'ACTIVE');
+      for (const id of ['iphoto-mount', 'iphoto-start']) $(id).parentElement.classList.toggle('disabled', list.length >= MAX);
+    }
+    async function add(file, stage) {
+      if (!file || !S) return;
+      await sync();
+      const msg = $('iphoto-msg');
+      if (list.length >= MAX) { msg.textContent = T('Sunt deja {0} poze. Șterge una ca să adaugi alta.', MAX); msg.hidden = false; return; }
+      try {
+        const blob = await stamp(file, S, stage);
+        const n = list.filter((p) => p.stage === stage).length + 1;
+        list.push({ stage, at: new Date().toISOString(), blob });
+        await keep(); draw();
+        let saved = null;                    // a copy in the report folder, when there is one; never a pile of downloads
+        if (await dirReady(false)) { try { saved = await writeToDir(blob, `${safeName(S.session.meterSerial)}_${FILE[stage]}_${n}.jpg`); refreshReportDir(); } catch { saved = null; } }
+        msg.textContent = (saved ? T('Poza e salvată în dosarul „{0}” ca {1}.', reportDir.name, saved) + ' ' : '') + T('Poza intră în raportul PDF.');
+        msg.hidden = false;
+      } catch (e) { msg.textContent = T('Nu am putut citi fotografia: {0}', e.message); msg.hidden = false; }
+    }
+    $('iphoto-mount').onchange = (ev) => { const f = ev.target.files[0]; ev.target.value = ''; add(f, 'mount'); };
+    $('iphoto-start').onchange = (ev) => { const f = ev.target.files[0]; ev.target.value = ''; add(f, 'start'); };
+    return {
+      // while measuring: under the installation card; at the end: in the report card, above "save"
+      place(s, kind) {
+        const card = $('iphoto-card');
+        card.hidden = !s;
+        if (!s) return;
+        sync();
+        const end = kind === 'done' || kind === 'check';
+        const ref = end ? $('readings-card') : $('align-error');
+        if (card.nextElementSibling !== ref) ref.parentNode.insertBefore(card, ref);
+        card.classList.toggle('inside', end);
+        draw();
+      },
+      count: () => list.length,
+      async pages() {
+        await sync();
+        const out = [];
+        for (const st of ['mount', 'start']) {
+          for (const p of list.filter((q) => q.stage === st)) {
+            try {
+              const bmp = await createImageBitmap(p.blob), c = document.createElement('canvas');
+              c.width = bmp.width; c.height = bmp.height; c.getContext('2d').drawImage(bmp, 0, 0);
+              out.push(c);
+            } catch { /* unreadable: left out */ }
+          }
+        }
+        return out;
+      },
+      // asked once per session before a report is saved without any installation photo
+      async ask(then) {
+        await sync();
+        if (asked || list.length || !S || S.session.status === 'CHECK') { then(); return; }
+        asked = true;
+        $('iphoto-ask').hidden = false;
+        $('iask-no').onclick = () => { $('iphoto-ask').hidden = true; then(); };
+        $('iask-yes').onclick = () => {
+          $('iphoto-ask').hidden = true;
+          const card = $('iphoto-card');
+          card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+        };
+      },
+      forget() {
+        if (key) kv.set(key, null).catch(() => {});
+        for (const p of list) if (p.url) URL.revokeObjectURL(p.url);
+        key = null; list = []; asked = false;
+      },
+    };
+  })();
 
   // ---------------------------------------------------------------- meter readings
   // Optional: the register values on the meter's own display, read with the camera
@@ -2312,22 +2457,448 @@
     $('fb-msg').textContent = T('Text copiat. Lipește-l în grupul de Teams.'); $('fb-msg').hidden = false;
   };
 
+  // ---------------------------------------------------------------- result for VVS-dialog
+  // The installer chooses fixed words once, in the report; the "li" bookmark writes exactly
+  // these words to "Ny aktivitet" and picks the case status. Words: vvstext.js (RPA reads them).
+  const VT = window.LINKIQ_VVS_TEXT || { results: [], faults: [], faultPrefix: 'Fejl ', commentPrefix: '', statuses: [] };
+  function vvsState() {
+    const meter = S ? S.session.meterSerial : null;
+    if (!ui.vvs || ui.vvs.meter !== meter) ui.vvs = { meter, result: null, faults: [], status: VT.statuses[0] || null, comment: '' };
+    return ui.vvs;
+  }
+  function vvsText(v) {
+    const lines = [];
+    if (v.result && !(v.result === 'Fejl' && v.faults.length)) lines.push(v.result);
+    for (const f of VT.faults) if (v.faults.includes(f)) lines.push(VT.faultPrefix + f);
+    if (v.comment && v.comment.trim()) lines.push(VT.commentPrefix + v.comment.trim().replace(/\s+/g, ' '));
+    return lines.join('\n');
+  }
+  const vvsReady = (v) => !!(v.result || v.faults.length) && !!v.status;
+  function renderVvs() {
+    const v = vvsState(), save = () => { store.set('ui', ui); renderVvs(); vvsQueueTouch(); };
+    chipRow($('ch-vres'), VT.results.map((r) => [r, r]), v.result, (r) => {
+      v.result = v.result === r ? null : r;
+      if (v.result === VT.results[0]) v.faults = [];          // "all OK" excludes faults
+      save();
+    });
+    $('vfault-row').hidden = v.result === VT.results[0];
+    const fr = $('ch-vfault');
+    fr.replaceChildren();
+    for (const f of VT.faults) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = f;
+      const on = v.faults.includes(f);
+      b.className = on ? 'on' : ''; b.setAttribute('aria-pressed', String(on));
+      b.onclick = () => { v.faults = on ? v.faults.filter((x) => x !== f) : v.faults.concat(f); save(); };
+      fr.appendChild(b);
+    }
+    chipRow($('ch-vstat'), VT.statuses.map((s) => [s, s]), v.status, (s) => { v.status = s; save(); });
+    if (document.activeElement !== $('vvs-comment')) $('vvs-comment').value = v.comment || '';
+    $('vvs-preview').textContent = vvsText(v) || T('Alege rezultatul.');
+  }
+  $('vvs-comment').oninput = () => {
+    const v = vvsState(); v.comment = $('vvs-comment').value; store.set('ui', ui);
+    $('vvs-preview').textContent = vvsText(v) || T('Alege rezultatul.');
+  };
+  $('vvs-comment').onchange = () => vvsQueueTouch();
+
+  /** Report section: the exact text and status that go to the case. */
+  function drawVvsSection(x, P, W, y, section, font, text) {
+    const v = vvsState(), t = vvsText(v);
+    if (!t) return y;
+    y = section(T('Pentru VVS-dialog'));
+    font(500, 22); text(T('Statusul cazului'), P, y + 34, INK.gray);
+    font(700, 24); text(v.status || '–', P + 300, y + 34);
+    y += 40;
+    font(500, 22); text(T('Text pentru Ny aktivitet'), P, y + 34, INK.gray);
+    font(700, 24);
+    for (const line of t.split('\n')) {
+      // long comments wrap
+      const words = line.split(' '); let cur = '';
+      for (const wd of words) {
+        if (x.measureText(cur + ' ' + wd).width > W - 2 * P - 300 && cur) { text(cur, P + 300, y + 34); y += 32; cur = wd; }
+        else cur = cur ? cur + ' ' + wd : wd;
+      }
+      text(cur, P + 300, y + 34); y += 32;
+    }
+    return y + 10;
+  }
+
+  // ---------------------------------------------------------------- queue for VVS-dialog
+  // Every saved report waits here until "li" has put it on the case. The list on the start
+  // page shows what has arrived and what is still waiting; files are kept in IndexedDB.
+  const VQ_KEEP_DAYS = 7;
+  async function vqLoad() { try { return (await kv.get('vvsq')) || []; } catch { return []; } }
+  async function vqSave(q) { try { await kv.set('vvsq', q); } catch { /* no storage */ } renderVq(q); }
+  const vqId = () => (S ? (S.session.id || 'chk-' + S.session.meterSerial + '-' + new Date().toISOString().slice(0, 10)) : null);
+  async function vqUpsert(fileName, blob) {
+    if (!S) return;
+    const id = vqId(), v = vvsState(), q = await vqLoad();
+    let e = q.find((x) => x.id === id);
+    if (!e) { e = { id, meter: String(S.session.meterSerial), created: new Date().toISOString(), files: [], state: 'pending' }; q.unshift(e); }
+    if (e.state === 'sent' && (fileName || vvsText(v) !== e.text || v.status !== e.status)) e.state = 'pending';   // changed after sending
+    e.text = vvsText(v); e.status = v.status; e.updated = new Date().toISOString();
+    if (fileName && blob) {
+      const ext = (fileName.match(/\.[a-z0-9]+$/i) || [''])[0].toLowerCase();
+      const old = e.files.find((f) => f.toLowerCase().endsWith(ext));
+      if (old) { e.files = e.files.filter((f) => f !== old); try { await kv.set('vvsf:' + id + ':' + old, null); } catch { /* */ } }
+      e.files.push(fileName);
+      try { await kv.set('vvsf:' + id + ':' + fileName, blob); } catch { /* */ }
+    }
+    await vqSave(q);
+  }
+  async function vvsQueueTouch() {                 // text/status changed after a report was saved
+    if (!S) return;
+    const q = await vqLoad();
+    if (q.some((x) => x.id === vqId())) await vqUpsert();
+  }
+  async function vqPrune() {
+    const q = await vqLoad(), limit = Date.now() - VQ_KEEP_DAYS * 864e5, keep = [];
+    for (const e of q) {
+      if (e.state === 'sent' && Date.parse(e.updated || e.created) < limit) {
+        await rememberSent([e]);
+        for (const f of e.files) { try { await kv.set('vvsf:' + e.id + ':' + f, null); } catch { /* */ } }
+      } else keep.push(e);
+    }
+    await vqSave(keep);
+  }
+  function renderVq(q) {
+    const waiting = q.filter((e) => e.state !== 'sent'), today = new Date().toISOString().slice(0, 10);
+    const sentToday = q.filter((e) => e.state === 'sent' && (e.updated || e.created).slice(0, 10) === today).length;
+    const errors = q.filter((e) => e.state === 'error').length;
+    const sum = T('Azi: {0} pe caz · {1} așteaptă', sentToday, waiting.length) + (errors ? ' · ' + T('{0} cu eroare', errors) : '');
+    $('vvsq-sum').textContent = q.length ? sum : T('Niciun raport în listă.');
+    $('sync-sum').textContent = sum;
+    syncImportLabels();
+    $('vvsq-send').hidden = !waiting.length;
+    $('vvsq-send').textContent = T('Trimite cele care așteaptă ({0})', waiting.length);
+    const done = q.filter((e) => e.state === 'sent' && !e.cleaned && e.files.length);
+    const nFiles = done.reduce((n, e) => n + e.files.length, 0);
+    $('sync-clean').hidden = !nFiles;
+    $('sync-clean').textContent = reportDir ? T('Șterge din „{0}” fișierele care sunt deja pe caz ({1})', reportDir.name, nFiles)
+      : T('Șterge din aplicație copiile care sunt deja pe caz ({0})', nFiles);
+    const list = $('sync-list');
+    list.replaceChildren();
+    let day = null;
+    for (const e of q) {
+      const d = (e.imported && e.state !== 'sent' ? e.created : e.updated || e.created).slice(0, 10);
+      if (d !== day) {
+        day = d;
+        const h = document.createElement('div'); h.className = 'sync-day';
+        h.textContent = d === today ? T('Azi') : new Date(d).toLocaleDateString(lang === 'da' ? 'da-DK' : 'ro-RO', { weekday: 'long', day: 'numeric', month: 'long' });
+        list.append(h);
+      }
+      const card = document.createElement('div');
+      card.className = 'card sync-item' + (e.state === 'sent' ? ' ok' : e.state === 'error' ? ' err' : '');
+      const top = document.createElement('div'); top.className = 'top';
+      const a = document.createElement('span'); a.textContent = e.meter;
+      const st = document.createElement('span'); st.className = 'st' + (e.state === 'pending' ? ' wait' : '');
+      st.textContent = e.state === 'sent' ? T('✓ pe caz {0}', e.cc || '') : e.state === 'error' ? T('eroare') : T('așteaptă');
+      top.append(a, st); card.append(top);
+      const meta = document.createElement('div'); meta.className = 'meta';
+      meta.textContent = [fmtTime(e.imported && e.state !== 'sent' ? e.created : e.updated || e.created), e.imported ? T('din dosar') : '', e.status || '', e.files.length ? e.files.join(', ') + (e.cleaned ? ' (' + T('șterse de pe telefon') + ')' : '') : T('fără fișiere')].filter(Boolean).join(' · ');
+      card.append(meta);
+      if (e.imported && e.state !== 'sent') card.append(importForm(e));
+      else if (e.text) { const pre = document.createElement('pre'); pre.textContent = e.text; card.append(pre); }
+      if (e.state === 'error' && e.msg) { const m = document.createElement('div'); m.className = 'error'; m.textContent = e.msg; card.append(m); }
+      if (e.state === 'sent' && e.msg) { const m = document.createElement('div'); m.className = 'meta'; m.textContent = e.msg; card.append(m); }
+      const acts = document.createElement('div'); acts.className = 'acts';
+      const send = document.createElement('button'); send.type = 'button'; send.className = e.state === 'sent' ? 'secondary' : 'primary';
+      send.textContent = e.state === 'sent' ? T('Trimite din nou') : T('Trimite');
+      send.onclick = () => openVvs([e]);
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'secondary';
+      del.textContent = T('Scoate din listă');
+      del.onclick = async () => {
+        if (e.state !== 'sent' && !confirm(T('Raportul pentru {0} nu a ajuns încă în VVS-dialog. Îl scoți totuși din listă?', e.meter))) return;
+        const all = await vqLoad();
+        for (const f of e.files) { try { await kv.set('vvsf:' + e.id + ':' + f, null); } catch { /* */ } }
+        await vqSave(all.filter((x) => x.id !== e.id));
+      };
+      acts.append(send, del); card.append(acts);
+      list.append(card);
+    }
+  }
+  // A report added from the folder has no session behind it: the installer picks the fixed words
+  // and the status here. Nothing chosen: li only puts the file on the case.
+  function importForm(e) {
+    const v = e.v || (e.v = { result: null, faults: [], status: VT.statuses[0] || null, comment: '' });
+    const box = document.createElement('div'); box.className = 'mini';
+    const save = async () => {
+      e.text = vvsText(v); e.status = v.status; e.updated = new Date().toISOString();
+      const q = await vqLoad(), x = q.find((y) => y.id === e.id);
+      if (x) { x.v = v; x.text = e.text; x.status = e.status; x.updated = e.updated; await vqSave(q); }
+    };
+    const q1 = document.createElement('p'); q1.className = 'q'; q1.textContent = T('Rezultat');
+    const res = document.createElement('div'); res.className = 'chips';
+    chipRow(res, VT.results.map((r) => [r, r]), v.result, (r) => { v.result = v.result === r ? null : r; if (v.result === VT.results[0]) v.faults = []; save(); });
+    box.append(q1, res);
+    if (v.result !== VT.results[0]) {
+      const q2 = document.createElement('p'); q2.className = 'q'; q2.textContent = T('Erori');
+      const fr = document.createElement('div'); fr.className = 'chips';
+      for (const f of VT.faults) {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = f;
+        const on = v.faults.includes(f); b.className = on ? 'on' : ''; b.setAttribute('aria-pressed', String(on));
+        b.onclick = () => { v.faults = on ? v.faults.filter((y) => y !== f) : [...v.faults, f]; if (v.faults.length && !v.result) v.result = 'Fejl'; save(); };
+        fr.append(b);
+      }
+      box.append(q2, fr);
+    }
+    const q3 = document.createElement('p'); q3.className = 'q'; q3.textContent = T('Statusul cazului');
+    const st = document.createElement('div'); st.className = 'chips';
+    chipRow(st, VT.statuses.map((x) => [x, x]), v.status, (x) => { v.status = x; save(); });
+    const cm = document.createElement('input'); cm.type = 'text'; cm.maxLength = 500; cm.value = v.comment || ''; cm.placeholder = T('Comentariu (opțional)');
+    cm.onchange = () => { v.comment = cm.value; save(); };
+    const pre = document.createElement('pre'); pre.textContent = e.text || T('Fără rezultat ales: li pune doar fișierul pe caz.');
+    box.append(q3, st, cm, pre);
+    return box;
+  }
+
+  // File names that VVS-dialog has confirmed, kept longer than the list itself, so a folder
+  // scan does not offer again what is already on a case.
+  async function rememberSent(entries) {
+    let names = [];
+    try { names = (await kv.get('vvssent')) || []; } catch { /* */ }
+    const set = new Set(names);
+    for (const e of entries) for (const f of e.files || []) set.add(f.toLowerCase());
+    try { await kv.set('vvssent', [...set].slice(-3000)); } catch { /* */ }
+  }
+
+  // Reports in the folder (or picked as files) can be added to the list, so a day that was
+  // never sent is not lost: one report per meter, the newest, PDF before image.
+  const REPORT_FILE = /^(\d{6,12})(_status)?[^.\/]*\.(pdf|png)$/i;
+  async function importCandidates(files) {
+    const q = await vqLoad();
+    let sent = [];
+    try { sent = (await kv.get('vvssent')) || []; } catch { /* */ }
+    const known = new Set([...sent, ...q.flatMap((e) => e.files.map((f) => f.toLowerCase()))]);
+    const best = new Map();
+    for (const f of files) {
+      const m = f.name.match(REPORT_FILE);
+      if (!m) continue;
+      const k = m[1] + (m[2] ? '_status' : ''), pdf = m[3].toLowerCase() === 'pdf', old = best.get(k);
+      const day = (t) => new Date(t).toDateString();
+      if (!old || (day(f.lastModified) === day(old.file.lastModified) ? pdf && !old.pdf : f.lastModified > old.file.lastModified)) best.set(k, { meter: m[1], file: f, pdf });
+    }
+    const limit = Date.now() - 30 * 864e5;
+    return [...best.values()].sort((a, b) => b.file.lastModified - a.file.lastModified)
+      .map((c) => ({ ...c, known: known.has(c.file.name.toLowerCase()), tick: !known.has(c.file.name.toLowerCase()) && c.file.lastModified > limit }));
+  }
+  function showImport(cands) {
+    const msg = $('sync-import-msg');
+    if (!cands.length) { msg.textContent = T('Nu am găsit rapoarte. Numele fișierului trebuie să înceapă cu seria contorului.'); msg.hidden = false; return; }
+    const list = $('import-list');
+    list.replaceChildren();
+    const boxes = cands.map((c) => {
+      const l = document.createElement('label'); if (c.known) l.className = 'known';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = c.tick;
+      const t = document.createElement('span');
+      t.textContent = c.meter;
+      const sm = document.createElement('small');
+      sm.textContent = [fmtTime(new Date(c.file.lastModified).toISOString()), c.file.name, c.known ? T('deja în listă sau pe caz') : null].filter(Boolean).join(' · ');
+      t.append(sm); l.append(cb, t); list.append(l);
+      return cb;
+    });
+    const count = () => { $('import-ok').textContent = T('Adaugă în listă ({0})', boxes.filter((b) => b.checked).length); };
+    boxes.forEach((b) => { b.onchange = count; }); count();
+    $('import-sheet').hidden = false;
+    $('import-cancel').onclick = () => { $('import-sheet').hidden = true; };
+    $('import-ok').onclick = async () => {
+      $('import-sheet').hidden = true;
+      const q = await vqLoad();
+      let n = 0;
+      for (let i = cands.length - 1; i >= 0; i--) {
+        if (!boxes[i].checked) continue;
+        const c = cands[i], id = 'imp-' + c.meter + '-' + c.file.lastModified;
+        if (q.some((e) => e.id === id)) continue;
+        try { await kv.set('vvsf:' + id + ':' + c.file.name, new Blob([await c.file.arrayBuffer()], { type: c.file.type || (c.pdf ? 'application/pdf' : 'image/png') })); }
+        catch { continue; }
+        q.unshift({ id, meter: c.meter, created: new Date(c.file.lastModified).toISOString(), updated: new Date().toISOString(),
+          files: [c.file.name], state: 'pending', imported: true, text: '', status: '' });
+        n++;
+      }
+      await vqSave(q);
+      msg.textContent = n ? T('{0} rapoarte adăugate. Alege rezultatul pe fiecare, apoi trimite.', n) : T('Nimic nou de adăugat.');
+      msg.hidden = false;
+    };
+  }
+  $('sync-import').onclick = async () => {
+    if (reportDir && canPickDir) {
+      if (!(await askDir())) { $('sync-files').click(); return; }
+      const files = [];
+      try { for await (const h of reportDir.values()) if (h.kind === 'file' && REPORT_FILE.test(h.name)) files.push(await h.getFile()); }
+      catch { /* folder gone */ }
+      showImport(await importCandidates(files));
+    } else $('sync-files').click();
+  };
+  $('sync-import2').onclick = () => $('sync-files').click();
+  $('sync-files').onchange = async (ev) => {
+    const files = [...ev.target.files];
+    ev.target.value = '';
+    if (files.length) showImport(await importCandidates(files));
+  };
+  function syncImportLabels() {
+    const dir = reportDir && canPickDir;
+    $('sync-import').textContent = dir ? T('Caută rapoarte în dosarul „{0}”', reportDir.name) : T('Adaugă rapoarte din fișiere');
+    $('sync-import2').hidden = !dir;
+  }
+
+  // Files that VVS-dialog has confirmed: offered for deletion (folder and the app's own copy).
+  $('sync-clean').onclick = async () => {
+    const q = await vqLoad(), done = q.filter((e) => e.state === 'sent' && !e.cleaned && e.files.length);
+    if (!done.length) return;
+    let gone = 0, kept = 0;
+    const folder = reportDir && (await askDir());
+    for (const e of done) {
+      for (const f of e.files) {
+        try { await kv.set('vvsf:' + e.id + ':' + f, null); } catch { /* */ }
+        if (folder) { try { await reportDir.removeEntry(f); gone++; } catch { kept++; } }
+      }
+      e.cleaned = true;
+    }
+    await vqSave(q);
+    const msg = $('sync-clean-msg');
+    msg.textContent = folder ? T('Șterse: {0} fișiere din „{1}”.', gone, reportDir.name) + (kept ? ' ' + T('{0} nu mai erau în dosar.', kept) : '')
+      : T('Copiile din aplicație sunt șterse. Fișierele din Descărcări le ștergi din aplicația Fișiere: au seria contorului în nume.');
+    msg.hidden = false;
+    refreshReportDir();
+  };
+  $('vvsq-open').onclick = () => showView('sync');
+  $('sync-back').onclick = () => showView(lastView || 'start');
+
+  // Hand-over to "li": LinkIQ opens VVS-dialog itself, so the page there can ask LinkIQ
+  // (window.opener) for the waiting reports and answer with the result of each one.
+  // When that link is lost (phone apps), the meter, text and status travel in the tab name,
+  // and the installer picks the files in the panel.
+  const VVS_ORIGIN = 'https://vvsdialog.kmd.dk';
+  let vvsWin = null, vvsOffer = [];
+  // The work for li travels three ways: window.opener (with the files), the tab name, and the
+  // address (?liq=…). On Android the installed app would open VVS-dialog in a small in-app
+  // browser without bookmarks; an intent: address opens it straight in Chrome instead.
+  const isAndroidApp = () => /Android/i.test(navigator.userAgent) && window.matchMedia('(display-mode: standalone)').matches;
+  // How the installed app on Android hands VVS-dialog to the real Chrome (with address bar and
+  // bookmarks). Phones differ, so the installer can try the ways in the li sheet; the one that
+  // works is remembered.
+  const openWay = () => store.get('vvsOpen', 'intent');
+  function androidUrl(way, url) {
+    const u = new URL(url), rest = u.host + u.pathname + u.search;
+    if (way === 'gc') return 'googlechrome://navigate?url=' + encodeURIComponent(url);
+    if (way === 'intent2') return 'intent://' + rest + '#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;launchFlags=0x10000000;end';
+    return 'intent://' + rest + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
+  }
+  for (const [id, way] of [['open-a', 'intent'], ['open-b', 'intent2'], ['open-c', 'gc'], ['open-d', 'tab']]) {
+    const b = $(id);
+    if (!b) continue;
+    b.onclick = () => {
+      store.set('vvsOpen', way);
+      $('open-msg').textContent = T('Metoda {0} e salvată. Ai acum Chrome cu bara de adrese?', b.textContent.trim());
+      $('open-msg').hidden = false;
+      if (way === 'tab') window.open(VVS_HOME, '_blank'); else location.href = androidUrl(way, VVS_HOME);
+    };
+  }
+
+  async function openVvs(items) {
+    vvsOffer = items.map((e) => e.id);
+    const first = items[0];
+    const work = b64url(new TextEncoder().encode(JSON.stringify(items.slice(0, 30).map((e) => ({ m: e.meter, s: e.status || '', t: e.text || '', id: e.id })))));
+    const path = 'Home.aspx?liq=' + work;
+    if (isAndroidApp() && openWay() !== 'tab') {
+      location.href = androidUrl(openWay(), VVS_ORIGIN + '/' + path);
+      copyText('LIQ1:' + work);                                // also for li after a login (the address is lost then)
+      return;
+    }
+    // Android freezes the LinkIQ tab while VVS-dialog is shown, so li cannot ask it for anything:
+    // the report files and li's own code travel in the tab name (read quickly, the tap still counts).
+    let files = '';
+    try {
+      const map = {}; let size = 0;
+      for (const e of items) {
+        for (const f of e.files || []) {
+          const blob = await kv.get('vvsf:' + e.id + ':' + f);
+          if (!blob || (size += blob.size) > 6e6) continue;
+          const bytes = new Uint8Array(await blob.arrayBuffer());
+          let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+          (map[e.id] = map[e.id] || []).push({ n: f, t: blob.type || '', d: btoa(bin) });
+        }
+      }
+      if (Object.keys(map).length) files = '|LIQFILES:' + b64url(new TextEncoder().encode(JSON.stringify(map)));
+    } catch { files = ''; }
+    vvsWin = window.open(VVS_ORIGIN + '/' + path + '#linkiq=' + first.meter,
+      'linkiq_j' + work + files + '|LIQBACK:' + encodeURIComponent(location.origin + location.pathname) +
+      '|LIQCODE:' + encodeURIComponent(window.LINKIQ_VVS_CODE || ''));   // the short li finds its code here
+  }
+  window.addEventListener('message', async (ev) => {
+    if (ev.origin !== VVS_ORIGIN || !ev.data || typeof ev.data !== 'object' || !ev.data.liq) return;
+    if (vvsWin && ev.source !== vvsWin) return;
+    const q = await vqLoad();
+    if (ev.data.liq === 'code') {                       // the short li asks for the real code
+      ev.source.postMessage({ liq: 'code', code: window.LINKIQ_VVS_CODE || '' }, VVS_ORIGIN);
+      return;
+    }
+    if (ev.data.liq === 'hello') {
+      const items = [];
+      for (const e of q.filter((x) => vvsOffer.includes(x.id))) {
+        const files = [];
+        for (const f of e.files) { try { const b = await kv.get('vvsf:' + e.id + ':' + f); if (b) files.push({ name: f, blob: b }); } catch { /* */ } }
+        items.push({ id: e.id, meter: e.meter, status: e.status, text: e.text, files });
+      }
+      ev.source.postMessage({ liq: 'items', items }, VVS_ORIGIN);
+    } else if (ev.data.liq === 'result') {
+      const e = q.find((x) => x.id === ev.data.id);
+      if (!e) return;
+      e.state = ev.data.ok ? 'sent' : 'error'; e.msg = ev.data.msg || ''; e.cc = ev.data.cc || e.cc;
+      e.updated = new Date().toISOString();
+      if (e.state === 'sent') await rememberSent([e]);
+      await vqSave(q);
+    }
+  });
+  // li could not reach LinkIQ (Android freezes the tab): it sends the installer back here with the results.
+  async function vvsResultsFromAddress() {
+    const m = location.hash.match(/liqdone=([\w-]+)/);
+    if (!m) return false;
+    history.replaceState(null, '', location.pathname + location.search);
+    let res = [];
+    try { res = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)))); } catch { return false; }
+    const q = await vqLoad();
+    for (const r of res) {
+      const e = q.find((x) => x.id === r.id);
+      if (!e) continue;
+      e.state = r.ok ? 'sent' : 'error'; e.msg = r.msg || ''; e.cc = r.cc || e.cc; e.updated = new Date().toISOString();
+    }
+    await rememberSent(q.filter((e) => e.state === 'sent'));
+    await vqSave(q);
+    showView('sync');
+    return true;
+  }
+  $('vvsq-send').onclick = async () => {
+    const q = await vqLoad(), waiting = q.filter((e) => e.state !== 'sent');
+    if (waiting.length) openVvs(waiting);
+  };
+
   // ---------------------------------------------------------------- VVS-dialog
   // LinkIQ cannot act inside VVS-dialog (another site, the installer's own login).
   // It hands over the meter number three ways - in the address, as the name of the
   // new tab, and on the clipboard - and the installer starts the "li" bookmark there.
   const VVS_HOME = 'https://vvsdialog.kmd.dk/Home.aspx';
-  $('vvs-btn').onclick = () => {
+  $('vvs-btn').onclick = async () => {
     const m = S ? String(S.session.meterSerial).replace(/\D/g, '') : '';
     if (!m) return;
-    window.open(VVS_HOME + '#linkiq=' + m, 'linkiq_' + m);   // first, while the tap still counts
+    const v = vvsState();
+    if (!vvsReady(v)) { showError('align-error', T('Alege întâi rezultatul și statusul pentru VVS-dialog.')); $('vvsres-card').scrollIntoView({ behavior: 'smooth' }); return; }
+    const q = await vqLoad(), id = vqId();
+    let e = q.find((x) => x.id === id);
+    const entry = e || { id, meter: m, status: v.status, text: vvsText(v), files: [] };
+    openVvs([entry]);                                          // first, while the tap still counts
+    if (!e) vqUpsert(); else vvsQueueTouch();
+    if (!entry.files.length) $('vvs-msg').textContent = T('Raportul nu e salvat încă: pe caz ajung doar textul și statusul. Salvează raportul și trimite din nou.');
+    if (isAndroidApp()) return;
     copyText(m).then((ok) => {
       $('vvs-msg').textContent = ok
         ? T('Seria {0} este copiată. În VVS-dialog scrie li în bara de adrese și alege bookmark-ul cu steluță.', m)
         : T('În VVS-dialog scrie li în bara de adrese și alege bookmark-ul cu steluță. Seria contorului: {0}.', m);
     });
   };
-  const vvsCode = window.LINKIQ_VVS_BOOKMARK || '';
+  // The bookmark itself is short (Android Chrome cuts long ones); it gets the real code from LinkIQ.
+  const vvsCode = window.LINKIQ_VVS_LOADER || window.LINKIQ_VVS_BOOKMARK || '';
   function openVvsSetup() {
     $('vvs-code').value = vvsCode;
     $('vvs-drag').href = vvsCode || '#';
@@ -2338,6 +2909,11 @@
   $('vvs-setup-open2').onclick = openVvsSetup;
   $('vvs-setup-close').onclick = () => { $('vvs-setup').hidden = true; };
   $('vvs-drag').onclick = (e) => e.preventDefault();          // it is for dragging to the bookmarks bar
+  $('vvs-copy2').onclick = async () => {
+    const ok = await copyText('LIQCODE:' + (window.LINKIQ_VVS_CODE || ''));
+    $('vvs-setup-msg').textContent = ok ? T('Codul complet e copiat. Deschide VVS-dialog în Chrome și apasă li: îl ia din clipboard și îl ține minte.') : T('Nu am putut copia.');
+    $('vvs-setup-msg').hidden = false;
+  };
   $('vvs-copy').onclick = async () => {
     const ok = await copyText(vvsCode);
     $('vvs-setup-msg').textContent = ok ? T('Cod copiat. Continuă cu pasul 2.') : T('Nu am putut copia. Selectează textul din câmp și copiază-l.');
@@ -2351,6 +2927,8 @@
     try { reportDir = (await kv.get('reportDir')) || null; } catch { /* no storage: ask again when needed */ }
     refreshReportDir();
     updateCamPerm();
+    vqPrune();
+    const back = vvsResultsFromAddress();       // results from li: the sync page is shown once boot is done
     $('tech').value = store.get('tech', '') || '';
     if (!(await serverAnswers())) await startStandalone();
     // Pairing link: https://host/#pair=CODE. The fragment never reaches the server.
@@ -2377,10 +2955,11 @@
     if (sid) {
       try {
         const s = await api('/api/sessions/' + sid);
-        if (s.session.status === 'ACTIVE') { enterSession(s); return; }
+        if (s.session.status === 'ACTIVE') { enterSession(s); if (await back) showView('sync'); return; }
       } catch { /* fall through */ }
       store.del('session');
     }
     showStart(pairedName);
+    if (await back) showView('sync');
   })();
 })();

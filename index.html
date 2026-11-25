@@ -92,6 +92,8 @@
       <h2>VVS-dialog</h2>
       <p class="hint">După raport, aplicația deschide VVS-dialog, iar bookmark-ul li găsește cazul deschis al contorului. Bookmark-ul se creează o singură dată în Chrome.</p>
       <button type="button" id="vvs-setup-open" class="secondary">Creează bookmark-ul li</button>
+      <p id="vvsq-sum" class="hint"></p>
+      <button type="button" id="vvsq-open" class="secondary">Sincronizare cu VVS-dialog</button>
     </div>
     <div id="fb-card" class="card">
       <h2>Feedback și propuneri</h2>
@@ -141,8 +143,8 @@
     </div>
     <div id="report-box" class="card" hidden>
       <h2>Raport</h2>
-      <p class="hint">Fotografiază întâi antena, apoi descarcă raportul: PDF-ul include și fotografia.</p>
-      <label class="file-btn" id="photo-label">Fotografiază antena<input type="file" id="photo-file" accept="image/*" capture="environment" hidden></label>
+      <p class="hint" id="photo-hint">Fotografiază întâi antena, apoi descarcă raportul: PDF-ul include și fotografia.</p>
+      <label class="file-btn" id="photo-label"><span id="photo-txt">Fotografiază antena</span><input type="file" id="photo-file" accept="image/*" capture="environment" hidden></label>
       <div id="readings-card">
         <h3>Citirile contorului <span class="sub">(opțional)</span></h3>
         <p class="hint">Apasă camera de lângă registru și ține afișajul în chenar. Verifică cifrele: le poți corecta.</p>
@@ -152,14 +154,30 @@
           <div id="readings-extra" class="checks"></div>
         </details>
       </div>
+      <div id="vvsres-card">
+        <h3>Pentru VVS-dialog</h3>
+        <p class="hint">Textul se scrie singur în „Ny aktivitet” pe caz, cu cuvinte fixe.</p>
+        <p class="q">Rezultat</p>
+        <div class="chips" id="ch-vres"></div>
+        <div id="vfault-row">
+          <p class="q">Erori</p>
+          <div class="chips" id="ch-vfault"></div>
+        </div>
+        <p class="q">Statusul cazului</p>
+        <div class="chips" id="ch-vstat"></div>
+        <p class="q">Comentariu (opțional)</p>
+        <textarea id="vvs-comment" rows="2" maxlength="500"></textarea>
+        <p class="q">Text pentru Ny aktivitet</p>
+        <pre id="vvs-preview" class="vvs-preview"></pre>
+      </div>
       <div id="dir-allow2" class="allow" hidden><button type="button" class="secondary">Permite salvarea în dosar</button></div>
       <button type="button" id="report-pdf-btn" class="secondary">Descarcă raportul (PDF)</button>
       <button type="button" id="report-btn" class="secondary">Descarcă raportul (imagine)</button>
       <p id="dir-info2" class="hint"></p>
       <p id="report-msg" class="hint" hidden></p>
       <img id="report-preview" alt="" hidden>
-      <button type="button" id="vvs-btn" class="secondary">Deschide VVS-dialog</button>
-      <p id="vvs-msg" class="hint">Copiază seria contorului și deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță.</p>
+      <button type="button" id="vvs-btn" class="primary">Trimite la VVS-dialog</button>
+      <p id="vvs-msg" class="hint">Deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță: raportul, textul și statusul ajung singure pe caz.</p>
       <p class="hint">Se deschide fără bară de adrese? Apasă ⋮ și alege „Deschide în Chrome”.</p>
       <p class="hint"><button type="button" id="vvs-setup-open2" class="link">Prima dată: creează bookmark-ul li</button></p>
     </div>
@@ -177,6 +195,16 @@
         <div class="chips" id="ch-place"></div>
         <div class="chips sub" id="ch-place-n" hidden></div>
       </div>
+    </div>
+    <div id="iphoto-card" class="card" hidden>
+      <h3>Poze cu instalația <span id="iphoto-n" class="sub"></span></h3>
+      <p class="hint" id="iphoto-hint">Fotografiază toată instalația la montaj și la punerea în funcțiune: contorul, țevile, antena și ce e în jur. Pozele intră în raportul PDF, ca istoric și dovadă a montajului corect.</p>
+      <div class="two">
+        <label class="file-btn"><span>La montaj</span><input type="file" id="iphoto-mount" accept="image/*" capture="environment" hidden></label>
+        <label class="file-btn"><span>La punerea în funcțiune</span><input type="file" id="iphoto-start" accept="image/*" capture="environment" hidden></label>
+      </div>
+      <ul id="iphoto-list" class="iphotos"></ul>
+      <p id="iphoto-msg" class="hint" hidden></p>
     </div>
     <p id="align-error" class="error" hidden></p>
     <div id="pos-card" class="card" hidden>
@@ -202,6 +230,22 @@
   </section>
 
   <!-- Hartă -->
+  <section id="view-sync" class="view" hidden>
+    <div class="card">
+      <h2>Sincronizare cu VVS-dialog</h2>
+      <p class="hint">Fiecare raport salvat așteaptă aici până când li îl pune pe caz: fișierele, textul din Ny aktivitet și statusul. Un singur li le trimite pe toate cele care așteaptă.</p>
+      <p id="sync-sum" class="sync-sum"></p>
+      <button type="button" id="sync-import" class="secondary">Adaugă rapoarte din fișiere</button>
+      <button type="button" id="sync-import2" class="link" hidden>sau alege fișierele</button>
+      <input type="file" id="sync-files" accept=".pdf,.png,application/pdf,image/png" multiple hidden>
+      <p id="sync-import-msg" class="hint" hidden></p>
+      <button type="button" id="vvsq-send" class="primary" hidden>Trimite cele care așteaptă</button>
+      <button type="button" id="sync-clean" class="secondary" hidden>Șterge fișierele care sunt deja pe caz</button>
+      <p id="sync-clean-msg" class="hint" hidden></p>
+      <button type="button" id="sync-back" class="secondary">Înapoi</button>
+    </div>
+    <div id="sync-list"></div>
+  </section>
   <section id="view-map" class="view" hidden>
     <div id="pick-bar" class="card" hidden>
       <h2>Atinge harta în dreptul contorului</h2>
@@ -282,6 +326,25 @@
   </div>
 </div>
 
+<div id="iphoto-ask" hidden>
+  <div class="card sheet">
+    <h2>Nu ai nicio poză cu instalația</h2>
+    <p class="hint">Pozele de la montaj și de la punerea în funcțiune arată cum a fost lăsată instalația. Fă cel puțin una înainte de raport.</p>
+    <button type="button" id="iask-yes" class="primary">Fac poze acum</button>
+    <button type="button" id="iask-no" class="secondary">Salvează raportul fără poze</button>
+  </div>
+</div>
+
+<div id="import-sheet" hidden>
+  <div class="card sheet">
+    <h2>Rapoarte găsite</h2>
+    <p class="hint" id="import-hint">Bifează rapoartele care trebuie să ajungă pe caz. Cele bifate intră în listă și le trimite li.</p>
+    <div id="import-list" class="checks"></div>
+    <button type="button" id="import-ok" class="primary">Adaugă în listă</button>
+    <button type="button" id="import-cancel" class="secondary">Renunță</button>
+  </div>
+</div>
+
 <div id="vvs-setup" hidden>
   <div class="card sheet">
     <h2>Bookmark-ul li pentru VVS-dialog</h2>
@@ -293,10 +356,24 @@
       <li>Folosire: în VVS-dialog scrie li în bara de adrese și alege rândul cu steluță. Din lista de bookmark-uri nu pornește.</li>
     </ol>
     <button type="button" id="vvs-copy" class="primary">Copiază codul</button>
+    <p class="hint">Bookmark-ul e scurt și ia codul întreg din LinkIQ. Prima dată, dacă VVS-dialog nu e deschis din LinkIQ: apasă butonul de mai jos, apoi li în VVS-dialog.</p>
+    <button type="button" id="vvs-copy2" class="secondary">Copiază codul complet pentru VVS-dialog (o dată)</button>
     <p id="vvs-setup-msg" class="hint" hidden></p>
     <textarea id="vvs-code" rows="3" readonly></textarea>
     <p class="hint">Pe PC: trage butonul de mai jos pe bara de bookmark-uri.</p>
     <a id="vvs-drag" class="drag" href="#">li</a>
+    <h3>Android: cum se deschide VVS-dialog</h3>
+    <p class="hint">Aplicația instalată deschide VVS-dialog într-o fereastră mică, fără bară de adrese, unde li nu merge. Încearcă pe rând A, B, C: cea care deschide Chrome cu bara de adrese rămâne salvată.</p>
+    <div class="lcd-row">
+      <button type="button" id="open-a" class="secondary">A</button>
+      <button type="button" id="open-b" class="secondary">B</button>
+      <button type="button" id="open-c" class="secondary">C</button>
+      <button type="button" id="open-d" class="secondary">D</button>
+    </div>
+    <p id="open-msg" class="hint" hidden></p>
+    <h3>Mai simplu: butonul LinkIQ pe pagina VVS-dialog</h3>
+    <p class="hint">Cu o extensie de scripturi, VVS-dialog are mereu un buton galben „LinkIQ” jos în dreapta, iar când e deschis din LinkIQ pornește singur. PC: Chrome/Edge + Tampermonkey. Android: Firefox + Tampermonkey. iPhone: Safari + aplicația Userscripts. Doar cu acordul IT.</p>
+    <a id="vvs-userscript" class="file-btn" href="linkiq-vvs.user.js" target="_blank" rel="noopener">Instalează butonul LinkIQ</a>
     <button type="button" id="vvs-setup-close" class="secondary">Închide</button>
   </div>
 </div>
@@ -305,11 +382,13 @@
   <button data-view="align" class="on">Aliniere</button>
   <button data-view="recv">Receptoare</button>
   <button data-view="map">Hartă</button>
+  <button data-view="sync">VVS</button>
 </nav>
 
 <script src="vendor/leaflet.js"></script>
 <script src="i18n.js"></script>
 <script src="vvs.js"></script>
+<script src="vvstext.js"></script>
 <script src="lcd.js"></script>
 <script src="engine.js"></script>
 <script src="app.js"></script>
