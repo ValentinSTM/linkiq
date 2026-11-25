@@ -294,8 +294,8 @@
     $('photo-label').hidden = a.kind === 'check';
     // an internal antenna sits in the meter: the picture is of the meter
     const inMeter = !!(ui.install && ui.install.antennaType === 'internal');
-    $('photo-txt').textContent = T(inMeter ? 'Fotografiază contorul' : 'Fotografiază antena');
-    $('photo-hint').textContent = T(inMeter ? 'Fotografiază întâi contorul, apoi descarcă raportul: PDF-ul include și fotografia.'
+    $('photo-txt').textContent = T(inMeter ? 'Fotografiază contorul și instalația' : 'Fotografiază antena');
+    $('photo-hint').textContent = T(inMeter ? 'Fotografiază contorul cu tot ce e în jurul lui (camera tehnică, țevi, dulapuri, metal), ca să se vadă ce poate slăbi semnalul. Apoi descarcă raportul: PDF-ul include și fotografia.'
       : 'Fotografiază întâi antena, apoi descarcă raportul: PDF-ul include și fotografia.');
     // installation card: under the buttons while measuring, above "save" at the end
     const card = $('install-card'), active = s.session.status === 'ACTIVE';
@@ -1929,7 +1929,7 @@
     try {
       const pages = [await buildReport(S)];
       if (lastPhoto && S.session.status !== 'CHECK') pages.push(lastPhoto);
-      await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', pages.length > 1 ? (ui.install && ui.install.antennaType === 'internal' ? 'Raportul PDF, cu fotografia contorului, a fost salvat ca {0}.' : 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.') : 'Raportul PDF a fost salvat ca {0}.', null);
+      await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', pages.length > 1 ? (ui.install && ui.install.antennaType === 'internal' ? 'Raportul PDF, cu fotografia instalației, a fost salvat ca {0}.' : 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.') : 'Raportul PDF a fost salvat ca {0}.', null);
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   }
   $('photo-file').onchange = async (ev) => {
@@ -1938,7 +1938,7 @@
     if (!file || !S) return;
     try {
       lastPhoto = await stampPhoto(file, S);
-      await saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + (ui.install && ui.install.antennaType === 'internal' ? '_maaler.jpg' : '_antenne.jpg'), 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
+      await saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + (ui.install && ui.install.antennaType === 'internal' ? '_installation.jpg' : '_antenne.jpg'), 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   };
 

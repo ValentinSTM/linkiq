@@ -505,5 +505,11 @@ window.LINKIQ_DA = {
  "Șterse: {0} fișiere din „{1}”.": "Slettet: {0} filer i „{1}“.",
  "{0} nu mai erau în dosar.": "{0} var ikke længere i mappen.",
  "Copiile din aplicație sunt șterse. Fișierele din Descărcări le ștergi din aplicația Fișiere: au seria contorului în nume.": "Appens kopier er slettet. Filerne i Overførsler sletter du i appen Filer – de har målernummeret i navnet.",
- "șterse de pe telefon": "slettet på telefonen"
+ "șterse de pe telefon": "slettet på telefonen",
+ "Fotografiază contorul și instalația": "Fotografér måleren og installationen",
+ "Fotografiază contorul cu tot ce e în jurul lui (camera tehnică, țevi, dulapuri, metal), ca să se vadă ce poate slăbi semnalul. Apoi descarcă raportul: PDF-ul include și fotografia.": "Fotografér måleren med alt omkring den (teknikrum, rør, skabe, metal), så man kan se, hvad der kan svække signalet. Hent derefter rapporten: PDF-filen indeholder også billedet.",
+ "Raportul PDF, cu fotografia instalației, a fost salvat ca {0}.": "PDF-rapporten med billedet af installationen er gemt som {0}.",
+ "Mai simplu: butonul LinkIQ pe pagina VVS-dialog": "Nemmere: LinkIQ-knappen på VVS-dialog-siden",
+ "Cu o extensie de scripturi, VVS-dialog are mereu un buton galben „LinkIQ” jos în dreapta, iar când e deschis din LinkIQ pornește singur. PC: Chrome/Edge + Tampermonkey. Android: Firefox + Tampermonkey. iPhone: Safari + aplicația Userscripts. Doar cu acordul IT.": "Med en script-udvidelse har VVS-dialog altid en gul „LinkIQ“-knap nederst til højre, og når siden åbnes fra LinkIQ, starter den af sig selv. PC: Chrome/Edge + Tampermonkey. Android: Firefox + Tampermonkey. iPhone: Safari + appen Userscripts. Kun efter aftale med IT.",
+ "Instalează butonul LinkIQ": "Installér LinkIQ-knappen"
 };

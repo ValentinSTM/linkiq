@@ -352,6 +352,7 @@
         if (e && e.message === 'LOGIN') { break; }
       }
     }
+    if (/^linkiq_j/.test(String(window.name || ''))) { window.name = ''; }   // done: the next page must not start it again
     reset('LinkIQ: færdig');
     results.forEach(function (r) { line(r); });
     if (items.length === 1 && lastCc && results[0].charAt(0) === '✓') {   // one case, all well: show it
