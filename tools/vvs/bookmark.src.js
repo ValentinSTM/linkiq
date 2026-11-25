@@ -199,7 +199,58 @@
     if (was && after.indexOf(was) < 0) { throw new Error('Aktiviteten blev ikke fundet efter Gem – se sagen'); }
   }
 
-  // ---------- 3c. files chosen by hand (no link to LinkIQ)
+  // ---------- 3c. no link to LinkIQ: the report folder, chosen once and remembered here
+  function idb() {
+    return new Promise(function (ok, fail) {
+      var r = indexedDB.open('linkiq-li', 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore('kv'); };
+      r.onsuccess = function () { ok(r.result); }; r.onerror = function () { fail(r.error); };
+    });
+  }
+  async function kvGet(k) { var db = await idb(); return new Promise(function (ok) { var q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = function () { ok(q.result); }; q.onerror = function () { ok(null); }; }); }
+  async function kvSet(k, v) {
+    try { var db = await idb(); } catch (e) { return; }
+    return new Promise(function (ok) {
+      try { var t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = ok; t.onerror = ok; } catch (e) { ok(); }
+    });
+  }
+  // Newest PDF and newest PNG/JPG whose name contains the meter number.
+  async function fromFolder(dir, m) {
+    var best = {};
+    for await (var entry of dir.values()) {
+      if (entry.kind !== 'file' || entry.name.indexOf(m) < 0) { continue; }
+      var ext = (entry.name.match(/\.(pdf|png|jpe?g)$/i) || [])[1];
+      if (!ext) { continue; }
+      ext = ext.toLowerCase() === 'pdf' ? 'pdf' : 'img';
+      var f = await entry.getFile();
+      if (!best[ext] || f.lastModified > best[ext].lastModified) { best[ext] = f; }
+    }
+    return ['pdf', 'img'].filter(function (k) { return best[k]; }).map(function (k) { return { name: best[k].name, blob: best[k] }; });
+  }
+  async function folderFiles(m) {
+    if (!window.showDirectoryPicker) { return null; }
+    var dir = null;
+    try { dir = await kvGet('dir'); } catch (e) { dir = null; }
+    return new Promise(function (ok) {
+      reset('LinkIQ: måler ' + m + ' – rapporten hentes fra mappen');
+      async function use(d) {
+        try {
+          if ((await d.queryPermission({ mode: 'read' })) !== 'granted' && (await d.requestPermission({ mode: 'read' })) !== 'granted') { ok(null); return; }
+          await kvSet('dir', d);
+          var fs = await fromFolder(d, m);
+          if (!fs.length) { reset('LinkIQ: ingen rapport med ' + m + ' i mappen „' + d.name + '“.'); await wait(2000); ok(null); return; }
+          ok(fs);
+        } catch (e) { ok(null); }
+      }
+      if (dir) { button('Brug mappen „' + dir.name + '“', function () { use(dir); }, true); }
+      button(dir ? 'Vælg en anden mappe' : 'Vælg rapportmappen (én gang)', async function () {
+        try { use(await window.showDirectoryPicker({ id: 'linkiq-rapporter', mode: 'read' })); } catch (e) { ok(null); }
+      }, !dir);
+      button('Vælg filerne selv', function () { ok(null); });
+    });
+  }
+
+  // ---------- 3d. files chosen by hand
   function pickFiles(m) {
     return new Promise(function (ok) {
       reset('LinkIQ: måler ' + m + ' – vælg rapporten (PDF/PNG) fra mappen');
@@ -253,7 +304,9 @@
         var cc = await findCase(String(it.meter));
         if (!cc) { results.push(it.meter + ': sprunget over'); continue; }
         var files = it.files || [];
-        if (!linked && !files.length && it.text !== undefined) { files = await pickFiles(it.meter); }
+        if (!linked && !files.length && it.text !== undefined) {
+          files = (await folderFiles(String(it.meter))) || await pickFiles(it.meter);
+        }
         reset('LinkIQ: ' + tag + 'sag ' + cc + ' – uploader …');
         var up = await upload(cc, files);
         var w = null;
