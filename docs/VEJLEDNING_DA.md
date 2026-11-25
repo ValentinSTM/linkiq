@@ -3,7 +3,7 @@
 **Dansk** · [English](en/GUIDE.md)
 
 1. Åbn appen. Står der et gult felt **Før du går i gang** øverst, så tryk **Tillad kamera** og/eller **Tillad at gemme i mappen** (kameraet spørges der om én gang; mappen ved hver opstart). Scan målerens QR-kode, eller indtast målernummeret. Skriv dit navn.
-2. Position er valgfri: tryk **GPS**, eller **Vælg på kort**.
+2. Position er valgfri: tryk **GPS**, eller **Vælg på kort**. På kortet kan du trykke ved måleren, skrive koordinater eller skrive adressen (fx *Søndergade 1, 8000 Aarhus C*) og trykke **Søg**. Adressen slås op i OpenStreetMap; kontrollér punktet på kortet.
 3. Tryk **Start**, og vælg **Antenne: Intern eller Ekstern** – CALL-knappen er låst, indtil du har valgt. **Intern:** én måling, ingen drejning (vises som én cirkel). **Ekstern:** vælg **Drejning (4 felter)** eller **Én position** (fastskruet antenne, eller stedet ingeniøren peger på: ét CALL og svar med det samme). Ved drejning: tryk på et felt for at springe det over, fx hvis antennen ville ramme væggen. Tryk derefter **CALL** på måleren, og bekræft i appen, når CALL vises i displayet.
 4. **Vent – flyt ikke antennen**, mens appen måler. Appen går videre, så snart de koncentratorer, der plejer at høre måleren, har svaret (ellers efter én cyklus på ca. 35 s). Er der kommet en måling, kan du trykke **Videre med det, der er kommet**. Under drejningen kan du altid trykke **Spring felt X over**.
 5. Drej antennen til næste felt, når appen beder om det (felter, du har sprunget over, springes over).

@@ -249,7 +249,11 @@
   <section id="view-map" class="view" hidden>
     <div id="pick-bar" class="card" hidden>
       <h2>Atinge harta în dreptul contorului</h2>
-      <input id="pick-coords" inputmode="text" autocomplete="off" placeholder="sau lipește coordonate: 56.1234, 10.1234">
+      <form id="pick-form" class="search-row">
+        <input id="pick-coords" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" placeholder="Adresă sau coordonate">
+        <button type="submit" id="pick-search" class="secondary">Caută</button>
+      </form>
+      <ul id="pick-results" class="rows" hidden></ul>
       <p id="pick-info" class="hint">Nicio poziție aleasă.</p>
       <div class="two">
         <button type="button" id="pick-cancel" class="secondary">Înapoi</button>
@@ -351,11 +355,17 @@
     <ol class="steps">
       <li>Apasă „Copiază codul”.</li>
       <li>În Chrome: deschide o pagină oarecare, apasă ⋮ și steluța.</li>
-      <li>Apasă „Editează”. Nume: li. Șterge adresa și lipește codul.</li>
+      <li>Apasă „Editează”. Numele trebuie să fie li (deschis din codul QR, e deja). Șterge adresa și lipește codul.</li>
       <li>Verifică dacă adresa începe cu javascript: – dacă nu, scrie-l în față.</li>
       <li>Folosire: în VVS-dialog scrie li în bara de adrese și alege rândul cu steluță. Din lista de bookmark-uri nu pornește.</li>
     </ol>
     <button type="button" id="vvs-copy" class="primary">Copiază codul</button>
+    <details id="li-share">
+      <summary>Cod QR pentru colegi</summary>
+      <p class="hint">Colegul scanează codul cu camera telefonului. Se deschide LinkIQ direct la acești pași, iar pagina se numește deja li: la steluță trebuie doar lipit codul în locul adresei.</p>
+      <img id="li-qr" alt="Cod QR pentru bookmark-ul li">
+      <button type="button" id="li-qr-save" class="secondary">Salvează codul QR</button>
+    </details>
     <p class="hint">Bookmark-ul e scurt și ia codul întreg din LinkIQ. Prima dată, dacă VVS-dialog nu e deschis din LinkIQ: apasă butonul de mai jos, apoi li în VVS-dialog.</p>
     <button type="button" id="vvs-copy2" class="secondary">Copiază codul complet pentru VVS-dialog (o dată)</button>
     <p id="vvs-setup-msg" class="hint" hidden></p>

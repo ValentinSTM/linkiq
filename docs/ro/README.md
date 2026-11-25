@@ -115,6 +115,8 @@ Teste: `pip install -r requirements-dev.txt && pytest`. Cu Docker: `docker compo
 | Hartă cu linii contor–site, semnal și distanță; aceeași hartă în raport | da |
 | Raport și ca PDF (`<seria>.pdf`), cu fotografia antenei și pozele instalației pe paginile următoare | da |
 | Poze cu instalația la montaj și la punerea în funcțiune (până la 6, cu seria și ora), la fiecare instalație | da |
+| Căutare după adresă pe hartă (OpenStreetMap, doar când montorul apasă Caută) | da |
+| Cod QR pentru colegi care deschide pașii pentru bookmark-ul li (pagina se numește deja li) | da |
 | Rapoartele din dosar sau din fișiere pot fi adăugate în lista VVS, ca o zi uitată să nu se piardă | da |
 | Verificarea unui contor fără sesiune și fără CALL: cine îl aude acum și de când (`<seria>_status.pdf`) | da, doar în varianta fără server |
 | Dosar ales de montor pentru rapoarte (creat ca `LinkIQ-rapporter`), cu lista rapoartelor salvate; fără suport în browser, se folosește descărcarea obișnuită | da |

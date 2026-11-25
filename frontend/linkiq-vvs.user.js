@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LinkIQ til VVS-dialog
 // @namespace    linkiq
-// @version      0.23
+// @version      0.24
 // @description  Lægger LinkIQ-rapporten på sagen: filer, Ny aktivitet med faste ord og status.
 // @match        https://vvsdialog.kmd.dk/*
 // @grant        none

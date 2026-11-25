@@ -5,7 +5,7 @@
 The app's screens are in Danish (or Romanian); the button names below are the Danish ones.
 
 1. Open the app. If a yellow box **Før du går i gang** (before you start) shows at the top, tap **Tillad kamera** and/or **Tillad at gemme i mappen** (the camera is asked once; the folder at every start). Scan the meter's QR code, or type the meter number. Enter your name.
-2. Position is optional: tap **GPS** or **Vælg på kort** (pick on map).
+2. Position is optional: tap **GPS** or **Vælg på kort** (pick on map). On the map you can tap at the meter, type coordinates, or type the address (e.g. *Søndergade 1, 8000 Aarhus C*) and tap **Søg**. The address is looked up in OpenStreetMap; check the point on the map.
 3. Tap **Start** and choose **Antenne: Intern or Ekstern** – the CALL button stays locked until you do. **Intern:** one measurement, no rotation (shown as one circle). **Ekstern:** choose **Drejning (4 felter)** (rotation) or **Én position** (one position: screwed-on antenna, or the place the site engineer points at – one CALL, instant answer). For rotation, tap a sector to leave it out (e.g. the antenna would hit the wall). Then press **CALL** on the meter and confirm in the app when CALL shows on the display.
 4. **Vent – flyt ikke antennen** (wait, do not move the antenna) while the app measures. It goes on as soon as the concentrators that regularly hear the meter have answered (otherwise after one cycle of about 35 s). Once a reading has come, **Videre med det, der er kommet** (go on with what has arrived) is available. During the rotation, **Spring felt X over** (skip sector X) is always available.
 5. Turn the antenna to the next sector when the app asks (sectors left out are skipped).

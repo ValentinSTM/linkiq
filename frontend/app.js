@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.23';
+  const VERSION = '0.24';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -900,17 +900,54 @@
     endPick();
     showCandidates();
   };
-  $('pick-coords').onchange = (ev) => {
-    // "56.1234, 10.1234", "56,1234 10,1234" or a pasted maps link containing lat,lon
-    const t = ev.target.value.trim();
+  // One field: coordinates ("56.1234, 10.1234", "56,1234 10,1234", a pasted maps link) or an
+  // address, looked up in OpenStreetMap (Nominatim) only when the installer asks for it.
+  function parseCoords(t) {
     let m = t.match(/(-?\d{1,2}\.\d{3,})[^\d-]+(-?\d{1,3}\.\d{3,})/);
     if (!m) {                                           // decimal commas
       const c = t.match(/(-?\d{1,2}),(\d{3,})[^\d-]+(-?\d{1,3}),(\d{3,})/);
       if (c) m = [t, `${c[1]}.${c[2]}`, `${c[3]}.${c[4]}`];
     }
-    if (!m || Math.abs(+m[1]) > 90 || Math.abs(+m[2]) > 180) { $('pick-info').textContent = T('Nu am recunoscut coordonatele. Exemplu: 56.1234, 10.1234'); return; }
-    if (ensureMap()) setPick(+m[1], +m[2], true);
+    return m && Math.abs(+m[1]) <= 90 && Math.abs(+m[2]) <= 180 ? [+m[1], +m[2]] : null;
+  }
+  let lastSearch = '';
+  async function searchAddress(t) {
+    const list = $('pick-results'), info = $('pick-info');
+    list.replaceChildren(); list.hidden = true;
+    info.textContent = T('Caut adresa…');
+    const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=0&limit=5&countrycodes=dk&accept-language=da'
+      + '&viewbox=9.4,56.5,10.9,55.8&q=' + encodeURIComponent(t);
+    let res;
+    try {
+      const r = await fetch(u, { referrerPolicy: 'strict-origin-when-cross-origin', headers: { Accept: 'application/json' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      res = await r.json();
+    } catch (e) { info.textContent = T('Căutarea adresei nu merge acum ({0}). Atinge harta sau folosește GPS.', e.message); return; }
+    if (!res.length) { info.textContent = T('Nu am găsit adresa. Scrie strada, numărul și orașul, de ex. Søndergade 1, 8000 Aarhus C.'); return; }
+    const pick = (x) => { list.hidden = true; if (ensureMap()) setPick(+x.lat, +x.lon, true); $('pick-info').textContent = x.display_name.split(', ').slice(0, 4).join(', ') + ' · ' + T('verifică pe hartă și mută punctul dacă e nevoie.'); };
+    if (res.length === 1) { pick(res[0]); return; }
+    for (const x of res) {
+      const li = document.createElement('li'), b = document.createElement('button');
+      b.type = 'button'; b.className = 'secondary'; b.textContent = x.display_name.split(', ').slice(0, 5).join(', ');
+      b.onclick = () => pick(x);
+      li.append(b); list.append(li);
+    }
+    list.hidden = false;
+    info.textContent = T('Alege adresa potrivită.');
+  }
+  $('pick-form').onsubmit = (ev) => {
+    ev.preventDefault();
+    const t = $('pick-coords').value.trim();
+    if (!t) return;
+    const c = parseCoords(t);
+    if (c) { $('pick-results').hidden = true; if (ensureMap()) setPick(c[0], c[1], true); return; }
+    if (t.length < 4) { $('pick-info').textContent = T('Scrie adresa întreagă sau coordonatele.'); return; }
+    if (t === lastSearch && !$('pick-results').hidden) return;
+    lastSearch = t;
+    $('pick-coords').blur();
+    searchAddress(t);
   };
+  $('pick-coords').onchange = () => { if (parseCoords($('pick-coords').value.trim())) $('pick-form').requestSubmit(); };
 
   $('start-form').onsubmit = async (ev) => {
     ev.preventDefault();
@@ -2899,15 +2936,45 @@
   };
   // The bookmark itself is short (Android Chrome cuts long ones); it gets the real code from LinkIQ.
   const vvsCode = window.LINKIQ_VVS_LOADER || window.LINKIQ_VVS_BOOKMARK || '';
+  // Link for colleagues: LinkIQ opens straight at the li steps, and the page title is "li", so
+  // the star in Chrome already gives the bookmark its name: only the code has to be pasted.
+  const LI_NAME = 'li', liLink = () => location.origin + location.pathname + '#li';
+  let liQrBlob = null, appTitle = document.title;
   function openVvsSetup() {
     $('vvs-code').value = vvsCode;
     $('vvs-drag').href = vvsCode || '#';
     $('vvs-setup-msg').hidden = true;
     $('vvs-setup').hidden = false;
+    document.title = LI_NAME;
   }
+  window.addEventListener('hashchange', () => { if (location.hash === '#li') openVvsSetup(); });
+  $('li-share').ontoggle = async () => {
+    if (!$('li-share').open || liQrBlob) return;
+    try {
+      if (!window.qrcode) await scanner.loadScript('vendor/qrcode.js');
+      const qr = window.qrcode(0, 'M'); qr.addData(liLink(), 'Byte'); qr.make();
+      const n = qr.getModuleCount(), cell = 12, size = (n + 8) * cell;
+      const c = document.createElement('canvas'); c.width = size; c.height = size + 60;
+      const x = c.getContext('2d');
+      x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.fillStyle = '#000';
+      for (let r = 0; r < n; r++) for (let q = 0; q < n; q++) if (qr.isDark(r, q)) x.fillRect((q + 4) * cell, (r + 4) * cell, cell, cell);
+      x.font = `600 24px ${SANS}`; x.textAlign = 'center'; x.fillStyle = '#0b1f2a';
+      x.fillText(T('LinkIQ: bookmark-ul li pentru VVS-dialog'), size / 2, size + 34);
+      liQrBlob = await new Promise((ok) => c.toBlob(ok, 'image/png'));
+      $('li-qr').src = URL.createObjectURL(liQrBlob);
+    } catch (e) { $('vvs-setup-msg').textContent = T('Nu am putut face codul QR: {0}', e.message); $('vvs-setup-msg').hidden = false; }
+  };
+  $('li-qr-save').onclick = () => {             // a plain download: not a report, never in the VVS list
+    if (!liQrBlob) return;
+    const a = document.createElement('a'); a.href = $('li-qr').src; a.download = 'linkiq-li-qr.png';
+    document.body.appendChild(a); a.click(); a.remove();
+  };
   $('vvs-setup-open').onclick = openVvsSetup;
   $('vvs-setup-open2').onclick = openVvsSetup;
-  $('vvs-setup-close').onclick = () => { $('vvs-setup').hidden = true; };
+  $('vvs-setup-close').onclick = () => {
+    $('vvs-setup').hidden = true; document.title = appTitle;
+    if (location.hash === '#li') history.replaceState(null, '', location.pathname + location.search);
+  };
   $('vvs-drag').onclick = (e) => e.preventDefault();          // it is for dragging to the bookmarks bar
   $('vvs-copy2').onclick = async () => {
     const ok = await copyText('LIQCODE:' + (window.LINKIQ_VVS_CODE || ''));
@@ -2928,7 +2995,8 @@
     refreshReportDir();
     updateCamPerm();
     vqPrune();
-    const back = vvsResultsFromAddress();       // results from li: the sync page is shown once boot is done
+    const back = vvsResultsFromAddress();
+    if (location.hash === '#li') openVvsSetup();   // QR code from a colleague: straight to the li steps       // results from li: the sync page is shown once boot is done
     $('tech').value = store.get('tech', '') || '';
     if (!(await serverAnswers())) await startStandalone();
     // Pairing link: https://host/#pair=CODE. The fragment never reaches the server.
