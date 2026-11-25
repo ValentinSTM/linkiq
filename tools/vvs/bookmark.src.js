@@ -166,6 +166,7 @@
     return hit;
   }
   async function writeLog(cc, text, status) {
+    text = String(text || '').replace(/[\u2013\u2014]/g, '-');   // VVS-dialog turns long dashes into "|"
     var url = '/Cases/ShowCase.aspx?cc=' + cc;
     var p = await page(url);
     if (loggedOut(p)) { throw new Error('LOGIN'); }
@@ -173,7 +174,8 @@
     var ta = p.doc.querySelector('textarea[name="' + NEW_LOG + 'LogTextTextArea"]');
     var save = p.doc.querySelector('input[name="' + NEW_LOG + 'SaveLogButton"]');
     if (!form || !ta || !save) { throw new Error('Fandt ikke feltet Ny aktivitet'); }
-    var norm = function (t) { return String(t || '').replace(/\s+/g, ''); };   // line breaks may show as <br>
+    // compare letters and digits only: VVS-dialog shows line breaks as <br> and changes some signs ("–" to "|")
+    var norm = function (t) { return String(t || '').toLowerCase().replace(/[^0-9a-zæøåäöü()]+/g, ''); };
     var body = norm(p.doc.body.textContent), want = norm(text), at = body.indexOf(want);
     while (at >= 0) {                                         // li pressed twice; deleted ones do not count
       if (body.substr(at + want.length, 9) !== '(slettet)') { return 'exists'; }
@@ -193,9 +195,8 @@
     }
     var action = new URL(form.getAttribute('action') || url, location.origin + url);
     var r = await page(action.href, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formFields(form, ch).toString() });
-    var first = text.split('\n')[0].trim().slice(0, 40);
-    var check = r.doc.body ? r.doc.body.textContent.replace(/\s+/g, ' ') : '';
-    if (first && check.indexOf(first.replace(/\s+/g, ' ')) < 0) { throw new Error('Aktiviteten blev ikke fundet efter Gem'); }
+    var after = norm(r.doc.body ? r.doc.body.textContent : ''), was = norm(text);
+    if (was && after.indexOf(was) < 0) { throw new Error('Aktiviteten blev ikke fundet efter Gem – se sagen'); }
   }
 
   // ---------- 3c. files chosen by hand (no link to LinkIQ)
