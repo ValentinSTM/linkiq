@@ -214,6 +214,10 @@ ul.readings .rs.edited { color: #b26a00; font-weight: 700; }
 .lcd-row { display: flex; gap: 8px; }
 .lcd-row button { flex: 1; }
 .lcd-row button[hidden] { display: none; }
+.hint.gal .link, .lcd-gal { display: inline; width: auto; min-height: 0; padding: 0; }
+.hint.gal[hidden] { display: none; }
+#lcd-reader .lcd-gal { color: #fff; margin-top: 6px; background: none; border: 0; text-decoration: underline; }
+#lcd-light:not(:has(button:not([hidden]))) { display: none; }
 #lcd-use { min-height: 56px; }
 #readings-more summary { font-weight: 700; min-height: 44px; display: flex; align-items: center; cursor: pointer; }
 .checks { display: grid; grid-template-columns: 1fr; gap: 2px; }

@@ -558,4 +558,11 @@ window.LINKIQ_DA = {
  "Scrie adresa întreagă sau coordonatele.": "Skriv hele adressen eller koordinaterne.",
  "Caută": "Søg",
  "Adresă sau coordonate": "Adresse eller koordinater",
+ "sau alege o poză din galerie": "eller vælg et billede fra galleriet",
+ "Lumină slabă? Fă poza cu aplicația Cameră a telefonului (blitz sau mod noapte), apoi alege-o din galerie:": "Dårligt lys? Tag billedet med telefonens Kamera-app (blitz eller nattilstand), og vælg det derefter fra galleriet:",
+ "la montaj": "ved montage",
+ "la punerea în funcțiune": "ved idriftsættelse",
+ "Alege o poză din galerie": "Vælg et billede fra galleriet",
+ "Mai întunecat": "Mørkere",
+ "Mai luminos": "Lysere",
 };

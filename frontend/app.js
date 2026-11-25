@@ -295,6 +295,7 @@
     const inMeter = !!(ui.install && ui.install.antennaType === 'internal');
     $('photo-label').hidden = a.kind === 'check' || inMeter;
     $('photo-hint').hidden = a.kind === 'check' || inMeter;
+    $('photo-gal').hidden = a.kind === 'check' || inMeter;
     $('photo-txt').textContent = T('Fotografiază antena');
     $('photo-hint').textContent = T('Fotografiază antena cu datele măsurătorii; pozele cu instalația se fac mai jos. PDF-ul le include pe toate.');
     instPhotos.place(s, a.kind);
@@ -1987,6 +1988,17 @@
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   };
 
+  // Every photo button can also take a picture from the gallery: in poor light the phone's own
+  // camera app (flash, night mode) often does better, and the picture is then picked here.
+  document.querySelectorAll('[data-gallery]').forEach((b) => {
+    b.onclick = () => {
+      const target = $(b.dataset.gallery), inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'image/*';
+      inp.onchange = () => { if (inp.files[0] && target.onchange) target.onchange({ target: inp }); };
+      inp.click();
+    };
+  });
+
   // ---------------------------------------------------------------- installation photos
   // Every installation, whatever the antenna: photos taken at mounting and at commissioning,
   // stamped with meter, moment, time and place, kept with the session (IndexedDB) until the
@@ -2018,7 +2030,7 @@
       const gps = s.session.gps && s.session.gps.lat !== null ? `${s.session.gps.lat.toFixed(5)}, ${s.session.gps.lon.toFixed(5)}` : null;
       const lines = [
         [`700 ${Math.round(u * 1.45)}px ${SANS}`, `${s.session.meterSerial} · ${T(STAGES[stage])}`],
-        [`500 ${u}px ${SANS}`, [fmtTime(new Date().toISOString()), s.session.technician].filter(Boolean).join(' · ')],
+        [`500 ${u}px ${SANS}`, [fmtTime(new Date(file.lastModified || Date.now()).toISOString()), s.session.technician].filter(Boolean).join(' · ')],
         [`400 ${Math.round(u * 0.8)}px ${SANS}`, [s.session.install ? installShort(s.session.install) : null, gps, `LinkIQ v${VERSION}`].filter(Boolean).join(' · ')],
       ];
       x.textAlign = 'left'; x.textBaseline = 'alphabetic'; x.fillStyle = '#fff';
@@ -2053,7 +2065,7 @@
       try {
         const blob = await stamp(file, S, stage);
         const n = list.filter((p) => p.stage === stage).length + 1;
-        list.push({ stage, at: new Date().toISOString(), blob });
+        list.push({ stage, at: new Date(file.lastModified || Date.now()).toISOString(), blob });
         await keep(); draw();
         let saved = null;                    // a copy in the report folder, when there is one; never a pile of downloads
         if (await dirReady(false)) { try { saved = await writeToDir(blob, `${safeName(S.session.meterSerial)}_${FILE[stage]}_${n}.jpg`); refreshReportDir(); } catch { saved = null; } }
@@ -2289,7 +2301,7 @@
       $('lcd-tip').textContent = T('Arată {0} pe contor și ține tot afișajul în chenar.', r.k === '*' ? T('registrul') : r.k);
       $('lcd-live').textContent = '…';
       $('lcd-frame').className = 'lcd-frame';
-      $('lcd-error').hidden = true; $('lcd-torch').hidden = true;
+      $('lcd-error').hidden = true; $('lcd-torch').hidden = true; $('lcd-bright').hidden = true; $('lcd-dark').hidden = true;
       setUse();
       $('lcd-reader').hidden = false;
       startedAt = Date.now();
@@ -2301,6 +2313,11 @@
         await v.play();
         const track = stream.getVideoTracks()[0], caps = track.getCapabilities ? track.getCapabilities() : {};
         if (caps.torch) $('lcd-torch').hidden = false;
+        // brighter / darker picture where the camera allows it (dim cellars, or glare on the glass)
+        if (caps.exposureCompensation && caps.exposureCompensation.max > caps.exposureCompensation.min) {
+          $('lcd-bright').hidden = false; $('lcd-dark').hidden = false;
+          if (caps.exposureMode && caps.exposureMode.includes('continuous')) track.applyConstraints({ advanced: [{ exposureMode: 'continuous' }] }).catch(() => {});
+        }
         if (caps.focusMode && caps.focusMode.includes('continuous')) track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
         loop();
       } catch (e) {
@@ -2351,6 +2368,16 @@
       const v = $('lcd-video');
       finish(v.videoWidth ? { text: '', img: snapshot(v, frameRegion(v)) } : null, 'manual');
     };
+    async function exposure(dir) {
+      if (!stream) return;
+      const track = stream.getVideoTracks()[0], c = track.getCapabilities().exposureCompensation;
+      const now = track.getSettings().exposureCompensation || 0, step = Math.max(c.step || 0, (c.max - c.min) / 8);
+      const next = Math.min(c.max, Math.max(c.min, now + dir * step));
+      try { await track.applyConstraints({ advanced: [{ exposureCompensation: next }] }); } catch { /* not supported after all */ }
+      voter = new window.LinkIQLcd.Voter(3, 10); best = null; setUse();   // start counting again with the new picture
+    }
+    $('lcd-bright').onclick = () => exposure(1);
+    $('lcd-dark').onclick = () => exposure(-1);
     $('lcd-torch').onclick = async () => {
       if (!stream) return;
       const track = stream.getVideoTracks()[0], on = !track.getSettings().torch;
