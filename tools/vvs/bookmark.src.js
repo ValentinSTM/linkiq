@@ -183,6 +183,9 @@
       if (!radio) { throw new Error('Status „' + status + '“ findes ikke i VVS-dialog'); }
       Array.prototype.forEach.call(p.doc.querySelectorAll('input[type=radio][name="' + radio.name + '"]'), function (r) { r.removeAttribute('checked'); });
       ch[radio.name] = radio.getAttribute('value');
+      // the page also sends the status drop-down of "Rediger sag" with the same value
+      var dd = p.doc.querySelector('select[name$="NewStatusDropDownList"]');
+      if (dd && dd.querySelector('option[value="' + radio.getAttribute('value') + '"]')) { ch[dd.name] = radio.getAttribute('value'); }
     }
     var action = new URL(form.getAttribute('action') || url, location.origin + url);
     var r = await page(action.href, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formFields(form, ch).toString() });
