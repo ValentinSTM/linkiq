@@ -22,17 +22,6 @@ The app's screens are in Danish (or Romanian); the button names below are the Da
 
 VVS-dialog opens without an address bar? Tap **⋮** and choose **Open in Chrome**.
 
-## Without a bookmark: the LinkIQ button in VVS-dialog (Android)
-
-Chrome on Android cannot get bookmarks from a web page. Without a bookmark it works in **Microsoft Edge** with the **Tampermonkey** extension (only with IT's approval):
-
-1. Install Microsoft Edge and sign in to VVS-dialog once.
-2. In Edge: menu › **Extensions** › **Tampermonkey** › **Get**.
-3. Open LinkIQ in Edge, tap **Første gang: opret bogmærket li** › **Installér LinkIQ-knappen**, and confirm in Tampermonkey.
-4. Use LinkIQ from Edge. **Send til VVS-dialog** opens VVS-dialog and the button starts by itself. The yellow **LinkIQ** button at the bottom right can also be tapped.
-
-The button updates itself when a new LinkIQ version comes out.
-
 ## The registry (sites and concentrators) by QR code
 
 Work phones may not save files from Teams or mail, so the registry travels as a QR code:

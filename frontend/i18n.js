@@ -558,6 +558,4 @@ window.LINKIQ_DA = {
  "Scrie adresa întreagă sau coordonatele.": "Skriv hele adressen eller koordinaterne.",
  "Caută": "Søg",
  "Adresă sau coordonate": "Adresse eller koordinater",
- "Fără bookmark: butonul LinkIQ pe pagina VVS-dialog": "Uden bogmærke: LinkIQ-knappen på VVS-dialog-siden",
- "Cu extensia Tampermonkey, VVS-dialog are mereu un buton galben „LinkIQ” jos în dreapta, iar când e deschis din LinkIQ pornește singur. Se instalează o dată și se actualizează singur. Android: Microsoft Edge (meniu › Extensii › Tampermonkey), iar LinkIQ se deschide tot din Edge. PC: Chrome/Edge + Tampermonkey. iPhone: Safari + aplicația Userscripts. Doar cu acordul IT.": "Med udvidelsen Tampermonkey har VVS-dialog altid en gul „LinkIQ“-knap nederst til højre, og når siden åbnes fra LinkIQ, starter den af sig selv. Installeres én gang og opdaterer sig selv. Android: Microsoft Edge (menu › Udvidelser › Tampermonkey), og LinkIQ åbnes også i Edge. Pc: Chrome/Edge + Tampermonkey. iPhone: Safari + appen Userscripts. Kun med IT's accept.",
 };

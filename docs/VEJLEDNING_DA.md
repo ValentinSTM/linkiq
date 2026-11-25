@@ -20,17 +20,6 @@
 
 Åbner VVS-dialog uden adresselinje? Tryk **⋮**, og vælg **Åbn i Chrome**.
 
-## Uden bogmærke: LinkIQ-knappen i VVS-dialog (Android)
-
-Chrome på Android kan ikke få bogmærker fra en webside. Uden bogmærke virker det i **Microsoft Edge** med udvidelsen **Tampermonkey** (kun med IT's accept):
-
-1. Installér Microsoft Edge, og log ind i VVS-dialog én gang.
-2. I Edge: menu › **Udvidelser** › **Tampermonkey** › **Hent**.
-3. Åbn LinkIQ i Edge, tryk **Første gang: opret bogmærket li** › **Installér LinkIQ-knappen**, og bekræft i Tampermonkey.
-4. Brug LinkIQ fra Edge. **Send til VVS-dialog** åbner VVS-dialog, og knappen starter af sig selv. Den gule **LinkIQ**-knap nederst til højre kan også trykkes.
-
-Knappen opdaterer sig selv, når der kommer en ny version af LinkIQ.
-
 ## Registret (sites og koncentratorer) via QR-kode
 
 Arbejdstelefonen må ikke gemme filer fra Teams eller mail. Registret kommer derfor som en QR-kode:
