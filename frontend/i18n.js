@@ -482,5 +482,18 @@ window.LINKIQ_DA = {
  "așteaptă": "venter",
  "Nimic azi.": "Intet i dag.",
  "Alege întâi rezultatul și statusul pentru VVS-dialog.": "Vælg først resultat og status til VVS-dialog.",
- "Raportul nu e salvat încă: pe caz ajung doar textul și statusul. Salvează raportul și trimite din nou.": "Rapporten er ikke gemt endnu: kun tekst og status kommer på sagen. Gem rapporten, og send igen."
+ "Raportul nu e salvat încă: pe caz ajung doar textul și statusul. Salvează raportul și trimite din nou.": "Rapporten er ikke gemt endnu: kun tekst og status kommer på sagen. Gem rapporten, og send igen.",
+ "Sincronizare cu VVS-dialog": "Synkronisering med VVS-dialog",
+ "Fiecare raport salvat așteaptă aici până când li îl pune pe caz: fișierele, textul din Ny aktivitet și statusul. Un singur li le trimite pe toate cele care așteaptă.": "Hver gemt rapport venter her, indtil li har lagt den på sagen: filerne, teksten i Ny aktivitet og status. Ét tryk på li sender alle, der venter.",
+ "VVS": "VVS",
+ "Azi: {0} pe caz · {1} așteaptă": "I dag: {0} på sagen · {1} venter",
+ "{0} cu eroare": "{0} med fejl",
+ "Niciun raport în listă.": "Ingen rapporter på listen.",
+ "Azi": "I dag",
+ "eroare": "fejl",
+ "fără fișiere": "uden filer",
+ "Trimite din nou": "Send igen",
+ "Trimite": "Send",
+ "Scoate din listă": "Fjern fra listen",
+ "Raportul pentru {0} nu a ajuns încă în VVS-dialog. Îl scoți totuși din listă?": "Rapporten for {0} er ikke kommet i VVS-dialog endnu. Vil du alligevel fjerne den fra listen?"
 };

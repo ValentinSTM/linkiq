@@ -89,9 +89,9 @@ ul.rows .val { font-weight: 700; font-variant-numeric: tabular-nums; }
 
 #map { height: 58vh; border-radius: 12px; border: 1px solid var(--line); z-index: 0; }
 
-nav { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+nav { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
 nav[hidden] { display: none; }
-nav button { background: none; border-radius: 0; color: var(--gray); min-height: 56px; border-top: 4px solid transparent; }
+nav button { background: none; border-radius: 0; color: var(--gray); min-height: 56px; padding: 0 4px; font-size: 15px; border-top: 4px solid transparent; }
 nav button.on { color: var(--blue); border-top-color: var(--blue); }
 
 .with-btn { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
@@ -240,3 +240,15 @@ ul.vvsq .st { font-weight: 700; white-space: nowrap; }
 ul.vvsq .st.ok { color: var(--green); }
 ul.vvsq .st.wait { color: #b26a00; }
 ul.vvsq .st.err { color: var(--red); }
+.sync-sum { font-weight: 700; font-size: 18px; margin: 4px 0; }
+.sync-day { margin: 14px 4px 6px; font-weight: 800; color: var(--gray); }
+.sync-item { border-left: 6px solid #b26a00; }
+.sync-item.ok { border-left-color: var(--green); }
+.sync-item.err { border-left-color: var(--red); }
+.sync-item .top { display: flex; justify-content: space-between; gap: 8px; font-weight: 800; font-size: 18px; }
+.sync-item .st { white-space: nowrap; }
+.sync-item.ok .st { color: var(--green); } .sync-item.err .st { color: var(--red); } .sync-item .st.wait { color: #b26a00; }
+.sync-item pre { margin: 6px 0; padding: 8px; background: #f3f6f8; border-radius: 8px; font: 600 15px/1.35 ui-monospace, monospace; white-space: pre-wrap; }
+.sync-item .meta { font-size: 14px; color: var(--gray); }
+.sync-item .acts { display: flex; gap: 8px; margin-top: 8px; }
+.sync-item .acts button { flex: 1; min-height: 44px; }

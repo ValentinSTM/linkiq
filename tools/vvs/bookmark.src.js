@@ -96,7 +96,7 @@
       try {
         var b = atob(j[1].replace(/-/g, '+').replace(/_/g, '/'));
         var d = JSON.parse(decodeURIComponent(escape(b)));
-        return [{ id: d.id, meter: d.m, status: d.s, text: d.t, files: [] }];
+        return (Array.isArray(d) ? d : [d]).map(function (x) { return { id: x.id, meter: x.m, status: x.s, text: x.t, files: [] }; });
       } catch (e) { /* fall through */ }
     }
     var m = (location.hash.match(/linkiq=(\d+)/) || [])[1] || (n.match(/^linkiq_(\d+)$/) || [])[1];
@@ -227,8 +227,12 @@
     }
     return ['pdf', 'img'].filter(function (k) { return best[k]; }).map(function (k) { return { name: best[k].name, blob: best[k] }; });
   }
+  var runDir = null;                       // granted once per run: the next meters need no tap
   async function folderFiles(m) {
     if (!window.showDirectoryPicker) { return null; }
+    if (runDir) {
+      try { var got = await fromFolder(runDir, m); if (got.length) { return got; } } catch (e) { /* ask below */ }
+    }
     var dir = null;
     try { dir = await kvGet('dir'); } catch (e) { dir = null; }
     return new Promise(function (ok) {
@@ -237,6 +241,7 @@
         try {
           if ((await d.queryPermission({ mode: 'read' })) !== 'granted' && (await d.requestPermission({ mode: 'read' })) !== 'granted') { ok(null); return; }
           await kvSet('dir', d);
+          runDir = d;
           var fs = await fromFolder(d, m);
           if (!fs.length) { reset('LinkIQ: ingen rapport med ' + m + ' i mappen „' + d.name + '“.'); await wait(2000); ok(null); return; }
           ok(fs);

@@ -92,9 +92,8 @@
       <h2>VVS-dialog</h2>
       <p class="hint">După raport, aplicația deschide VVS-dialog, iar bookmark-ul li găsește cazul deschis al contorului. Bookmark-ul se creează o singură dată în Chrome.</p>
       <button type="button" id="vvs-setup-open" class="secondary">Creează bookmark-ul li</button>
-      <h3 id="vvsq-title">Trimise la VVS-dialog</h3>
-      <ul id="vvsq-list" class="rows vvsq"></ul>
-      <button type="button" id="vvsq-send" class="primary" hidden>Trimite cele care așteaptă</button>
+      <p id="vvsq-sum" class="hint"></p>
+      <button type="button" id="vvsq-open" class="secondary">Sincronizare cu VVS-dialog</button>
     </div>
     <div id="fb-card" class="card">
       <h2>Feedback și propuneri</h2>
@@ -221,6 +220,16 @@
   </section>
 
   <!-- Hartă -->
+  <section id="view-sync" class="view" hidden>
+    <div class="card">
+      <h2>Sincronizare cu VVS-dialog</h2>
+      <p class="hint">Fiecare raport salvat așteaptă aici până când li îl pune pe caz: fișierele, textul din Ny aktivitet și statusul. Un singur li le trimite pe toate cele care așteaptă.</p>
+      <p id="sync-sum" class="sync-sum"></p>
+      <button type="button" id="vvsq-send" class="primary" hidden>Trimite cele care așteaptă</button>
+      <button type="button" id="sync-back" class="secondary">Înapoi</button>
+    </div>
+    <div id="sync-list"></div>
+  </section>
   <section id="view-map" class="view" hidden>
     <div id="pick-bar" class="card" hidden>
       <h2>Atinge harta în dreptul contorului</h2>
@@ -324,6 +333,7 @@
   <button data-view="align" class="on">Aliniere</button>
   <button data-view="recv">Receptoare</button>
   <button data-view="map">Hartă</button>
+  <button data-view="sync">VVS</button>
 </nav>
 
 <script src="vendor/leaflet.js"></script>

@@ -758,8 +758,11 @@
     }
   }
 
+  let lastView = 'start';
   function showView(name) {
-    for (const v of ['pair', 'start', 'align', 'recv', 'map']) $('view-' + v).hidden = v !== name;
+    for (const v of ['pair', 'start', 'align', 'recv', 'map', 'sync']) $('view-' + v).hidden = v !== name;
+    if (name !== 'sync') lastView = name;
+    if (name === 'sync') vqLoad().then(renderVq);
     $('tabs').hidden = name === 'start' || name === 'pair' || picking;
     $('pick-bar').hidden = !(picking && name === 'map');
     $('map-info').hidden = picking;
@@ -2420,22 +2423,56 @@
     await vqSave(keep);
   }
   function renderVq(q) {
-    const list = $('vvsq-list');
+    const waiting = q.filter((e) => e.state !== 'sent'), today = new Date().toISOString().slice(0, 10);
+    const sentToday = q.filter((e) => e.state === 'sent' && (e.updated || e.created).slice(0, 10) === today).length;
+    const errors = q.filter((e) => e.state === 'error').length;
+    const sum = T('Azi: {0} pe caz · {1} așteaptă', sentToday, waiting.length) + (errors ? ' · ' + T('{0} cu eroare', errors) : '');
+    $('vvsq-sum').textContent = q.length ? sum : T('Niciun raport în listă.');
+    $('sync-sum').textContent = sum;
+    $('vvsq-send').hidden = !waiting.length;
+    $('vvsq-send').textContent = T('Trimite cele care așteaptă ({0})', waiting.length);
+    const list = $('sync-list');
     list.replaceChildren();
-    const today = new Date().toISOString().slice(0, 10);
-    const shown = q.filter((e) => e.state !== 'sent' || (e.updated || e.created).slice(0, 10) === today);
-    for (const e of shown) {
-      const li = document.createElement('li'), a = document.createElement('span'), st = document.createElement('span');
-      a.textContent = `${e.meter} · ${fmtTime(e.updated || e.created)}`;
-      st.className = 'st ' + (e.state === 'sent' ? 'ok' : e.state === 'error' ? 'err' : 'wait');
-      st.textContent = e.state === 'sent' ? T('✓ pe caz {0}', e.cc || '') : e.state === 'error' ? T('eroare: {0}', e.msg || '') : T('așteaptă');
-      li.append(a, st); list.append(li);
+    let day = null;
+    for (const e of q) {
+      const d = (e.updated || e.created).slice(0, 10);
+      if (d !== day) {
+        day = d;
+        const h = document.createElement('div'); h.className = 'sync-day';
+        h.textContent = d === today ? T('Azi') : new Date(d).toLocaleDateString(lang === 'da' ? 'da-DK' : 'ro-RO', { weekday: 'long', day: 'numeric', month: 'long' });
+        list.append(h);
+      }
+      const card = document.createElement('div');
+      card.className = 'card sync-item' + (e.state === 'sent' ? ' ok' : e.state === 'error' ? ' err' : '');
+      const top = document.createElement('div'); top.className = 'top';
+      const a = document.createElement('span'); a.textContent = e.meter;
+      const st = document.createElement('span'); st.className = 'st' + (e.state === 'pending' ? ' wait' : '');
+      st.textContent = e.state === 'sent' ? T('✓ pe caz {0}', e.cc || '') : e.state === 'error' ? T('eroare') : T('așteaptă');
+      top.append(a, st); card.append(top);
+      const meta = document.createElement('div'); meta.className = 'meta';
+      meta.textContent = [fmtTime(e.updated || e.created), e.status || '', e.files.length ? e.files.join(', ') : T('fără fișiere')].filter(Boolean).join(' · ');
+      card.append(meta);
+      if (e.text) { const pre = document.createElement('pre'); pre.textContent = e.text; card.append(pre); }
+      if (e.state === 'error' && e.msg) { const m = document.createElement('div'); m.className = 'error'; m.textContent = e.msg; card.append(m); }
+      if (e.state === 'sent' && e.msg) { const m = document.createElement('div'); m.className = 'meta'; m.textContent = e.msg; card.append(m); }
+      const acts = document.createElement('div'); acts.className = 'acts';
+      const send = document.createElement('button'); send.type = 'button'; send.className = e.state === 'sent' ? 'secondary' : 'primary';
+      send.textContent = e.state === 'sent' ? T('Trimite din nou') : T('Trimite');
+      send.onclick = () => openVvs([e]);
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'secondary';
+      del.textContent = T('Scoate din listă');
+      del.onclick = async () => {
+        if (e.state !== 'sent' && !confirm(T('Raportul pentru {0} nu a ajuns încă în VVS-dialog. Îl scoți totuși din listă?', e.meter))) return;
+        const all = await vqLoad();
+        for (const f of e.files) { try { await kv.set('vvsf:' + e.id + ':' + f, null); } catch { /* */ } }
+        await vqSave(all.filter((x) => x.id !== e.id));
+      };
+      acts.append(send, del); card.append(acts);
+      list.append(card);
     }
-    if (!shown.length) { const li = document.createElement('li'); li.className = 'hint'; li.textContent = T('Nimic azi.'); list.append(li); }
-    const waiting = q.filter((e) => e.state !== 'sent').length;
-    $('vvsq-send').hidden = !waiting;
-    $('vvsq-send').textContent = T('Trimite cele care așteaptă ({0})', waiting);
   }
+  $('vvsq-open').onclick = () => showView('sync');
+  $('sync-back').onclick = () => showView(lastView || 'start');
 
   // Hand-over to "li": LinkIQ opens VVS-dialog itself, so the page there can ask LinkIQ
   // (window.opener) for the waiting reports and answer with the result of each one.
@@ -2446,7 +2483,7 @@
   async function openVvs(items) {
     vvsOffer = items.map((e) => e.id);
     const first = items[0];
-    const name = 'linkiq_j' + b64url(new TextEncoder().encode(JSON.stringify({ m: first.meter, s: first.status || '', t: first.text || '', id: first.id })));
+    const name = 'linkiq_j' + b64url(new TextEncoder().encode(JSON.stringify(items.slice(0, 30).map((e) => ({ m: e.meter, s: e.status || '', t: e.text || '', id: e.id })))));
     vvsWin = window.open(VVS_HOME + '#linkiq=' + first.meter, name);
   }
   window.addEventListener('message', async (ev) => {
