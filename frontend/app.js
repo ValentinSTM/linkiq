@@ -292,6 +292,11 @@
     $('finish-box').hidden = true;
     $('report-box').hidden = a.kind !== 'done' && a.kind !== 'check';
     $('photo-label').hidden = a.kind === 'check';
+    // an internal antenna sits in the meter: the picture is of the meter
+    const inMeter = !!(ui.install && ui.install.antennaType === 'internal');
+    $('photo-txt').textContent = T(inMeter ? 'Fotografiază contorul' : 'Fotografiază antena');
+    $('photo-hint').textContent = T(inMeter ? 'Fotografiază întâi contorul, apoi descarcă raportul: PDF-ul include și fotografia.'
+      : 'Fotografiază întâi antena, apoi descarcă raportul: PDF-ul include și fotografia.');
     // installation card: under the buttons while measuring, above "save" at the end
     const card = $('install-card'), active = s.session.status === 'ACTIVE';
     card.hidden = !active;
@@ -1924,7 +1929,7 @@
     try {
       const pages = [await buildReport(S)];
       if (lastPhoto && S.session.status !== 'CHECK') pages.push(lastPhoto);
-      await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', pages.length > 1 ? 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.' : 'Raportul PDF a fost salvat ca {0}.', null);
+      await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', pages.length > 1 ? (ui.install && ui.install.antennaType === 'internal' ? 'Raportul PDF, cu fotografia contorului, a fost salvat ca {0}.' : 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.') : 'Raportul PDF a fost salvat ca {0}.', null);
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   }
   $('photo-file').onchange = async (ev) => {
@@ -1933,7 +1938,7 @@
     if (!file || !S) return;
     try {
       lastPhoto = await stampPhoto(file, S);
-      await saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + '_antenne.jpg', 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
+      await saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + (ui.install && ui.install.antennaType === 'internal' ? '_maaler.jpg' : '_antenne.jpg'), 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   };
 
@@ -2431,6 +2436,11 @@
     $('sync-sum').textContent = sum;
     $('vvsq-send').hidden = !waiting.length;
     $('vvsq-send').textContent = T('Trimite cele care așteaptă ({0})', waiting.length);
+    const done = q.filter((e) => e.state === 'sent' && !e.cleaned && e.files.length);
+    const nFiles = done.reduce((n, e) => n + e.files.length, 0);
+    $('sync-clean').hidden = !nFiles;
+    $('sync-clean').textContent = reportDir ? T('Șterge din „{0}” fișierele care sunt deja pe caz ({1})', reportDir.name, nFiles)
+      : T('Șterge din aplicație copiile care sunt deja pe caz ({0})', nFiles);
     const list = $('sync-list');
     list.replaceChildren();
     let day = null;
@@ -2450,7 +2460,7 @@
       st.textContent = e.state === 'sent' ? T('✓ pe caz {0}', e.cc || '') : e.state === 'error' ? T('eroare') : T('așteaptă');
       top.append(a, st); card.append(top);
       const meta = document.createElement('div'); meta.className = 'meta';
-      meta.textContent = [fmtTime(e.updated || e.created), e.status || '', e.files.length ? e.files.join(', ') : T('fără fișiere')].filter(Boolean).join(' · ');
+      meta.textContent = [fmtTime(e.updated || e.created), e.status || '', e.files.length ? e.files.join(', ') + (e.cleaned ? ' (' + T('șterse de pe telefon') + ')' : '') : T('fără fișiere')].filter(Boolean).join(' · ');
       card.append(meta);
       if (e.text) { const pre = document.createElement('pre'); pre.textContent = e.text; card.append(pre); }
       if (e.state === 'error' && e.msg) { const m = document.createElement('div'); m.className = 'error'; m.textContent = e.msg; card.append(m); }
@@ -2471,6 +2481,26 @@
       list.append(card);
     }
   }
+  // Files that VVS-dialog has confirmed: offered for deletion (folder and the app's own copy).
+  $('sync-clean').onclick = async () => {
+    const q = await vqLoad(), done = q.filter((e) => e.state === 'sent' && !e.cleaned && e.files.length);
+    if (!done.length) return;
+    let gone = 0, kept = 0;
+    const folder = reportDir && (await askDir());
+    for (const e of done) {
+      for (const f of e.files) {
+        try { await kv.set('vvsf:' + e.id + ':' + f, null); } catch { /* */ }
+        if (folder) { try { await reportDir.removeEntry(f); gone++; } catch { kept++; } }
+      }
+      e.cleaned = true;
+    }
+    await vqSave(q);
+    const msg = $('sync-clean-msg');
+    msg.textContent = folder ? T('Șterse: {0} fișiere din „{1}”.', gone, reportDir.name) + (kept ? ' ' + T('{0} nu mai erau în dosar.', kept) : '')
+      : T('Copiile din aplicație sunt șterse. Fișierele din Descărcări le ștergi din aplicația Fișiere: au seria contorului în nume.');
+    msg.hidden = false;
+    refreshReportDir();
+  };
   $('vvsq-open').onclick = () => showView('sync');
   $('sync-back').onclick = () => showView(lastView || 'start');
 
@@ -2480,11 +2510,22 @@
   // and the installer picks the files in the panel.
   const VVS_ORIGIN = 'https://vvsdialog.kmd.dk';
   let vvsWin = null, vvsOffer = [];
+  // The work for li travels three ways: window.opener (with the files), the tab name, and the
+  // address (?liq=…). On Android the installed app would open VVS-dialog in a small in-app
+  // browser without bookmarks; an intent: address opens it straight in Chrome instead.
+  const isAndroidApp = () => /Android/i.test(navigator.userAgent) && window.matchMedia('(display-mode: standalone)').matches;
   async function openVvs(items) {
     vvsOffer = items.map((e) => e.id);
     const first = items[0];
-    const name = 'linkiq_j' + b64url(new TextEncoder().encode(JSON.stringify(items.slice(0, 30).map((e) => ({ m: e.meter, s: e.status || '', t: e.text || '', id: e.id })))));
-    vvsWin = window.open(VVS_HOME + '#linkiq=' + first.meter, name);
+    const work = b64url(new TextEncoder().encode(JSON.stringify(items.slice(0, 30).map((e) => ({ m: e.meter, s: e.status || '', t: e.text || '', id: e.id })))));
+    const path = 'Home.aspx?liq=' + work;
+    if (isAndroidApp()) {
+      location.href = 'intent://vvsdialog.kmd.dk/' + path + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' +
+        encodeURIComponent(VVS_ORIGIN + '/' + path) + ';end';
+      copyText('LIQ1:' + work);                                // also for li after a login (the address is lost then)
+      return;
+    }
+    vvsWin = window.open(VVS_ORIGIN + '/' + path + '#linkiq=' + first.meter, 'linkiq_j' + work);
   }
   window.addEventListener('message', async (ev) => {
     if (ev.origin !== VVS_ORIGIN || !ev.data || typeof ev.data !== 'object' || !ev.data.liq) return;
@@ -2527,6 +2568,7 @@
     openVvs([entry]);                                          // first, while the tap still counts
     if (!e) vqUpsert(); else vvsQueueTouch();
     if (!entry.files.length) $('vvs-msg').textContent = T('Raportul nu e salvat încă: pe caz ajung doar textul și statusul. Salvează raportul și trimite din nou.');
+    if (isAndroidApp()) return;
     copyText(m).then((ok) => {
       $('vvs-msg').textContent = ok
         ? T('Seria {0} este copiată. În VVS-dialog scrie li în bara de adrese și alege bookmark-ul cu steluță.', m)

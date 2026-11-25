@@ -143,8 +143,8 @@
     </div>
     <div id="report-box" class="card" hidden>
       <h2>Raport</h2>
-      <p class="hint">Fotografiază întâi antena, apoi descarcă raportul: PDF-ul include și fotografia.</p>
-      <label class="file-btn" id="photo-label">Fotografiază antena<input type="file" id="photo-file" accept="image/*" capture="environment" hidden></label>
+      <p class="hint" id="photo-hint">Fotografiază întâi antena, apoi descarcă raportul: PDF-ul include și fotografia.</p>
+      <label class="file-btn" id="photo-label"><span id="photo-txt">Fotografiază antena</span><input type="file" id="photo-file" accept="image/*" capture="environment" hidden></label>
       <div id="readings-card">
         <h3>Citirile contorului <span class="sub">(opțional)</span></h3>
         <p class="hint">Apasă camera de lângă registru și ține afișajul în chenar. Verifică cifrele: le poți corecta.</p>
@@ -226,6 +226,8 @@
       <p class="hint">Fiecare raport salvat așteaptă aici până când li îl pune pe caz: fișierele, textul din Ny aktivitet și statusul. Un singur li le trimite pe toate cele care așteaptă.</p>
       <p id="sync-sum" class="sync-sum"></p>
       <button type="button" id="vvsq-send" class="primary" hidden>Trimite cele care așteaptă</button>
+      <button type="button" id="sync-clean" class="secondary" hidden>Șterge fișierele care sunt deja pe caz</button>
+      <p id="sync-clean-msg" class="hint" hidden></p>
       <button type="button" id="sync-back" class="secondary">Înapoi</button>
     </div>
     <div id="sync-list"></div>

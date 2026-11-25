@@ -89,9 +89,10 @@
     });
   }
   function tell(msg) { try { if (window.opener) { window.opener.postMessage(msg, '*'); } } catch (e) { /* LinkIQ closed */ } }
-  function fromName() {
+  function fromName(clip) {
     var n = String(window.name || '');
-    var j = n.match(/^linkiq_j([\w-]+)$/);
+    var j = n.match(/^linkiq_j([\w-]+)$/) || (location.search.match(/[?&]liq=([\w-]+)/) || null) ||
+      (String(clip || '').trim().match(/^LIQ1:([\w-]+)$/) || null);
     if (j) {
       try {
         var b = atob(j[1].replace(/-/g, '+').replace(/_/g, '/'));
@@ -256,7 +257,9 @@
   }
 
   // ---------- 3d. files chosen by hand
-  function pickFiles(m) {
+  function pickFiles(m, meters) {
+    meters = meters || [String(m)];
+    var ours = function (name) { return meters.some(function (x) { return name.indexOf(x) >= 0; }); };
     return new Promise(function (ok) {
       reset('LinkIQ: måler ' + m + ' – vælg rapporten (PDF/PNG) fra mappen');
       var inp = document.createElement('input');
@@ -273,9 +276,9 @@
         list.textContent = '';
         Array.prototype.forEach.call(inp.files, function (f, i) {
           var l = document.createElement('label'), c = document.createElement('input');
-          c.type = 'checkbox'; c.dataset.i = i; c.checked = f.name.indexOf(m) >= 0;
+          c.type = 'checkbox'; c.dataset.i = i; c.checked = ours(f.name);
           l.style.display = 'block'; l.appendChild(c);
-          l.appendChild(document.createTextNode(' ' + f.name + (f.name.indexOf(m) >= 0 ? '' : '  (ikke denne måler!)')));
+          l.appendChild(document.createTextNode(' ' + f.name + (ours(f.name) ? '' : '  (ikke denne måler!)')));
           list.appendChild(l);
         });
         go.disabled = false;
@@ -289,17 +292,34 @@
     var items = await fromOpener();
     var linked = !!items;
     if (!items || !items.length) { items = fromName(); linked = false; }
+    var clip = '';
     if (!items) {
-      var clip = '';
       try {
         if (navigator.clipboard && navigator.clipboard.readText) {
           clip = await Promise.race([navigator.clipboard.readText(), wait(4000).then(function () { return ''; })]);
         }
       } catch (e) { clip = ''; }
       clip = String(clip || '').trim();
+      items = fromName(clip);                 // "LIQ1:…" copied by LinkIQ (after a login the address is gone)
+    }
+    if (!items) {
       var m0 = (prompt('LinkIQ: Målernummer?', /^\d{6,12}$/.test(clip) ? clip : '') || '').replace(/\D/g, '');
       if (!m0) { box.remove(); return; }
       items = [{ meter: m0, files: [] }];
+    }
+    // Phones without folder access: one file choice for all the meters, sorted by the number in the name.
+    var needFiles = items.filter(function (x) { return !linked && x.text !== undefined && !(x.files && x.files.length); });
+    if (needFiles.length > 1 && !window.showDirectoryPicker) {
+      var all = await pickFiles(needFiles.map(function (x) { return x.meter; }).join(', '), needFiles.map(function (x) { return String(x.meter); }));
+      needFiles.forEach(function (x) {
+        var best = {};
+        all.filter(function (f) { return f.name.indexOf(String(x.meter)) >= 0; }).forEach(function (f) {
+          var k = /\.pdf$/i.test(f.name) ? 'pdf' : 'img';
+          if (!best[k] || (f.blob.lastModified || 0) > (best[k].blob.lastModified || 0)) { best[k] = f; }
+        });
+        x.files = ['pdf', 'img'].filter(function (k) { return best[k]; }).map(function (k) { return best[k]; });
+        x.picked = true;
+      });
     }
     var results = [], lastCc = null;
     for (var k = 0; k < items.length; k++) {
@@ -309,7 +329,7 @@
         var cc = await findCase(String(it.meter));
         if (!cc) { results.push(it.meter + ': sprunget over'); continue; }
         var files = it.files || [];
-        if (!linked && !files.length && it.text !== undefined) {
+        if (!linked && !files.length && it.text !== undefined && !it.picked) {
           files = (await folderFiles(String(it.meter))) || await pickFiles(it.meter);
         }
         reset('LinkIQ: ' + tag + 'sag ' + cc + ' – uploader …');

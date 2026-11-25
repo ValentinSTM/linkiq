@@ -495,5 +495,15 @@ window.LINKIQ_DA = {
  "Trimite din nou": "Send igen",
  "Trimite": "Send",
  "Scoate din listă": "Fjern fra listen",
- "Raportul pentru {0} nu a ajuns încă în VVS-dialog. Îl scoți totuși din listă?": "Rapporten for {0} er ikke kommet i VVS-dialog endnu. Vil du alligevel fjerne den fra listen?"
+ "Raportul pentru {0} nu a ajuns încă în VVS-dialog. Îl scoți totuși din listă?": "Rapporten for {0} er ikke kommet i VVS-dialog endnu. Vil du alligevel fjerne den fra listen?",
+ "Fotografiază contorul": "Fotografér måleren",
+ "Fotografiază întâi contorul, apoi descarcă raportul: PDF-ul include și fotografia.": "Fotografér først måleren, og hent derefter rapporten: PDF-filen indeholder også billedet.",
+ "Raportul PDF, cu fotografia contorului, a fost salvat ca {0}.": "PDF-rapporten med billedet af måleren er gemt som {0}.",
+ "Șterge fișierele care sunt deja pe caz": "Slet filer, der allerede er på sagen",
+ "Șterge din „{0}” fișierele care sunt deja pe caz ({1})": "Slet filer i „{0}“, der allerede er på sagen ({1})",
+ "Șterge din aplicație copiile care sunt deja pe caz ({0})": "Slet appens kopier, der allerede er på sagen ({0})",
+ "Șterse: {0} fișiere din „{1}”.": "Slettet: {0} filer i „{1}“.",
+ "{0} nu mai erau în dosar.": "{0} var ikke længere i mappen.",
+ "Copiile din aplicație sunt șterse. Fișierele din Descărcări le ștergi din aplicația Fișiere: au seria contorului în nume.": "Appens kopier er slettet. Filerne i Overførsler sletter du i appen Filer – de har målernummeret i navnet.",
+ "șterse de pe telefon": "slettet på telefonen"
 };

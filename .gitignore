@@ -10,3 +10,5 @@ pair-*.svg
 *med-register*.html
 linkiq_sites.csv
 linkiq_koncentratorer.csv
+# Test copy for the separate linkiq-test repository (tools/build_test.py)
+dist-test/
