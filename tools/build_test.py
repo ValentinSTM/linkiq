@@ -32,7 +32,10 @@ edit("app.js", [
 ])
 edit("sw.js", [("const VERSION = 'linkiq-shell-", "const VERSION = 'linkiq-test-shell-")])
 m = json.loads((OUT / "manifest.webmanifest").read_text(encoding="utf-8"))
-m.update(name="LinkIQ TEST", short_name="LinkIQ TEST", theme_color="#b34700", background_color="#b34700")
+m.update(name="LinkIQ TEST", short_name="LinkIQ TEST", theme_color="#b34700", background_color="#b34700",
+         # a normal Chrome tab from the home-screen icon: VVS-dialog then opens in a real tab with
+         # address bar (li) and stays linked to LinkIQ (the report files are handed over directly)
+         display="browser")
 (OUT / "manifest.webmanifest").write_text(json.dumps(m, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 edit("index.html", [("<title>", "<title>TEST · ")])
 (OUT / "styles.css").open("a", encoding="utf-8").write("\n/* test copy */\nheader { background: #b34700 !important; }\n")
