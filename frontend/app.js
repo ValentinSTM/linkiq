@@ -2551,6 +2551,10 @@
     if (ev.origin !== VVS_ORIGIN || !ev.data || typeof ev.data !== 'object' || !ev.data.liq) return;
     if (vvsWin && ev.source !== vvsWin) return;
     const q = await vqLoad();
+    if (ev.data.liq === 'code') {                       // the short li asks for the real code
+      ev.source.postMessage({ liq: 'code', code: window.LINKIQ_VVS_CODE || '' }, VVS_ORIGIN);
+      return;
+    }
     if (ev.data.liq === 'hello') {
       const items = [];
       for (const e of q.filter((x) => vvsOffer.includes(x.id))) {
@@ -2595,7 +2599,8 @@
         : T('În VVS-dialog scrie li în bara de adrese și alege bookmark-ul cu steluță. Seria contorului: {0}.', m);
     });
   };
-  const vvsCode = window.LINKIQ_VVS_BOOKMARK || '';
+  // The bookmark itself is short (Android Chrome cuts long ones); it gets the real code from LinkIQ.
+  const vvsCode = window.LINKIQ_VVS_LOADER || window.LINKIQ_VVS_BOOKMARK || '';
   function openVvsSetup() {
     $('vvs-code').value = vvsCode;
     $('vvs-drag').href = vvsCode || '#';
@@ -2606,6 +2611,11 @@
   $('vvs-setup-open2').onclick = openVvsSetup;
   $('vvs-setup-close').onclick = () => { $('vvs-setup').hidden = true; };
   $('vvs-drag').onclick = (e) => e.preventDefault();          // it is for dragging to the bookmarks bar
+  $('vvs-copy2').onclick = async () => {
+    const ok = await copyText('LIQCODE:' + (window.LINKIQ_VVS_CODE || ''));
+    $('vvs-setup-msg').textContent = ok ? T('Codul complet e copiat. Deschide VVS-dialog în Chrome și apasă li: îl ia din clipboard și îl ține minte.') : T('Nu am putut copia.');
+    $('vvs-setup-msg').hidden = false;
+  };
   $('vvs-copy').onclick = async () => {
     const ok = await copyText(vvsCode);
     $('vvs-setup-msg').textContent = ok ? T('Cod copiat. Continuă cu pasul 2.') : T('Nu am putut copia. Selectează textul din câmp și copiază-l.');

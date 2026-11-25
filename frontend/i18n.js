@@ -514,5 +514,9 @@ window.LINKIQ_DA = {
  "Instalează butonul LinkIQ": "Installér LinkIQ-knappen",
  "Android: cum se deschide VVS-dialog": "Android: sådan åbnes VVS-dialog",
  "Aplicația instalată deschide VVS-dialog într-o fereastră mică, fără bară de adrese, unde li nu merge. Încearcă pe rând A, B, C: cea care deschide Chrome cu bara de adrese rămâne salvată.": "Den installerede app åbner VVS-dialog i et lille vindue uden adresselinje, hvor li ikke virker. Prøv A, B og C efter tur: den, der åbner Chrome med adresselinje, bliver gemt.",
- "Metoda {0} e salvată. Ai acum Chrome cu bara de adrese?": "Metode {0} er gemt. Har du nu Chrome med adresselinje?"
+ "Metoda {0} e salvată. Ai acum Chrome cu bara de adrese?": "Metode {0} er gemt. Har du nu Chrome med adresselinje?",
+ "Bookmark-ul e scurt și ia codul întreg din LinkIQ. Prima dată, dacă VVS-dialog nu e deschis din LinkIQ: apasă butonul de mai jos, apoi li în VVS-dialog.": "Bogmærket er kort og henter hele koden fra LinkIQ. Første gang, hvis VVS-dialog ikke er åbnet fra LinkIQ: tryk på knappen herunder og derefter på li i VVS-dialog.",
+ "Copiază codul complet pentru VVS-dialog (o dată)": "Kopiér hele koden til VVS-dialog (én gang)",
+ "Codul complet e copiat. Deschide VVS-dialog în Chrome și apasă li: îl ia din clipboard și îl ține minte.": "Hele koden er kopieret. Åbn VVS-dialog i Chrome, og tryk på li: den hentes fra udklipsholderen og huskes.",
+ "Nu am putut copia.": "Kunne ikke kopiere."
 };
