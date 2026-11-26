@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.26';
+  const VERSION = '0.27';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -682,21 +682,55 @@
   }
   const AGE_RANK = { CURRENT: 0, OCCASIONAL: 1, OLD: 2 };
   const OLD_GRAY = '#9aa5ad';
+  // The same three signal colours everywhere: map, legend, report, tags.
+  const SIG = { good: '#1b8a3a', mid: '#e07800', weak: '#c62828' };
   /** Line style: solid for contact in the last hour, dashed for occasional, grey dotted for older than 8 h. */
   const linkStyle = (l) => (l.age === 'OLD' ? { color: OLD_GRAY, dash: [4, 8], dashL: '2 8' }
     : { color: linkColor(l.best), dash: l.primary ? [] : l.age === 'OCCASIONAL' ? [14, 10] : [12, 9], dashL: l.primary ? null : '8 8' });
   // Colours follow the PROVISIONAL thresholds: good / marginal / weak.
   const linkColor = (rssi) => {
     const th = cfg.thresholds || { goodDbm: -95, marginalDbm: -110 };
-    return rssi >= th.goodDbm ? '#1b8a3a' : rssi >= th.marginalDbm ? '#b26a00' : '#c62828';
+    return rssi >= th.goodDbm ? SIG.good : rssi >= th.marginalDbm ? SIG.mid : SIG.weak;
   };
+  const sigClass = (l) => (l.age === 'OLD' ? 'sig-old' : linkColor(l.best) === SIG.good ? 'sig-good' : linkColor(l.best) === SIG.mid ? 'sig-mid' : 'sig-weak');
   const meters = (m) => Math.round(m).toLocaleString(lang === 'da' ? 'da-DK' : 'ro-RO') + ' m';
   const tipNode = (t) => { const e = document.createElement('span'); e.textContent = t; return e; };   // never HTML
+  // Text under the map, and a legend drawn with the very colours and lines used on the map.
+  function mapInfo(text, legend) {
+    $('map-info-text').textContent = text;
+    const box = $('map-legend');
+    box.replaceChildren();
+    box.hidden = !legend;
+    if (!legend) return;
+    const th = cfg.thresholds || { goodDbm: -95, marginalDbm: -110 };
+    const NS = 'http://www.w3.org/2000/svg';
+    const sample = (color, dash, width, dot) => {
+      const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 44 14'); svg.setAttribute('width', '44'); svg.setAttribute('height', '14');
+      if (dot) {
+        const c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', '22'); c.setAttribute('cy', '7'); c.setAttribute('r', '6');
+        c.setAttribute('fill', color); c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', '2'); svg.append(c);
+      } else {
+        const l = document.createElementNS(NS, 'line'); l.setAttribute('x1', '2'); l.setAttribute('y1', '7'); l.setAttribute('x2', '42'); l.setAttribute('y2', '7');
+        l.setAttribute('stroke', color); l.setAttribute('stroke-width', String(width)); if (dash) l.setAttribute('stroke-dasharray', dash); svg.append(l);
+      }
+      return svg;
+    };
+    const item = (svg, txt) => { const d = document.createElement('div'); const sp = document.createElement('span'); sp.textContent = txt; d.append(svg, sp); box.append(d); };
+    item(sample(SIG.good, null, 4), T('semnal bun, ≥ {0} dBm', th.goodDbm));
+    item(sample(SIG.mid, null, 4), T('la limită, {0}…{1} dBm', th.goodDbm, th.marginalDbm));
+    item(sample(SIG.weak, null, 4), T('slab, < {0} dBm', th.marginalDbm));
+    if (legend.old) item(sample(OLD_GRAY, '2 5', 3), T('fără contact de peste 8 ore'));
+    if (legend.lines) {
+      item(sample('#55626b', null, 6), T('linie groasă și continuă: receptorul principal'));
+      item(sample('#55626b', '8 6', 3), T('linie întreruptă: ceilalți receptori'));
+    }
+    if (legend.meter) item(sample('#1565c0', null, 0, true), T('contorul'));
+  }
   const linkText = (l) => `${Math.round(l.best)} dBm` + (l.distanceM !== null ? ` · ${meters(l.distanceM)}` : '') + (l.age === 'OLD' ? ` · ${T('peste 8 ore')}` : '');
   let lastFit = '';
 
   async function drawMap() {
-    if (!ensureMap()) { $('map-info').textContent = T('Harta nu este disponibilă.'); return; }
+    if (!ensureMap()) { mapInfo(T('Harta nu este disponibilă.')); return; }
     mapLayer.clearLayers();
     $('map-pos').hidden = !S || picking || S.session.gps.lat !== null;
     if (!S) {                                   // no measurement: the sites in the registry
@@ -704,7 +738,7 @@
       try { sites = (await api('/api/sites')).filter((x) => x.latitude !== null); } catch { /* */ }
       if (S || picking) return;               // the view changed meanwhile
       for (const x of sites) L.circleMarker([x.latitude, x.longitude], { radius: 7, color: '#fff', weight: 3, fillColor: '#55626b', fillOpacity: 1 }).bindTooltip(tipNode(x.name || x.siteCode)).addTo(mapLayer);
-      $('map-info').textContent = sites.length ? T('Nicio măsurătoare în curs. Harta arată site-urile din registru.') : T('Nicio măsurătoare în curs.');
+      mapInfo(sites.length ? T('Nicio măsurătoare în curs. Harta arată site-urile din registru.') : T('Nicio măsurătoare în curs.'));
       setTimeout(() => {
         map.invalidateSize();
         if (lastFit === 'sites') return;
@@ -722,7 +756,7 @@
       if (g) {
         // meter -> site: signal and distance written on the line
         const line = L.polyline([[g.lat, g.lon], [l.lat, l.lon]], { color, weight: l.primary ? 6 : 3, dashArray: st.dashL, opacity: l.age === 'OLD' ? 0.7 : 0.9 }).addTo(mapLayer);
-        line.bindTooltip(tipNode(linkText(l)), { permanent: i < 6 || l.primary, direction: 'center', className: 'link-label' + (l.primary ? ' primary' : '') });
+        line.bindTooltip(tipNode(linkText(l)), { permanent: i < 6 || l.primary, direction: 'center', className: 'link-label ' + sigClass(l) + (l.primary ? ' primary' : '') });
       }
       L.circleMarker([l.lat, l.lon], { radius: l.primary ? 10 : 7, color: '#fff', weight: 3, fillColor: color, fillOpacity: 1 })
         .bindTooltip(tipNode(`${[l.name, l.address].filter(Boolean).join(', ') || l.serial} · ${linkText(l)}`)).addTo(mapLayer);
@@ -734,12 +768,11 @@
     }
     let info = T('Harta explică doar geometria. Măsurătoarea radio rămâne decisivă.');
     if (links.length) {
-      info = T('{0} site-uri au auzit contorul. Linia groasă este receptorul principal; verde = semnal bun, galben = la limită, roșu = slab.', links.length)
-        + (S.session.status === 'CHECK' ? ' ' + T('Linie gri = fără contact de peste 8 ore.') : '')
+      info = T('{0} site-uri au auzit contorul.', links.length)
         + (g ? '' : ' ' + T('Alege poziția contorului (adresă sau hartă) ca să apară liniile și distanțele.'));
     } else if (S && S.warnings.includes('REGISTRY_EMPTY')) info = T('Încarcă registrul (site-uri și concentratoare) pe ecranul de start ca să apară concentratoarele pe hartă.');
     else if (!pts.length) info = T('Fără poziție GPS și fără receptoare cu coordonate. ') + info;
-    $('map-info').textContent = info;
+    mapInfo(info, links.length ? { lines: !!g, old: links.some((l) => l.age === 'OLD'), meter: !!g } : null);
     const fit = pts.map((q) => q.join(',')).join(';');
     setTimeout(() => {
       map.invalidateSize();
@@ -1480,7 +1513,7 @@
   // At the end of a session: a report image named after the meter serial, and a
   // photo of the antenna with the measurement stamped on it. Both are drawn on a
   // canvas and saved through the browser's normal download.
-  const INK = { navy: '#0b2a3c', blue: '#1565c0', green: '#1b8a3a', gray: '#55626b', light: '#dfe5e9', red: '#c62828', ink: '#0b1f2a', yellow: '#f9c400', amber: '#b26a00' };
+  const INK = { navy: '#0b2a3c', blue: '#1565c0', green: '#1b8a3a', gray: '#55626b', light: '#dfe5e9', red: '#c62828', ink: '#0b1f2a', yellow: '#f9c400', amber: '#e07800' };
   const SANS = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
   const fmtTime = (utc) => (utc ? new Date(utc).toLocaleString(lang === 'da' ? 'da-DK' : 'ro-RO', { dateStyle: 'medium', timeStyle: 'short' }) : '–');
   const outcomeColor = (o) => (/^(OPTIMAL|GOOD)/.test(o || '') ? INK.green : o === 'MARGINAL' ? INK.amber : INK.red);
@@ -1593,9 +1626,21 @@
     if (s.session.status === 'CHECK') legend.push([OLD_GRAY, T('peste 8 ore')]);
     x.font = `600 17px ${SANS}`; x.textBaseline = 'middle'; x.textAlign = 'left';
     let lx = 14;
-    x.fillStyle = 'rgba(255,255,255,0.88)'; x.fillRect(6, H - 38, s.session.status === 'CHECK' ? 640 : 470, 32);
-    for (const [col, name] of legend) { x.fillStyle = col; x.fillRect(lx, H - 27, 26, 9); x.fillStyle = INK.ink; x.fillText(name, lx + 32, H - 22); lx += 44 + x.measureText(name).width; }
-    x.fillStyle = INK.ink; x.fillRect(lx, H - 29, 26, 13); x.fillText('= ' + T('receptor principal'), lx + 32, H - 22);
+    const kinds = [[7, [], T('principal')], [3, [8, 6], T('ceilalți')]];
+    let need = 14;
+    for (const [, name] of legend) need += 44 + x.measureText(name).width;
+    for (const [, , name] of kinds) need += 44 + x.measureText(name).width;
+    x.fillStyle = 'rgba(255,255,255,0.88)'; x.fillRect(6, H - 38, need, 32);
+    for (const [col, name] of legend) {            // the same line samples as on the map
+      x.strokeStyle = col; x.lineWidth = 5; x.setLineDash(col === OLD_GRAY ? [2, 5] : []);
+      x.beginPath(); x.moveTo(lx, H - 22); x.lineTo(lx + 26, H - 22); x.stroke(); x.setLineDash([]);
+      x.fillStyle = INK.ink; x.fillText(name, lx + 32, H - 22); lx += 44 + x.measureText(name).width;
+    }
+    for (const [w, dash, name] of kinds) {
+      x.strokeStyle = INK.gray; x.lineWidth = w; x.setLineDash(dash);
+      x.beginPath(); x.moveTo(lx, H - 22); x.lineTo(lx + 26, H - 22); x.stroke(); x.setLineDash([]);
+      x.fillStyle = INK.ink; x.fillText(name, lx + 32, H - 22); lx += 44 + x.measureText(name).width;
+    }
     const mpp = 156543.03392 * Math.cos(g.lat * Math.PI / 180) / 2 ** z;
     const nice = [50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000].find((v) => v / mpp >= 90) || 50000;
     x.fillStyle = 'rgba(255,255,255,0.88)'; x.fillRect(W - nice / mpp - 30, 8, nice / mpp + 22, 38);
@@ -1843,6 +1888,43 @@
   })();
   // Retention: installation photos of a session that was never finished go after 30 days.
   const PHOTO_KEEP_DAYS = 30;
+  // ---------------------------------------------------------------- start picture
+  // Shown for a moment at start (at least 0.9 s, never more than the start itself needs). The
+  // picture is splash.svg, or one chosen under Mere, kept on this device only.
+  let splashUrl = null;
+  async function splashSetup() {
+    $('splash-ver').textContent = 'v' + VERSION;
+    const on = store.get('splashOn', true) !== false;
+    $('splash-on').checked = on;
+    if (!on) { $('splash').hidden = true; }
+    let custom = null;
+    try { custom = await kv.get('splashImg'); } catch { /* */ }
+    if (splashUrl) URL.revokeObjectURL(splashUrl);
+    splashUrl = custom ? URL.createObjectURL(custom) : null;
+    if (splashUrl && on) $('splash-img').src = splashUrl;
+    $('splash-prev').src = splashUrl || 'splash.svg';
+    $('splash-reset').hidden = !custom;
+  }
+  function splashDone() {
+    const sp = $('splash');
+    if (sp.hidden) return;
+    const wait = Math.max(0, 900 - performance.now());
+    setTimeout(() => { sp.classList.add('out'); setTimeout(() => { sp.hidden = true; }, 400); }, wait);
+  }
+  $('splash-file').onchange = async (ev) => {
+    const f = ev.target.files[0]; ev.target.value = '';
+    if (!f) return;
+    try {
+      const bmp = await createImageBitmap(f), k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      await kv.set('splashImg', await canvasBlob(c, 'image/jpeg'));
+    } catch { /* not a picture */ }
+    splashSetup();
+  };
+  $('splash-reset').onclick = async () => { try { await kv.del('splashImg'); } catch { /* */ } $('splash-img').src = 'splash.svg'; splashSetup(); };
+  $('splash-on').onchange = () => store.set('splashOn', $('splash-on').checked);
+
   async function sweepPhotos() {
     try {
       for (const k of (await kv.keys()).filter((x) => x.startsWith('iph:'))) {
@@ -2502,7 +2584,7 @@
       const reg = regOf(r.k);
       voter = new window.LinkIQLcd.Voter(3, 10);
       $('lcd-title').textContent = `${r.k === '*' ? (r.label || T('Alt registru')) : r.k} · ${T(reg.ro)}`;
-      $('lcd-tip').textContent = T('Arată {0} pe contor și ține tot afișajul în chenar.', r.k === '*' ? T('registrul') : r.k);
+      $('lcd-tip').textContent = T('Arată {0} pe contor și ține tot afișajul în chenar, cam la 15 cm. Prea aproape, camera nu mai focalizează: folosește zoomul.', r.k === '*' ? T('registrul') : r.k);
       $('lcd-live').textContent = '…';
       $('lcd-frame').className = 'lcd-frame';
       $('lcd-error').hidden = true; $('lcd-torch').hidden = true; $('lcd-bright').hidden = true; $('lcd-dark').hidden = true;
@@ -2517,6 +2599,12 @@
         await v.play();
         const track = stream.getVideoTracks()[0], caps = track.getCapabilities ? track.getCapabilities() : {};
         if (caps.torch) $('lcd-torch').hidden = false;
+        // Zoom, so the phone stays far enough for the camera to focus (a meter display is small).
+        // The camera's own zoom when it has one (more detail); otherwise the picture is enlarged.
+        zoomHw = caps.zoom && caps.zoom.max > caps.zoom.min ? caps.zoom : null;
+        zoomTrack = track;
+        // start at 2× with the camera's zoom; an enlarged picture starts at 1× (the installer can zoom)
+        await setZoom(Number(store.get(zoomHw ? 'lcdZoom' : 'lcdZoomSw', zoomHw ? 2 : 1)) || 1);
         // brighter / darker picture where the camera allows it (dim cellars, or glare on the glass)
         if (caps.exposureCompensation && caps.exposureCompensation.max > caps.exposureCompensation.min) {
           $('lcd-bright').hidden = false; $('lcd-dark').hidden = false;
@@ -2535,7 +2623,8 @@
         try {
           const region = frameRegion(v), res = grab(v, region);
           const want = regOf(target.k).n;
-          const ok = res.text && res.text.indexOf('?') < 0;
+          // a row of only 1s is what the edge of a cut-off display looks like: never taken as a reading
+          const ok = res.text && res.text.indexOf('?') < 0 && !/^1{5,}$/.test(res.text.replace(/[^0-9]/g, ''));
           if (res.kind !== 'none') seenAt = Date.now();
           $('lcd-frame').className = 'lcd-frame' + (ok ? ' seen' : '');
           $('lcd-live').textContent = res.text || '…';
@@ -2563,7 +2652,7 @@
     function close() {
       clearTimeout(timer);
       if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
-      $('lcd-video').srcObject = null;
+      $('lcd-video').srcObject = null; $('lcd-video').style.transform = '';
       $('lcd-reader').hidden = true;
     }
     $('lcd-close').onclick = close;
@@ -2572,6 +2661,21 @@
       const v = $('lcd-video');
       finish(v.videoWidth ? { text: '', img: snapshot(v, frameRegion(v)) } : null, 'manual');
     };
+    let zoomHw = null, zoomTrack = null, zoom = 1;
+    async function setZoom(z) {
+      const lo = zoomHw ? Math.max(1, zoomHw.min) : 1, hi = zoomHw ? Math.min(zoomHw.max, 6) : 3;
+      zoom = Math.round(Math.min(hi, Math.max(lo, z)) * 2) / 2;
+      if (zoomHw && zoomTrack) {
+        try { await zoomTrack.applyConstraints({ advanced: [{ zoom }] }); $('lcd-video').style.transform = ''; }
+        catch { $('lcd-video').style.transform = `scale(${zoom})`; }
+      } else $('lcd-video').style.transform = zoom > 1 ? `scale(${zoom})` : '';
+      $('lcd-zoom-l').textContent = `Zoom ${String(zoom).replace('.', ',')}×`;
+      $('lcd-zout').disabled = zoom <= lo; $('lcd-zin').disabled = zoom >= hi;
+      store.set(zoomHw ? 'lcdZoom' : 'lcdZoomSw', zoom);
+      if (voter) { voter = new window.LinkIQLcd.Voter(3, 10); best = null; setUse(); }   // count again on the new picture
+    }
+    $('lcd-zin').onclick = () => setZoom(zoom + 0.5);
+    $('lcd-zout').onclick = () => setZoom(zoom - 0.5);
     async function exposure(dir) {
       if (!stream) return;
       const track = stream.getVideoTracks()[0], c = track.getCapabilities().exposureCompensation;
@@ -3215,6 +3319,8 @@
     vqPrune();
     const back = vvsResultsFromAddress();       // results from li: the sync page is shown once boot is done
     sweepPhotos();
+    splashSetup().catch(() => {});
+    setTimeout(splashDone, 2500);                // never longer, whatever the start does
     $('tech').value = store.get('tech', '') || '';
     if (!(await serverAnswers())) await startStandalone();
     // Pairing link: https://host/#pair=CODE. The fragment never reaches the server.
@@ -3241,11 +3347,12 @@
     if (sid) {
       try {
         const s = await api('/api/sessions/' + sid);
-        if (s.session.status === 'ACTIVE') { enterSession(s); if (await back) showView('sync'); return; }
+        if (s.session.status === 'ACTIVE') { enterSession(s); if (await back) showView('sync'); splashDone(); return; }
       } catch { /* fall through */ }
       store.del('session');
     }
     showStart(pairedName);
     if (await back) showView('sync');
+    splashDone();
   })();
 })();
