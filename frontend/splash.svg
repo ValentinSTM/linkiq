@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMid slice">
+  <!-- LinkIQ start picture: a Danish district-heating street at dusk, the heat meters talking by
+       radio to a concentrator on the roof. Replace this file, or choose another picture under Mere. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#06202f"/>
+      <stop offset="0.55" stop-color="#0b3a55"/>
+      <stop offset="0.78" stop-color="#2d6a86"/>
+      <stop offset="1" stop-color="#e9a15a"/>
+    </linearGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a2a22"/>
+      <stop offset="1" stop-color="#1c1410"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffd23f" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffd23f" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="brick" width="36" height="18" patternUnits="userSpaceOnUse">
+      <rect width="36" height="18" fill="#a5452b"/>
+      <path d="M0 9h36M18 0v9M0 9v9M36 9v9" stroke="#8a3621" stroke-width="2"/>
+    </pattern>
+    <pattern id="brickY" width="36" height="18" patternUnits="userSpaceOnUse">
+      <rect width="36" height="18" fill="#d9b26a"/>
+      <path d="M0 9h36M18 0v9M0 9v9M36 9v9" stroke="#bf9851" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#sky)"/>
+  <!-- stars -->
+  <g fill="#fff" opacity="0.7">
+    <circle cx="120" cy="160" r="2.5"/><circle cx="300" cy="90" r="2"/><circle cx="520" cy="210" r="2.5"/>
+    <circle cx="760" cy="120" r="2"/><circle cx="930" cy="250" r="3"/><circle cx="640" cy="360" r="2"/>
+    <circle cx="210" cy="420" r="2"/><circle cx="990" cy="460" r="2"/><circle cx="420" cy="540" r="1.8"/>
+  </g>
+  <!-- district heating plant on the horizon: chimney and plume -->
+  <g opacity="0.85">
+    <rect x="770" y="1020" width="200" height="170" fill="#123247"/>
+    <rect x="800" y="1060" width="30" height="24" fill="#ffd23f" opacity="0.7"/><rect x="850" y="1060" width="30" height="24" fill="#ffd23f" opacity="0.5"/>
+    <rect x="900" y="1060" width="30" height="24" fill="#ffd23f" opacity="0.7"/>
+    <path d="M880 1020 L888 700 L916 700 L924 1020 Z" fill="#e8ecef"/>
+    <path d="M884.6 840 L919.4 840 L920.4 880 L883.6 880 Z M883 940 L921 940 L922 980 L882 980 Z M886 760 L918 760 L918.8 790 L885.2 790 Z" fill="#c62828"/>
+    <path d="M902 690 C870 640 930 610 900 560 C880 525 940 500 920 455" stroke="#dfe7ec" stroke-width="26" fill="none" stroke-linecap="round" opacity="0.35"/>
+  </g>
+  <!-- radio: network of concentrators, links to the houses -->
+  <g stroke="#ffd23f" stroke-width="4" fill="none" opacity="0.9">
+    <path d="M230 980 L540 870 L850 960" stroke-dasharray="10 12"/>
+    <path d="M540 870 L540 1170" stroke-dasharray="10 12"/>
+  </g>
+  <g fill="#ffd23f">
+    <circle cx="230" cy="980" r="12"/><circle cx="850" cy="960" r="12"/>
+  </g>
+  <!-- waves around the concentrator -->
+  <circle cx="540" cy="870" r="150" fill="url(#glow)"/>
+  <g stroke="#ffd23f" fill="none" stroke-linecap="round">
+    <path d="M490 820 A70 70 0 0 1 590 820" stroke-width="7" opacity="0.9"/>
+    <path d="M460 790 A110 110 0 0 1 620 790" stroke-width="7" opacity="0.6"/>
+    <path d="M430 760 A150 150 0 0 1 650 760" stroke-width="7" opacity="0.35"/>
+  </g>
+  <circle cx="540" cy="870" r="16" fill="#fff"/>
+  <!-- Danish row houses -->
+  <g>
+    <rect x="40" y="1250" width="330" height="330" fill="url(#brick)"/>
+    <path d="M20 1260 L205 1110 L390 1260 Z" fill="#3b3f44"/>
+    <rect x="80" y="1310" width="80" height="90" fill="#ffe08a"/><rect x="250" y="1310" width="80" height="90" fill="#ffe08a"/>
+    <path d="M80 1355h80M120 1310v90M250 1355h80M290 1310v90" stroke="#fff" stroke-width="5"/>
+    <rect x="170" y="1450" width="70" height="130" fill="#2a3d4a"/>
+
+    <rect x="375" y="1220" width="330" height="360" fill="url(#brickY)"/>
+    <path d="M355 1230 L540 1070 L725 1230 Z" fill="#7a2f22"/>
+    <rect x="415" y="1280" width="80" height="90" fill="#ffe08a"/><rect x="585" y="1280" width="80" height="90" fill="#2b4556"/>
+    <path d="M415 1325h80M455 1280v90M585 1325h80M625 1280v90" stroke="#fff" stroke-width="5"/>
+    <rect x="505" y="1450" width="70" height="130" fill="#123247"/>
+    <!-- the concentrator mast on the roof -->
+    <path d="M540 1070 L540 890" stroke="#e8ecef" stroke-width="10"/>
+
+    <rect x="710" y="1250" width="330" height="330" fill="url(#brick)"/>
+    <path d="M690 1260 L875 1110 L1060 1260 Z" fill="#3b3f44"/>
+    <rect x="750" y="1310" width="80" height="90" fill="#2b4556"/><rect x="920" y="1310" width="80" height="90" fill="#ffe08a"/>
+    <path d="M750 1355h80M790 1310v90M920 1355h80M960 1310v90" stroke="#fff" stroke-width="5"/>
+    <rect x="840" y="1450" width="70" height="130" fill="#2a3d4a"/>
+  </g>
+  <!-- ground with district heating pipes: supply (red) and return (blue) -->
+  <rect y="1580" width="1080" height="340" fill="url(#ground)"/>
+  <rect y="1580" width="1080" height="16" fill="#55626b"/>
+  <g stroke-linecap="round">
+    <path d="M0 1700 H1080" stroke="#c62828" stroke-width="34"/>
+    <path d="M0 1700 H1080" stroke="#e35a4a" stroke-width="10" stroke-dasharray="60 40" opacity="0.6"/>
+    <path d="M0 1790 H1080" stroke="#1565c0" stroke-width="34"/>
+    <path d="M0 1790 H1080" stroke="#4f8fdc" stroke-width="10" stroke-dasharray="60 40" opacity="0.6"/>
+  </g>
+  <!-- service pipes up to the houses, each with a heat meter that talks by radio -->
+  <g>
+    <path d="M190 1700 V1600 M220 1790 V1600" stroke="#c62828" stroke-width="12"/>
+    <path d="M220 1790 V1600" stroke="#1565c0" stroke-width="12"/>
+    <path d="M525 1700 V1600 M555 1790 V1600" stroke="#c62828" stroke-width="12"/>
+    <path d="M555 1790 V1600" stroke="#1565c0" stroke-width="12"/>
+    <path d="M860 1700 V1600 M890 1790 V1600" stroke="#c62828" stroke-width="12"/>
+    <path d="M890 1790 V1600" stroke="#1565c0" stroke-width="12"/>
+  </g>
+  <g>
+    <rect x="160" y="1500" width="90" height="70" rx="12" fill="#e8ecef"/><rect x="175" y="1515" width="60" height="22" rx="3" fill="#1f3a2e"/><rect x="180" y="1520" width="50" height="12" fill="#7fe0a0"/>
+    <rect x="495" y="1500" width="90" height="70" rx="12" fill="#e8ecef"/><rect x="510" y="1515" width="60" height="22" rx="3" fill="#1f3a2e"/><rect x="515" y="1520" width="50" height="12" fill="#7fe0a0"/>
+    <rect x="830" y="1500" width="90" height="70" rx="12" fill="#e8ecef"/><rect x="845" y="1515" width="60" height="22" rx="3" fill="#1f3a2e"/><rect x="850" y="1520" width="50" height="12" fill="#7fe0a0"/>
+  </g>
+  <g stroke="#ffd23f" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.9">
+    <path d="M190 1480 A30 30 0 0 1 220 1480"/><path d="M178 1462 A48 48 0 0 1 232 1462"/>
+    <path d="M525 1480 A30 30 0 0 1 555 1480"/><path d="M513 1462 A48 48 0 0 1 567 1462"/>
+    <path d="M860 1480 A30 30 0 0 1 890 1480"/><path d="M848 1462 A48 48 0 0 1 902 1462"/>
+  </g>
+</svg>

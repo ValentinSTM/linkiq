@@ -130,6 +130,9 @@ Tests: `pip install -r requirements-dev.txt && pytest`. With Docker: `docker com
 | "Før du går" (before you leave): checklist of report, photos, meter readings and VVS-dialog | yes |
 | Reports and photos shown inside the app (PDF pages too), from the checklist, Rapporter and the folder | yes |
 | GPS taken by itself when allowed; otherwise address or map | yes |
+| Map legend with the same colours and lines as on the map | yes |
+| Zoom in the meter display reader (the camera's own zoom when it has one) | yes |
+| Start picture: `frontend/splash.svg`, or another picture chosen under Mere › Startbillede (on the device only) | yes |
 | Reports from the folder or from files can be added to the VVS list, so a forgotten day is not lost | yes |
 | Checking a meter without a session and without CALL: who hears it now, and since when (`<meter>_status.pdf`) | yes, without a server only |
 | Status check: each concentrator once; last contact within the last hour (≤ 75 min), occasional (≤ 8 h) or older (does not count); verdict on hourly data and redundancy; signal and contact limits written in the report | yes |

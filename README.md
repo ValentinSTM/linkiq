@@ -128,6 +128,9 @@ Test: `pip install -r requirements-dev.txt && pytest`. Med Docker: `docker compo
 | „Før du går": tjekliste over rapport, billeder, målerstande og VVS-dialog | ja |
 | Rapporter og billeder vises inde i appen (også PDF-sider), fra tjeklisten, Rapporter og mappen | ja |
 | GPS hentes af sig selv, når det er tilladt; ellers adresse eller kort | ja |
+| Kortforklaring med de samme farver og linjer som på kortet | ja |
+| Zoom i måleraflæsningen (kameraets egen zoom, når den findes) | ja |
+| Startbillede: `frontend/splash.svg`, eller et andet billede valgt under Mere › Startbillede (kun på enheden) | ja |
 | Rapporter fra mappen eller fra filer kan føjes til VVS-listen, så en glemt dag ikke går tabt | ja |
 | Kontrol af en måler uden session og uden CALL: hvem hører den nu, og siden hvornår (`<målernummer>_status.pdf`) | ja, kun uden server |
 | Statuskontrol: hver koncentrator én gang; seneste kontakt inden for den seneste time (≤ 75 min), lejlighedsvis (≤ 8 t) eller ældre (tæller ikke); dom om timedata og redundans; grænser for signal og kontakt skrevet i rapporten | ja |
