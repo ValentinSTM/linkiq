@@ -1818,6 +1818,9 @@
     let keep = false;                           // a heading stays with what follows it
     const brk = () => { if (keep) { keep = false; return; } breaks.push(Math.round(y) + 14); };   // below the descenders of the line above
     const mark = (yy) => { if (keep) { keep = false; return; } breaks.push(Math.round(yy) + 14); };
+    // fixed page starts on paper: 1 the visit, 2 meter readings and VVS-dialog, 3 map, 4 measurement and receivers
+    const forced = [];
+    const force = () => { keep = false; forced.push(Math.round(y) + 14); };
     const section = (title) => { brk(); keep = true; y += 36; x.fillStyle = INK.light; x.fillRect(P, y, W - 2 * P, 2); y += 50; font(700, 30); text(title, P, y, INK.navy); y += 10; };
     const row = (label, value, color = INK.ink) => {
       brk();
@@ -1874,9 +1877,8 @@
     if (!isCheck) {
       // the El og syn fields, so the separate KMD form is not needed; the last two are filled by the app itself
       const es = (ui.vvs && ui.vvs.meter === s.session.meterSerial && ui.vvs.es) || {};
-      const vals = Object.fromEntries(filledReadings().filter((r) => r.value).map((r) => [r.k, true]));
-      const all3 = ['E1', 'V1', 'HR'].every((k) => vals[k]);
-      const nPh = instPhotos.count(), nUnit = instPhotos.countOf('unit');
+      const readKeys = filledReadings().filter((r) => r.value).map((r) => (r.k === '*' ? r.label || '?' : r.k));
+      const nPh = instPhotos.count(), ph = { mount: instPhotos.countOf('mount'), start: instPhotos.countOf('start'), unit: instPhotos.countOf('unit') };
       section(T('El og syn'));
       const miss = (v) => v || T('necompletat');
       row('Anlæg', miss(es.anlaeg), es.anlaeg ? INK.ink : INK.gray);
@@ -1885,10 +1887,11 @@
       if (es.model) row('Model', es.model);
       row('Hovedhaner lukket', miss(es.haner), es.haner ? INK.ink : INK.gray);
       row('Plomberet', miss(es.plomb), es.plomb === 'Ja' ? INK.green : es.plomb ? INK.amber : INK.gray);
-      row(T('Cele 3 registre citite'), all3 ? T('Da: E1, V1 și HR') : T('Nu: lipsește {0}', ['E1', 'V1', 'HR'].filter((k) => !vals[k]).join(', ')), all3 ? INK.green : INK.amber);
-      row(T('Foto'), nPh ? T('Da: {0} poze', nPh) + (nUnit ? '' : ' · ' + T('fără vandvarmer / unit')) : T('Nu'), nPh && nUnit ? INK.green : INK.amber);
+      row('Tælleværker', readKeys.length ? T('Da') + ' (' + readKeys.join(', ') + ')' : T('Nu'), readKeys.length ? INK.green : INK.amber);
+      row(T('Foto'), nPh ? T('{0} poze: {1} la montaj, {2} la punerea în funcțiune, {3} vandvarmer / unit', nPh, ph.mount, ph.start, ph.unit) : T('Nu'), nPh && ph.unit ? INK.green : INK.amber);
     }
 
+    force();
     y = await drawReadings(x, P, W, y, (t) => { section(t); return y; }, font, text, mark);
     keep = false;
     y = drawVvsSection(x, P, W, y, (t) => { section(t); return y; }, font, text);
@@ -1896,6 +1899,7 @@
 
     const sm = { ...s, receivers: useful };
     const mapCanvas = await reportMap(sm, W - 2 * P, 620);
+    force();
     if (mapCanvas) {
       section(T('Hartă'));
       y += 34; font(700, 22); text(T('Toate site-urile'), P, y, INK.gray); y += 12;
@@ -1940,6 +1944,7 @@
       row('', T(g && g.lat !== null ? 'Harta lipsește: registrul cu site-uri nu este încărcat pe acest dispozitiv.' : 'Harta lipsește: sesiunea nu are poziția contorului.'), INK.gray);
     }
 
+    force();
     if (!isCheck) {
     const internalOnly = !s.finalCheck && singleOf(s) && s.coarse.length <= 1;
     if (internalOnly) {
@@ -2044,6 +2049,7 @@
     out.width = W; out.height = y;
     out.getContext('2d').drawImage(big, 0, 0);
     out.breaks = breaks.filter((b) => b > 0 && b < y);
+    out.forced = forced.filter((b) => b > 0 && b < y);
     return out;
   }
 
@@ -2075,7 +2081,9 @@
     while (start < report.height - 4) {
       const avail = A4H - foot - (pages.length ? head : 0);
       let end = start + avail;
-      if (end >= report.height) end = report.height;
+      const must = (report.forced || []).find((b) => b > start + 40 && b <= Math.min(end, report.height));
+      if (must) end = must;                     // a section that starts its own page
+      else if (end >= report.height) end = report.height;
       else {
         const fit = (report.breaks || []).filter((b) => b > start + avail * 0.25 && b <= end);
         if (fit.length) end = fit[fit.length - 1];

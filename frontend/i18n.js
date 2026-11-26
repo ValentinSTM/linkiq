@@ -705,4 +705,6 @@ window.LINKIQ_DA = {
  "Nu, altă adresă": "Nej, en anden adresse",
  "Datele ajung pe două căi, dar semnalul principal e slab: orele se completează cu întârziere, uneori de câteva ore.": "Data kommer ad to veje, men hovedsignalet er svagt: timerne bliver først komplette med forsinkelse, nogle gange flere timer.",
  "O singură legătură, cu semnal slab: orele se completează cu întârziere și nu există rezervă.": "Kun én forbindelse med svagt signal: timerne bliver komplette med forsinkelse, og der er ingen reserve.",
+ "Da": "Ja",
+ "{0} poze: {1} la montaj, {2} la punerea în funcțiune, {3} vandvarmer / unit": "{0} billeder: {1} ved montage, {2} ved idriftsættelse, {3} vandvarmer / unit",
 };
