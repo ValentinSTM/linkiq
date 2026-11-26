@@ -386,3 +386,11 @@ nav .badge { position: absolute; top: 3px; left: calc(50% + 22px); }
 .fsbox .fs-addr { font-size: 1.15em; font-weight: 700; margin: 4px 0; }
 .fsbox .two { margin: 8px 0; }
 .fsbox [hidden] { display: none !important; }
+
+/* the standard start picture has its own title and Kredsløb logo: no text over it, the whole
+   picture on a wide screen, the loading bar thin at the very bottom */
+#splash.std { background: #f9ddbd; }
+#splash.std .sp-text, #splash.std .sp-org { display: none; }
+#splash.std .sp-foot { padding: 0 0 calc(4px + env(safe-area-inset-bottom)); }
+#splash.std .sp-bar { height: 4px; border-radius: 0; background: rgba(11,42,60,.12); }
+@media (min-aspect-ratio: 3/4) { #splash.std #splash-img { object-fit: contain; } }

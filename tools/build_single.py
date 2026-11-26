@@ -47,8 +47,8 @@ def main() -> None:
     # carries its scripts inline, so that policy is left out here (the file runs from the phone itself).
     html = re.sub(r'<meta http-equiv="Content-Security-Policy"[^>]*>\n?', "", html)
     # the start picture travels inside the file too
-    svg = base64.b64encode((FRONT / "splash.svg").read_bytes()).decode()
-    html = html.replace('src="splash.svg"', 'src="data:image/svg+xml;base64,' + svg + '"')
+    jpg = base64.b64encode((FRONT / "splash.jpg").read_bytes()).decode()
+    html = html.replace('src="splash.jpg"', 'src="data:image/jpeg;base64,' + jpg + '"')
     html = html.replace("</head>", "<style>\n" + css + "\n</style>\n</head>")
     registry = ""
     if args.sites:
