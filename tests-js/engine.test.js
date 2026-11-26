@@ -408,35 +408,33 @@ test('the demo still works without a registry', async () => {
   assert.ok(eng.summary(sid).receivers.length > 0);
 });
 
-test('a strong receiver of another owner never wins; inactive ones do not count either', async () => {
+test('a strong receiver outside the approved list never wins; inactive ones do not count either', async () => {
   const at = Date.UTC(2026, 10, 12, 8, 50, 0);
   const live = () => ({ SerialNumber: METER, Links: [
-    { SerialNumber: '80000001', TimestampUtcToDevice: new Date(at).toISOString(), RssiToDevice: -67 },   // third party
+    { SerialNumber: '80000001', TimestampUtcToDevice: new Date(at).toISOString(), RssiToDevice: -67 },   // not in the list
     { SerialNumber: '70000001', TimestampUtcToDevice: new Date(at).toISOString(), RssiToDevice: -91 },
-    { SerialNumber: '70000003', TimestampUtcToDevice: new Date(at).toISOString(), RssiToDevice: -104 },
+    { SerialNumber: '70000003', TimestampUtcToDevice: new Date(at).toISOString(), RssiToDevice: -104 },  // a partner's, shared: in the list
     { SerialNumber: '70000002', TimestampUtcToDevice: new Date(at).toISOString(), RssiToDevice: -80 },   // inactive
   ] });
   const { eng } = make({ registry: false, live });
   eng.importSites(SITES);
-  eng.importConcentrators('serialNumber;siteCode;active;Ownership\n70000001;S01;1;Kredsløb\n70000002;S01;0;Kredsløb\n70000003;S02;1;Kredslob A/S\n80000001;S02;1;Anden Ejer ApS\n');
+  eng.importConcentrators('serialNumber;siteCode;active\n70000001;S01;1\n70000002;S01;0\n70000003;S02;1\n');
   const info = eng.registryInfo();
-  assert.equal(info.eligible, 2); assert.equal(info.foreign, 1); assert.equal(info.inactive, 1); assert.equal(info.ownerColumn, true);
+  assert.equal(info.eligible, 2); assert.equal(info.inactive, 1);
   const c = await eng.check(METER, null);
   assert.equal(c.primary.serial, '70000001');
   assert.equal(c.primary.rssi, -91);
   assert.deepEqual(c.receivers.map((r) => r.serial).sort(), ['70000001', '70000003']);
-  // the QR copy of the registry keeps the owners
+  // the QR copy of the registry keeps the inactive mark
   const copy = make({ registry: false, live }).eng;
   const csv = eng.registryCsv();
   copy.importSites(csv.sites); copy.importConcentrators(csv.concentrators);
-  assert.equal(copy.registryInfo().foreign, 1);
+  assert.equal(copy.registryInfo().inactive, 1);
 });
 
-test('a registry without an owner column is Kredsløb\'s list, as before', () => {
+test('every concentrator in the imported list is approved, whoever operates it', () => {
   const { eng } = make();
-  const info = eng.registryInfo();
-  assert.equal(info.ownerColumn, false);
-  assert.equal(info.eligible, 3);
+  assert.equal(eng.registryInfo().eligible, 3);
 });
 
 test('retention: sessions and saved positions older than a year are deleted', () => {

@@ -13,8 +13,8 @@ and tests), or **Decision** (needs a decision or work outside the code, by Kreds
 | Purpose: on-demand diagnosis of one meter, read-only | green | Already met |
 | Kamstrup: one meter at a time, at most one request per 5 s, no scraping | green | Already met |
 | HTTP 200 is not a new measurement (baseline + fingerprint) | green | Already met |
-| Receivers of other owners never decide the result | was red with an empty registry | **Done**: fail closed |
-| Ownership and `active` explicit in the registry | yellow | **Done** in the app; the export is a **Decision** |
+| Receivers outside the approved list never decide the result | was red with an empty registry | **Done**: fail closed |
+| `active` explicit in the registry | yellow | **Done** |
 | Input (meter number) validated and URL-encoded | green | Already met |
 | DOM/XSS: text only, never HTML | green/yellow | **Done**: map labels as text, CSP also on GitHub Pages |
 | Service worker does not cache RF data | green | Already met |
@@ -31,8 +31,8 @@ and tests), or **Decision** (needs a decision or work outside the code, by Kreds
 
 ### 1. Fail closed: no registry, no result
 
-Before: when no registry was loaded, every receiver that heard the meter counted as Kredsløb's. A
-strong third-party concentrator could then make a bad installation look good.
+Before: when no registry was loaded, every receiver that heard the meter counted as approved. A
+strong concentrator outside Kredsløb's list could then make a bad installation look good.
 
 Now:
 
@@ -40,19 +40,17 @@ Now:
   The installer sees: *"Kredsløbs koncentratorregister er ikke indlæst … målingen kan ikke
   godkendes. Indlæs registret (QR-kode) på startskærmen."* The registry card on the start screen
   says the same.
-- A concentrator counts in a result only when it is **in the registry, active and Kredsløb's**:
-  - `active` = 0 / false / nej / no: never counts;
-  - a column `Ownership` / `Owner` / `Ejer` / `Ejerskab`, when present, must say Kredsløb (also
-    "Kredslob", "Kredsløb A/S"). Any other owner never counts;
-  - without an owner column the whole list is taken as Kredsløb's list, as before. The app then
-    says so on the start screen.
-- Receivers of other owners are only kept in the session log, marked not owned; they never become
-  primary or backup, and they are not shown as ours.
-- The registry QR code carries the owner column, so a colleague's phone gets the same rules.
+- A concentrator counts in a result only when it is **in the imported registry and not marked
+  inactive** (`active` = 0 / false / nej / no never counts). Everything in the registry is approved
+  infrastructure for Kredsløb: its own concentrators and partners' shared under agreement. Who owns a
+  concentrator is not written in the app.
+- Receivers outside the registry are only kept in the session log, marked not approved; they never
+  become primary or backup and are not listed.
+- The registry QR code carries `active`, so a colleague's phone gets the same rules.
 - The demo (simulator) still runs without a registry, for training.
 - The optional server (`backend/`) follows the same rule in real mode.
 
-Tests: `tests-js/engine.test.js` (no registry, other owner at −67 dBm against ours at −91 dBm,
+Tests: `tests-js/engine.test.js` (no registry, a concentrator outside the list at −67 dBm against an approved one at −91 dBm,
 inactive, QR copy, demo) and `backend/tests/test_workflow.py`.
 
 ### 2. li accepts work only from LinkIQ
@@ -125,8 +123,8 @@ kundens personlige ting."*
    mirror or is closed. Today the app's code (without registry) is public on GitHub Pages. When the
    Azure host is known, add its exact name to `LIQ_ORIGIN` in `tools/vvs/bookmark.src.js` (a
    `*.kredslob.dk` name is already allowed).
-2. **Registry export.** Export the concentrator list with the columns `serialNumber`, `siteCode`,
-   `active`, `Ownership` (plus the site list with coordinates). The registry is never put in a
+2. **Registry export.** Export the concentrator list with the columns `serialNumber`, `siteCode` and
+   `active` (plus the site list with coordinates). Everything in the list counts as approved infrastructure. The registry is never put in a
    repository; it travels as a QR code or file.
 3. **Map provider.** OpenStreetMap sees which map squares a phone loads (the area around the meter)
    and, with address search, the address typed. Options: accept (no personal data, no customer

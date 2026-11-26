@@ -2000,11 +2000,8 @@ window.LINKIQ_DA = {
  "Mai întunecat": "Mørkere",
  "Mai luminos": "Lysere",
  "Doar echipamentul și instalația: fără persoane, acte sau lucruri personale ale clientului.": "Kun udstyret og installationen: ingen personer, papirer eller kundens personlige ting.",
- "{0} au alt proprietar decât Kredsløb și nu contează în rezultat.": "{0} har en anden ejer end Kredsløb og tæller ikke med i resultatet.",
  "{0} sunt marcate inactive și nu contează în rezultat.": "{0} er markeret som inaktive og tæller ikke med i resultatet.",
- "Registrul nu are coloana de proprietar (Ownership / Ejer): toate concentratoarele din el sunt socotite ale Kredsløb.": "Registret har ingen ejerkolonne (Ownership / Ejer): alle koncentratorer i det regnes som Kredsløbs.",
- "Registrul nu este încărcat. Fără el nu se poate face nicio măsurătoare: LinkIQ nu poate ști care concentratoare sunt ale Kredsløb. Doar modul demonstrativ merge fără registru.": "Registret er ikke indlæst. Uden det kan der ikke måles: LinkIQ kan ikke vide, hvilke koncentratorer der tilhører Kredsløb. Kun demotilstanden virker uden register.",
- "Registrul concentratoarelor Kredsløb nu este încărcat sau nu are niciun concentrator activ al Kredsløb. Fără el nu se poate decide care concentratoare sunt ale noastre, deci măsurătoarea nu poate fi aprobată. Încarcă registrul (cod QR) pe ecranul de start.": "Kredsløbs koncentratorregister er ikke indlæst eller har ingen aktive Kredsløb-koncentratorer. Uden det kan LinkIQ ikke afgøre, hvilke koncentratorer der tilhører Kredsløb, så målingen kan ikke godkendes. Indlæs registret (QR-kode) på startskærmen.",
+ "Registrul nu este încărcat. Fără el nu se poate face nicio măsurătoare: LinkIQ nu poate ști care concentratoare sunt ale Kredsløb. Doar modul demonstrativ merge fără registru.": "Registret er ikke indlæst. Uden det kan der ikke måles: LinkIQ kan ikke vide, hvilke koncentratorer der er godkendte for Kredsløb. Kun demotilstanden virker uden register.",
  "Nicio măsurătoare în curs. Harta arată site-urile din registru.": "Ingen måling i gang. Kortet viser registrets sites.",
  "Nicio măsurătoare în curs.": "Ingen måling i gang.",
  "Alege poziția contorului (adresă sau hartă) ca să apară liniile și distanțele.": "Angiv målerens position (adresse eller kort), så linjer og afstande vises.",
@@ -2044,6 +2041,7 @@ window.LINKIQ_DA = {
  "Deschide în altă aplicație": "Åbn i en anden app",
  "Mai mult": "Mere",
  "1 poză": "1 billede",
+ "Registrul concentratoarelor Kredsløb nu este încărcat sau nu are niciun concentrator activ. Fără el nu se poate decide care concentratoare sunt aprobate, deci măsurătoarea nu poate fi aprobată. Încarcă registrul (cod QR) pe ecranul de start.": "Kredsløbs koncentratorregister er ikke indlæst eller har ingen aktive koncentratorer. Uden det kan LinkIQ ikke afgøre, hvilke koncentratorer der er godkendte, så målingen kan ikke godkendes. Indlæs registret (QR-kode) på startskærmen.",
 };
 
 </script>
@@ -14980,9 +14978,7 @@ var qrcode = function() {
     deviceType: ['devicetype', 'type'],
     firmware: ['firmware', 'fw'],
     active: ['active', 'aktiv'],
-    owner: ['owner', 'ownership', 'ejer', 'ejerskab'],
   };
-  const OWN = /kredsl(ø|o|oe)b/i;   // the owner name that makes a concentrator ours
 
   function parseCsv(text) {
     text = String(text).replace(/^﻿/, '');
@@ -15110,16 +15106,15 @@ var qrcode = function() {
       return { sites: Object.keys(this.db.sites).length, concentrators: conc.length,
         review: conc.filter((c) => c.status === 'REVIEW' || c.status === 'MISSING_LOCATION').length,
         eligible: conc.filter((c) => this._eligible(c)).length,
-        foreign: conc.filter((c) => c.owner && !OWN.test(c.owner)).length,
-        inactive: conc.filter((c) => c.active === false).length,
-        ownerColumn: conc.some((c) => c.owner !== null && c.owner !== undefined) };
+        inactive: conc.filter((c) => c.active === false).length };
     }
     /**
-     * May this concentrator count in a verdict? Only when it is in the registry, active, and
-     * Kredsløb's (an owner column, when the registry has one, must say Kredsløb). Never guessed.
+     * May this concentrator count in a verdict? Only when it is in the registry and not marked
+     * inactive. Everything in the imported list is approved infrastructure for Kredsløb (its own
+     * and partners' shared under agreement); anything else never counts. Never guessed.
      */
     _eligible(c) {
-      return !!c && c.active !== false && (c.owner === null || c.owner === undefined || OWN.test(c.owner));
+      return !!c && c.active !== false;
     }
     _owned(serial, demo) {
       // the demo without a registry: the simulator's receivers are all "ours"; with one, the same rules
@@ -15130,7 +15125,7 @@ var qrcode = function() {
     _needRegistry(demo) {
       if (demo) return;
       if (!Object.values(this.db.concentrators).some((c) => this._eligible(c))) {
-        throw new EngineError(409, 'REGISTRY_EMPTY', 'Registrul concentratoarelor Kredsløb nu este încărcat sau nu are niciun concentrator activ al Kredsløb. Fără el nu se poate decide care concentratoare sunt ale noastre, deci măsurătoarea nu poate fi aprobată. Încarcă registrul (cod QR) pe ecranul de start.');
+        throw new EngineError(409, 'REGISTRY_EMPTY', 'Registrul concentratoarelor Kredsløb nu este încărcat sau nu are niciun concentrator activ. Fără el nu se poate decide care concentratoare sunt aprobate, deci măsurătoarea nu poate fi aprobată. Încarcă registrul (cod QR) pe ecranul de start.');
       }
     }
     clearRegistry() { this.db.sites = {}; this.db.concentrators = {}; this.db.registrySource = null; this.save(); }
@@ -15157,9 +15152,8 @@ var qrcode = function() {
       const cell = (v) => String(v === null || v === undefined ? '' : v).replace(/[;\r\n]/g, ' ');
       const sites = ['siteCode;name;address;latitude;longitude;status'].concat(Object.values(this.db.sites).map((s) =>
         [s.siteCode, s.name, s.address, s.latitude, s.longitude, s.status === 'MISSING_LOCATION' ? '' : s.status].map(cell).join(';')));
-      const own = Object.values(this.db.concentrators).some((c) => c.owner !== null && c.owner !== undefined);
-      const conc = ['serialNumber;siteCode;status;active' + (own ? ';owner' : '')].concat(Object.values(this.db.concentrators).map((c) =>
-        [c.serial, c.declaredSite, c.declaredStatus, c.active ? 1 : 0].concat(own ? [c.owner || ''] : []).map(cell).join(';')));
+      const conc = ['serialNumber;siteCode;status;active'].concat(Object.values(this.db.concentrators).map((c) =>
+        [c.serial, c.declaredSite, c.declaredStatus, c.active ? 1 : 0].map(cell).join(';')));
       return { sites: sites.join('\n') + '\n', concentrators: conc.join('\n') + '\n' };
     }
 
@@ -15189,9 +15183,7 @@ var qrcode = function() {
         this.db.concentrators[serial] = { serial, siteCode: pick(row, 'siteCode') || null,
           declaredSite: pick(row, 'siteCode') || null, deviceType: pick(row, 'deviceType'),
           firmware: pick(row, 'firmware'), declaredStatus: pick(row, 'status') || 'ACTIVE',
-          active: !['0', 'false', 'nej', 'no'].includes(pick(row, 'active').toLowerCase()),
-          // owner: null when the file has no owner column (the whole file is then Kredsløb's list)
-          owner: Object.keys(row).some((k) => ALIASES.owner.includes(k)) ? pick(row, 'owner') : null };
+          active: !['0', 'false', 'nej', 'no'].includes(pick(row, 'active').toLowerCase()) };
         n++;
       }
       const review = this._remapConcentrators();
@@ -15470,7 +15462,7 @@ var qrcode = function() {
       // snapshot). One row per receiver: its most recent reading; a tie goes to the stronger one.
       const latest = {};
       for (const l of links) {
-        if (!this._owned(l.serial, demo)) continue;   // other owners and inactive ones: never in the verdict
+        if (!this._owned(l.serial, demo)) continue;   // not in the approved list, or inactive: never in the verdict
         const had = latest[l.serial], t = l.observedMs === null ? -Infinity : l.observedMs;
         const ht = had ? (had.observedMs === null ? -Infinity : had.observedMs) : null;
         if (!had || t > ht || (t === ht && l.rssi > had.rssi)) latest[l.serial] = l;
@@ -17147,9 +17139,7 @@ var qrcode = function() {
     const r = engine.registryInfo();
     $('reg-info').textContent = r.concentrators
       ? T('Registru: {0} site-uri, {1} concentratoare', r.sites, r.concentrators) + (r.review ? T(', {0} fără site sigur.', r.review) : '.')
-        + (r.foreign ? ' ' + T('{0} au alt proprietar decât Kredsløb și nu contează în rezultat.', r.foreign) : '')
         + (r.inactive ? ' ' + T('{0} sunt marcate inactive și nu contează în rezultat.', r.inactive) : '')
-        + (r.ownerColumn ? '' : ' ' + T('Registrul nu are coloana de proprietar (Ownership / Ejer): toate concentratoarele din el sunt socotite ale Kredsløb.'))
         + ' ' + T({ embedded: 'Este inclus în aplicație; nu trebuie importat.', folder: 'Se încarcă singur din dosarul aplicației.',
           qr: 'Citit dintr-un cod QR; rămâne pe acest dispozitiv până imporți altul.' }[(engine.db.registrySource || {}).origin]
           || 'Importat manual; rămâne pe acest dispozitiv până imporți altul.')

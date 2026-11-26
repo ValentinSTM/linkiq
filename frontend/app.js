@@ -1416,9 +1416,7 @@
     const r = engine.registryInfo();
     $('reg-info').textContent = r.concentrators
       ? T('Registru: {0} site-uri, {1} concentratoare', r.sites, r.concentrators) + (r.review ? T(', {0} fără site sigur.', r.review) : '.')
-        + (r.foreign ? ' ' + T('{0} au alt proprietar decât Kredsløb și nu contează în rezultat.', r.foreign) : '')
         + (r.inactive ? ' ' + T('{0} sunt marcate inactive și nu contează în rezultat.', r.inactive) : '')
-        + (r.ownerColumn ? '' : ' ' + T('Registrul nu are coloana de proprietar (Ownership / Ejer): toate concentratoarele din el sunt socotite ale Kredsløb.'))
         + ' ' + T({ embedded: 'Este inclus în aplicație; nu trebuie importat.', folder: 'Se încarcă singur din dosarul aplicației.',
           qr: 'Citit dintr-un cod QR; rămâne pe acest dispozitiv până imporți altul.' }[(engine.db.registrySource || {}).origin]
           || 'Importat manual; rămâne pe acest dispozitiv până imporți altul.')

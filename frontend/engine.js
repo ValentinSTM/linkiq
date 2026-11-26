@@ -136,9 +136,7 @@
     deviceType: ['devicetype', 'type'],
     firmware: ['firmware', 'fw'],
     active: ['active', 'aktiv'],
-    owner: ['owner', 'ownership', 'ejer', 'ejerskab'],
   };
-  const OWN = /kredsl(ø|o|oe)b/i;   // the owner name that makes a concentrator ours
 
   function parseCsv(text) {
     text = String(text).replace(/^﻿/, '');
@@ -266,16 +264,15 @@
       return { sites: Object.keys(this.db.sites).length, concentrators: conc.length,
         review: conc.filter((c) => c.status === 'REVIEW' || c.status === 'MISSING_LOCATION').length,
         eligible: conc.filter((c) => this._eligible(c)).length,
-        foreign: conc.filter((c) => c.owner && !OWN.test(c.owner)).length,
-        inactive: conc.filter((c) => c.active === false).length,
-        ownerColumn: conc.some((c) => c.owner !== null && c.owner !== undefined) };
+        inactive: conc.filter((c) => c.active === false).length };
     }
     /**
-     * May this concentrator count in a verdict? Only when it is in the registry, active, and
-     * Kredsløb's (an owner column, when the registry has one, must say Kredsløb). Never guessed.
+     * May this concentrator count in a verdict? Only when it is in the registry and not marked
+     * inactive. Everything in the imported list is approved infrastructure for Kredsløb (its own
+     * and partners' shared under agreement); anything else never counts. Never guessed.
      */
     _eligible(c) {
-      return !!c && c.active !== false && (c.owner === null || c.owner === undefined || OWN.test(c.owner));
+      return !!c && c.active !== false;
     }
     _owned(serial, demo) {
       // the demo without a registry: the simulator's receivers are all "ours"; with one, the same rules
@@ -286,7 +283,7 @@
     _needRegistry(demo) {
       if (demo) return;
       if (!Object.values(this.db.concentrators).some((c) => this._eligible(c))) {
-        throw new EngineError(409, 'REGISTRY_EMPTY', 'Registrul concentratoarelor Kredsløb nu este încărcat sau nu are niciun concentrator activ al Kredsløb. Fără el nu se poate decide care concentratoare sunt ale noastre, deci măsurătoarea nu poate fi aprobată. Încarcă registrul (cod QR) pe ecranul de start.');
+        throw new EngineError(409, 'REGISTRY_EMPTY', 'Registrul concentratoarelor Kredsløb nu este încărcat sau nu are niciun concentrator activ. Fără el nu se poate decide care concentratoare sunt aprobate, deci măsurătoarea nu poate fi aprobată. Încarcă registrul (cod QR) pe ecranul de start.');
       }
     }
     clearRegistry() { this.db.sites = {}; this.db.concentrators = {}; this.db.registrySource = null; this.save(); }
@@ -313,9 +310,8 @@
       const cell = (v) => String(v === null || v === undefined ? '' : v).replace(/[;\r\n]/g, ' ');
       const sites = ['siteCode;name;address;latitude;longitude;status'].concat(Object.values(this.db.sites).map((s) =>
         [s.siteCode, s.name, s.address, s.latitude, s.longitude, s.status === 'MISSING_LOCATION' ? '' : s.status].map(cell).join(';')));
-      const own = Object.values(this.db.concentrators).some((c) => c.owner !== null && c.owner !== undefined);
-      const conc = ['serialNumber;siteCode;status;active' + (own ? ';owner' : '')].concat(Object.values(this.db.concentrators).map((c) =>
-        [c.serial, c.declaredSite, c.declaredStatus, c.active ? 1 : 0].concat(own ? [c.owner || ''] : []).map(cell).join(';')));
+      const conc = ['serialNumber;siteCode;status;active'].concat(Object.values(this.db.concentrators).map((c) =>
+        [c.serial, c.declaredSite, c.declaredStatus, c.active ? 1 : 0].map(cell).join(';')));
       return { sites: sites.join('\n') + '\n', concentrators: conc.join('\n') + '\n' };
     }
 
@@ -345,9 +341,7 @@
         this.db.concentrators[serial] = { serial, siteCode: pick(row, 'siteCode') || null,
           declaredSite: pick(row, 'siteCode') || null, deviceType: pick(row, 'deviceType'),
           firmware: pick(row, 'firmware'), declaredStatus: pick(row, 'status') || 'ACTIVE',
-          active: !['0', 'false', 'nej', 'no'].includes(pick(row, 'active').toLowerCase()),
-          // owner: null when the file has no owner column (the whole file is then Kredsløb's list)
-          owner: Object.keys(row).some((k) => ALIASES.owner.includes(k)) ? pick(row, 'owner') : null };
+          active: !['0', 'false', 'nej', 'no'].includes(pick(row, 'active').toLowerCase()) };
         n++;
       }
       const review = this._remapConcentrators();
@@ -626,7 +620,7 @@
       // snapshot). One row per receiver: its most recent reading; a tie goes to the stronger one.
       const latest = {};
       for (const l of links) {
-        if (!this._owned(l.serial, demo)) continue;   // other owners and inactive ones: never in the verdict
+        if (!this._owned(l.serial, demo)) continue;   // not in the approved list, or inactive: never in the verdict
         const had = latest[l.serial], t = l.observedMs === null ? -Infinity : l.observedMs;
         const ht = had ? (had.observedMs === null ? -Infinity : had.observedMs) : null;
         if (!had || t > ht || (t === ht && l.rssi > had.rssi)) latest[l.serial] = l;

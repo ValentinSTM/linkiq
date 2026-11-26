@@ -144,7 +144,7 @@ class Service:
             raise LinkIQError(422, "BAD_METER_SERIAL", "Meter serial must be 4-20 letters/digits")
         # Fail closed: without the Kredsløb registry no receiver can be called ours.
         if self.cfg.kamstrup_mode != "sim" and self.registry_empty():
-            raise LinkIQError(409, "REGISTRY_EMPTY", "Registrul concentratoarelor Kredsløb nu este încărcat sau nu are niciun concentrator activ al Kredsløb. Fără el nu se poate decide care concentratoare sunt ale noastre, deci măsurătoarea nu poate fi aprobată. Încarcă registrul (cod QR) pe ecranul de start.")
+            raise LinkIQError(409, "REGISTRY_EMPTY", "Registrul concentratoarelor Kredsløb nu este încărcat sau nu are niciun concentrator activ. Fără el nu se poate decide care concentratoare sunt aprobate, deci măsurătoarea nu poate fi aprobată. Încarcă registrul (cod QR) pe ecranul de start.")
         now = self.clock()
         with self.db.tx() as c:
             c.execute("BEGIN IMMEDIATE")

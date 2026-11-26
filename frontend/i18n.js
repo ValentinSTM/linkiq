@@ -565,11 +565,8 @@ window.LINKIQ_DA = {
  "Mai întunecat": "Mørkere",
  "Mai luminos": "Lysere",
  "Doar echipamentul și instalația: fără persoane, acte sau lucruri personale ale clientului.": "Kun udstyret og installationen: ingen personer, papirer eller kundens personlige ting.",
- "{0} au alt proprietar decât Kredsløb și nu contează în rezultat.": "{0} har en anden ejer end Kredsløb og tæller ikke med i resultatet.",
  "{0} sunt marcate inactive și nu contează în rezultat.": "{0} er markeret som inaktive og tæller ikke med i resultatet.",
- "Registrul nu are coloana de proprietar (Ownership / Ejer): toate concentratoarele din el sunt socotite ale Kredsløb.": "Registret har ingen ejerkolonne (Ownership / Ejer): alle koncentratorer i det regnes som Kredsløbs.",
- "Registrul nu este încărcat. Fără el nu se poate face nicio măsurătoare: LinkIQ nu poate ști care concentratoare sunt ale Kredsløb. Doar modul demonstrativ merge fără registru.": "Registret er ikke indlæst. Uden det kan der ikke måles: LinkIQ kan ikke vide, hvilke koncentratorer der tilhører Kredsløb. Kun demotilstanden virker uden register.",
- "Registrul concentratoarelor Kredsløb nu este încărcat sau nu are niciun concentrator activ al Kredsløb. Fără el nu se poate decide care concentratoare sunt ale noastre, deci măsurătoarea nu poate fi aprobată. Încarcă registrul (cod QR) pe ecranul de start.": "Kredsløbs koncentratorregister er ikke indlæst eller har ingen aktive Kredsløb-koncentratorer. Uden det kan LinkIQ ikke afgøre, hvilke koncentratorer der tilhører Kredsløb, så målingen kan ikke godkendes. Indlæs registret (QR-kode) på startskærmen.",
+ "Registrul nu este încărcat. Fără el nu se poate face nicio măsurătoare: LinkIQ nu poate ști care concentratoare sunt ale Kredsløb. Doar modul demonstrativ merge fără registru.": "Registret er ikke indlæst. Uden det kan der ikke måles: LinkIQ kan ikke vide, hvilke koncentratorer der er godkendte for Kredsløb. Kun demotilstanden virker uden register.",
  "Nicio măsurătoare în curs. Harta arată site-urile din registru.": "Ingen måling i gang. Kortet viser registrets sites.",
  "Nicio măsurătoare în curs.": "Ingen måling i gang.",
  "Alege poziția contorului (adresă sau hartă) ca să apară liniile și distanțele.": "Angiv målerens position (adresse eller kort), så linjer og afstande vises.",
@@ -609,4 +606,5 @@ window.LINKIQ_DA = {
  "Deschide în altă aplicație": "Åbn i en anden app",
  "Mai mult": "Mere",
  "1 poză": "1 billede",
+ "Registrul concentratoarelor Kredsløb nu este încărcat sau nu are niciun concentrator activ. Fără el nu se poate decide care concentratoare sunt aprobate, deci măsurătoarea nu poate fi aprobată. Încarcă registrul (cod QR) pe ecranul de start.": "Kredsløbs koncentratorregister er ikke indlæst eller har ingen aktive koncentratorer. Uden det kan LinkIQ ikke afgøre, hvilke koncentratorer der er godkendte, så målingen kan ikke godkendes. Indlæs registret (QR-kode) på startskærmen.",
 };

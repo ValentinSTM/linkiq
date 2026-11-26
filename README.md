@@ -67,9 +67,9 @@ Under **Mere** › *Register og data* (sletning og CSV-import under **Avanceret*
 
 - **Indlæs sites / koncentratorer (CSV)**: registret bliver kun på telefonen. Kolonnerne
   `Breddegrad` / `Længdegrad`, decimalkomma og filer gemt fra Excel accepteres. Uden register
-  kan der ikke måles (kun i demotilstand): LinkIQ kan ikke vide, hvilke koncentratorer der tilhører
-  Kredsløb. Har koncentratorlisten en kolonne `Ownership` / `Ejer`, tæller kun rækker med Kredsløb;
-  rækker med `active` = 0 tæller aldrig med.
+  kan der ikke måles (kun i demotilstand): LinkIQ kan ikke vide, hvilke koncentratorer der er
+  godkendte. Alt i den importerede liste er godkendt infrastruktur for Kredsløb (egne og partneres,
+  delt efter aftale); rækker med `active` = 0 tæller aldrig med.
 - **Eksportér målingerne (CSV)**: alle sessioner på enheden, til analyse.
 - **Demotilstand**: simulator, til oplæring uden måler.
 

@@ -70,8 +70,8 @@ Under **Mere** (more) › *Register og data* (deleting and CSV import under **Av
 - **Load sites / concentrators (CSV)**: the registry stays on the phone only. The columns
   `Breddegrad` / `Længdegrad`, decimal commas and files saved from Excel are accepted. Without a
   registry no measurement can be made (demo mode only): LinkIQ cannot know which concentrators
-  belong to Kredsløb. When the concentrator list has an `Ownership` / `Ejer` column, only rows saying
-  Kredsløb count; rows with `active` = 0 never count.
+  are approved. Everything in the imported list is approved infrastructure for Kredsløb (its own and
+  partners', shared under agreement); rows with `active` = 0 never count.
 - **Export measurements (CSV)**: all sessions on the device, for analysis.
 - **Demo mode**: simulator, for training without a meter.
 

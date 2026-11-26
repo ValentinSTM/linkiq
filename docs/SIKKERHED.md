@@ -13,8 +13,8 @@ test) eller **Beslutning** (kræver en beslutning eller arbejde uden for koden, 
 | Formål: diagnose af én måler efter behov, kun læsning | grøn | Opfyldt |
 | Kamstrup: én måler ad gangen, højst én forespørgsel pr. 5 s, ingen scraping | grøn | Opfyldt |
 | HTTP 200 er ikke en ny måling (baseline + fingeraftryk) | grøn | Opfyldt |
-| Andre ejeres modtagere afgør aldrig resultatet | var rød med tomt register | **Gjort**: fail closed |
-| Ejerskab og `active` eksplicit i registret | gul | **Gjort** i appen; eksporten er en **Beslutning** |
+| Modtagere uden for den godkendte liste afgør aldrig resultatet | var rød med tomt register | **Gjort**: fail closed |
+| `active` eksplicit i registret | gul | **Gjort** |
 | Input (målernummer) valideret og URL-kodet | grøn | Opfyldt |
 | DOM/XSS: kun tekst, aldrig HTML | grøn/gul | **Gjort**: kortetiketter som tekst, CSP også på GitHub Pages |
 | Service worker gemmer ikke RF-data | grøn | Opfyldt |
@@ -31,8 +31,8 @@ test) eller **Beslutning** (kræver en beslutning eller arbejde uden for koden, 
 
 ### 1. Fail closed: intet register, intet resultat
 
-Før: var der intet register indlæst, talte alle modtagere, der hørte måleren, som Kredsløbs. En
-stærk koncentrator hos en tredjepart kunne så få en dårlig installation til at se god ud.
+Før: var der intet register indlæst, talte alle modtagere, der hørte måleren, som godkendte. En
+stærk koncentrator uden for Kredsløbs liste kunne så få en dårlig installation til at se god ud.
 
 Nu:
 
@@ -40,18 +40,17 @@ Nu:
   spurgt. Montøren ser: *"Kredsløbs koncentratorregister er ikke indlæst … målingen kan ikke
   godkendes. Indlæs registret (QR-kode) på startskærmen."* Registerkortet på startskærmen siger
   det samme.
-- En koncentrator tæller kun i et resultat, når den er **i registret, aktiv og Kredsløbs**:
-  - `active` = 0 / false / nej / no: tæller aldrig;
-  - en kolonne `Ownership` / `Owner` / `Ejer` / `Ejerskab` skal, når den findes, sige Kredsløb
-    (også „Kredslob", „Kredsløb A/S"). Enhver anden ejer tæller aldrig;
-  - uden ejerkolonne regnes hele listen som Kredsløbs liste, som før. Det står så på startskærmen.
-- Andre ejeres modtagere gemmes kun i sessionens log, markeret som ikke egne; de bliver aldrig
-  primær eller reserve og vises ikke som vores.
-- Registrets QR-kode bærer ejerkolonnen med, så en kollegas telefon får de samme regler.
+- En koncentrator tæller kun i et resultat, når den er **i det importerede register og ikke
+  markeret inaktiv** (`active` = 0 / false / nej / no tæller aldrig). Alt i registret er godkendt
+  infrastruktur for Kredsløb: egne koncentratorer og partneres, som deles efter aftale. Hvem der
+  ejer en koncentrator, skrives ikke i appen.
+- Modtagere uden for registret gemmes kun i sessionens log, markeret som ikke godkendte; de bliver
+  aldrig primær eller reserve og vises ikke på listen.
+- Registrets QR-kode bærer `active` med, så en kollegas telefon får de samme regler.
 - Demotilstanden (simulator) virker stadig uden register, til oplæring.
 - Den valgfri server (`backend/`) følger samme regel i rigtig tilstand.
 
-Test: `tests-js/engine.test.js` (intet register, anden ejer på −67 dBm mod vores på −91 dBm,
+Test: `tests-js/engine.test.js` (intet register, en koncentrator uden for listen på −67 dBm mod en godkendt på −91 dBm,
 inaktiv, QR-kopi, demo) og `backend/tests/test_workflow.py`.
 
 ### 2. li tager kun imod arbejde fra LinkIQ
@@ -123,8 +122,8 @@ eller kundens personlige ting."*
    eller lukkes. I dag er appens kode (uden register) offentlig på GitHub Pages. Når Azure-værten
    kendes, tilføjes dens præcise navn til `LIQ_ORIGIN` i `tools/vvs/bookmark.src.js` (et
    `*.kredslob.dk`-navn er allerede tilladt).
-2. **Eksport af registret.** Eksportér koncentratorlisten med kolonnerne `serialNumber`, `siteCode`,
-   `active`, `Ownership` (plus sitelisten med koordinater). Registret lægges aldrig i et depot; det
+2. **Eksport af registret.** Eksportér koncentratorlisten med kolonnerne `serialNumber`, `siteCode` og
+   `active` (plus sitelisten med koordinater). Alt i listen regnes som godkendt infrastruktur. Registret lægges aldrig i et depot; det
    overføres som QR-kode eller fil.
 3. **Kortleverandør.** OpenStreetMap ser, hvilke kortfliser en telefon henter (området omkring
    måleren), og ved adressesøgning den skrevne adresse. Muligheder: acceptere (ingen

@@ -129,7 +129,7 @@ kald. Vinderen beregnes ved hvert svar, og finjusteringen starter med `position-
 | Tab af data | observationer skrives med det samme; SQLite i WAL-tilstand | planlagt backup af filen |
 | Kamstrup-endpoint uden godkendelse og uden aftale om drift | kilden er isoleret i en udskiftelig adapter | aftale med Kamstrup |
 | Ukrypteret trafik | HTTPS på hostingen | – |
-| En tredjeparts koncentrator får en dårlig installation til at se god ud | kun koncentratorer i registret, aktive og med ejer Kredsløb tæller; uden register ingen måling (fail closed) | ejerkolonne i registereksporten |
+| En koncentrator uden for den godkendte liste får en dårlig installation til at se god ud | kun aktive koncentratorer i det importerede register tæller; uden register ingen måling (fail closed) | – |
 | Kode plantet i VVS-dialog via li | li tager kun imod arbejde fra LinkIQ-adresser og sender kun resultater dertil | signeret li-kode (nyt bogmærke) |
 
 Den fulde gennemgang og status: [SIKKERHED.md](SIKKERHED.md).
