@@ -322,5 +322,5 @@ details.adv[open] { display: flex; flex-direction: column; gap: 8px; }
 .empty-state { text-align: center; color: var(--gray); padding: 24px 12px; }
 #report-box h3, #iphoto-card h3, #leave-card h3 { font-size: 16px; margin: 0 0 6px; }
 #iphoto-card h3 .sub { font-weight: 500; color: var(--gray); font-size: 14px; }
-nav .badge { position: absolute; top: 6px; right: 8px; }
+nav .badge { position: absolute; top: 3px; left: calc(50% + 22px); }
 #iphoto-card .hint { margin: 4px 0; }
