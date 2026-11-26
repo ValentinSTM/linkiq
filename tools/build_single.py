@@ -5,7 +5,8 @@
         -> dist/linkiq.html                 the public app, no data inside
 
     python tools/build_single.py --sites linkiq_sites.csv --concentrators linkiq_koncentratorer.csv --out ../linkiq-med-register.html
-        -> the same app with YOUR registry built in: installers import nothing,
+        -> the same app with YOUR registry built in: installers import base64
+import nothing,
            and it also works when the file is opened straight from the phone.
            This file contains your concentrator locations: do NOT publish it
            (keep it out of the repository and of any published site).
@@ -45,6 +46,9 @@ def main() -> None:
     # The hosted app has a Content-Security-Policy that allows only script files; the single file
     # carries its scripts inline, so that policy is left out here (the file runs from the phone itself).
     html = re.sub(r'<meta http-equiv="Content-Security-Policy"[^>]*>\n?', "", html)
+    # the start picture travels inside the file too
+    svg = base64.b64encode((FRONT / "splash.svg").read_bytes()).decode()
+    html = html.replace('src="splash.svg"', 'src="data:image/svg+xml;base64,' + svg + '"')
     html = html.replace("</head>", "<style>\n" + css + "\n</style>\n</head>")
     registry = ""
     if args.sites:
