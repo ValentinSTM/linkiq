@@ -2168,8 +2168,10 @@
   const PHOTO_KEEP_DAYS = 30;
   // ---------------------------------------------------------------- start picture
   // Shown for a moment at start (at least 0.9 s, never more than the start itself needs). The
-  // picture is splash.svg, or one chosen under Mere, kept on this device only.
+  // picture is splash.jpg (it carries its own title and logo), or one chosen under Mere, kept on
+  // this device only; a chosen picture gets the name written over it.
   let splashUrl = null;
+  const SPLASH_STD = $('splash-img').getAttribute('src');     // a data URI in the single-file build
   async function splashSetup() {
     $('splash-ver').textContent = 'v' + VERSION;
     const on = store.get('splashOn', true) !== false;
@@ -2180,7 +2182,8 @@
     if (splashUrl) URL.revokeObjectURL(splashUrl);
     splashUrl = custom ? URL.createObjectURL(custom) : null;
     if (splashUrl && on) $('splash-img').src = splashUrl;
-    $('splash-prev').src = splashUrl || 'splash.svg';
+    $('splash').classList.toggle('std', !splashUrl);
+    $('splash-prev').src = splashUrl || SPLASH_STD;
     $('splash-reset').hidden = !custom;
   }
   function splashDone() {
@@ -2200,7 +2203,7 @@
     } catch { /* not a picture */ }
     splashSetup();
   };
-  $('splash-reset').onclick = async () => { try { await kv.del('splashImg'); } catch { /* */ } $('splash-img').src = 'splash.svg'; splashSetup(); };
+  $('splash-reset').onclick = async () => { try { await kv.del('splashImg'); } catch { /* */ } $('splash-img').src = SPLASH_STD; splashSetup(); };
   $('splash-on').onchange = () => store.set('splashOn', $('splash-on').checked);
 
   async function sweepPhotos() {
@@ -3726,6 +3729,8 @@
   $('fs-yes').onclick = () => fsAnswer('yes');
   $('fs-no').onclick = () => fsAnswer('no');
   $('meter').addEventListener('input', () => { if (!S) renderFs(); });
+  // the name is kept as it is typed: the way back from VVS-dialog (li) can reload the app
+  $('tech').addEventListener('input', () => { if (!$('tech').readOnly) store.set('tech', $('tech').value.trim()); });
 
   $('vvsq-send').onclick = async () => {
     const q = await vqLoad(), waiting = q.filter((e) => e.state !== 'sent');
