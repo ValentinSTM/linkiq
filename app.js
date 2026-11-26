@@ -51,8 +51,9 @@
     // limit. Many weak or old links are no reserve, however many there are.
     const parts = [];
     if (c.usable !== undefined) {
-      parts.push(T('{0} utilizabile (≥ {1} dBm, ultima oră)', c.usable, c.marginalDbm));
-      if (c.weak) parts.push(T('{0} slabe (< {1} dBm): nu contează', c.weak, c.marginalDbm));
+      const lim = c.usableDbm || c.marginalDbm;
+      parts.push(T('{0} utilizabile (≥ {1} dBm, ultima oră)', c.usable, lim));
+      if (c.weak) parts.push(T('{0} slabe (< {1} dBm): nu contează', c.weak, lim));
     } else if (c.current) parts.push(T('{0} cu contact în ultima oră', c.current));
     if (c.occasional) parts.push(T('{0} doar ocazional (1–{1} ore)', c.occasional, c.historyMaxH));
     if (c.old) parts.push(T('{0} fără contact de peste {1} ore (nu contează)', c.old, c.historyMaxH));
@@ -64,11 +65,15 @@
     if (!c || !s.receivers.length) return ['red', T('Niciun concentrator de-al nostru nu a auzit contorul.')];
     if (!s.primary) return ['red', T('Fără contact în ultimele {0} ore: datele din această perioadă se pierd.', c.historyMaxH)];
     if (c.usable !== undefined) {
-      if (!c.usable) return c.current ? ['red', T('Contact doar cu semnal slab (sub {0} dBm): datele orare se pot pierde.', c.marginalDbm)]
+      if (!c.usable) return c.current ? ['red', T('Contact doar cu semnal slab (sub {0} dBm): datele orare se pot pierde.', c.usableDbm || c.marginalDbm)]
         : ['yellow', T('Niciun contact în ultima oră: datele ajung cu întârziere.')];
       if (c.usable >= 2 && c.goodPrimary) return ['green', c.usableSites >= 2 ? T('Date orare, semnal bun și rezervă pe alt site.') : T('Date orare, semnal bun și rezervă pe același site.')];
-      if (c.usable >= 2) return ['yellow', T('Date orare cu rezervă, dar semnalul principal e doar la limită.')];
-      return ['yellow', T('O singură legătură utilizabilă: fără rezervă sigură.')];
+      // below the marginal limit the hours still arrive, but complete only after retries, sometimes hours later
+      const late = s.primary && s.primary.rssi < c.marginalDbm;
+      if (c.usable >= 2) return ['yellow', late ? T('Datele ajung pe două căi, dar semnalul principal e slab: orele se completează cu întârziere, uneori de câteva ore.')
+        : T('Date orare cu rezervă, dar semnalul principal e doar la limită.')];
+      return ['yellow', late ? T('O singură legătură, cu semnal slab: orele se completează cu întârziere și nu există rezervă.')
+        : T('O singură legătură utilizabilă: fără rezervă sigură.')];
     }
     if (c.current >= 2) return ['green', T('Date orare, cu redundanță.')];
     if (c.current === 1) return ['yellow', T('Un singur concentrator cu contact în ultima oră: fără redundanță.')];
@@ -77,7 +82,8 @@
   /** One line with the signal and contact-age limits, so a report can be read on its own. */
   function limitsText(withAge) {
     const th = cfg.thresholds || { goodDbm: -95, marginalDbm: -110 };
-    let t = T('Semnal: bun ≥ {0} dBm · la limită {0}…{1} dBm · slab < {1} dBm (praguri provizorii).', th.goodDbm, th.marginalDbm);
+    let t = T('Semnal: bun ≥ {0} dBm · la limită {0}…{1} dBm · slab < {1} dBm (praguri provizorii).', th.goodDbm, th.marginalDbm)
+      + ' ' + T('O rezervă contează până la {0} dBm: fiecare valoare orară e trimisă de 18 ori pe oră, iar orele lipsă sunt recuperate.', th.usableDbm || -120);
     if (withAge) t += ' ' + T('Contact: ultima oră ≤ {0} min · ocazional ≤ {1} ore · mai vechi de {1} ore nu contează.', th.contactCurrentMaxMin || 75, th.contactHistoryMaxH || 8);
     return t;
   }
@@ -937,6 +943,7 @@
     renderReadings();
     renderVvs();
     renderElsyn();
+    renderFs();
     if (navigator.wakeLock) navigator.wakeLock.request('screen').then((w) => { wakeLock = w; }).catch(() => {});
   }
 
@@ -954,6 +961,7 @@
     if (locPerm === 'granted') locate(true); else if (locPerm === 'denied') $('gps-info').textContent = T(OFF_TXT);
     $('candidates').hidden = true;
     refreshData();
+    renderFs();
     showView('start');
   }
 
@@ -1102,7 +1110,7 @@
     const pick = (x) => {
       list.hidden = true; if (ensureMap()) setPick(+x.lat, +x.lon, true);
       const a = x.address || {}, town = a.city || a.town || a.village || a.suburb || '';
-      pickedAddr = a.road ? `${a.road}${a.house_number ? ' ' + a.house_number : ''}${a.postcode ? ', ' + a.postcode + (town ? ' ' + town : '') : ''}` : x.display_name.split(', ').slice(0, 2).join(' '); $('pick-info').textContent = x.display_name.split(', ').slice(0, 4).join(', ') + ' · ' + T('verifică pe hartă și mută punctul dacă e nevoie.'); };
+      pickedAddr = a.road ? `${a.road}${a.house_number ? ' ' + a.house_number : ''}${a.postcode ? ', ' + a.postcode + (town ? ' ' + town : '') : ''}` : null; $('pick-info').textContent = x.display_name.split(', ').slice(0, 4).join(', ') + ' · ' + T('verifică pe hartă și mută punctul dacă e nevoie.'); };
     if (res.length === 1) { pick(res[0]); return; }
     for (const x of res) {
       const li = document.createElement('li'), b = document.createElement('button');
@@ -1366,14 +1374,14 @@
     info.hidden = false;
     const shown = text.length > 80 ? text.slice(0, 80) + '…' : text;
     if (found.length === 1) {
-      $('meter').value = found[0];
+      $('meter').value = found[0]; renderFs();
       info.textContent = found[0] === text ? T('Serie citită din cod.') : T('Serie citită din codul: {0}', shown);
     } else if (found.length > 1) {
       info.textContent = T('Codul conține mai multe numere. Alege seria contorului: {0}', shown);
       for (const f of found) {
         const b = document.createElement('button');
         b.type = 'button'; b.textContent = f;
-        b.onclick = () => { $('meter').value = f; chips.hidden = true; info.textContent = T('Serie aleasă din cod.'); };
+        b.onclick = () => { $('meter').value = f; renderFs(); chips.hidden = true; info.textContent = T('Serie aleasă din cod.'); };
         chips.appendChild(b);
       }
     } else {
@@ -1774,14 +1782,23 @@
   const REPORT_VERSION = '0.2';   // the report's own layout; changes without a new app version
   const isStale = (q) => q.ageMin !== null && q.ageMin !== undefined && q.ageMin > REPORT_MAX_AGE_H * 60;
 
+  const REPORT_SITES = 3;
   async function buildReport(s) {
     const staleCount = s.receivers.filter(isStale).length;
     const shown = s.receivers.filter((q) => !isStale(q));
-    // On paper only the links that can carry the data: the primary, and the others with at least
-    // the marginal signal and contact within the history window. The rest is counted, not listed.
-    const margDbm = (cfg.thresholds || { marginalDbm: -110 }).marginalDbm;
-    const useful = shown.filter((q) => q.relation === 'PRIMARY' || (q.bestRssi >= margDbm && q.age !== 'OLD'));
-    const weakHidden = shown.length - useful.length;
+    // On paper only the links that can carry the data: the primary, and the others down to the
+    // usable limit with contact within the history window. Of those, one per site and at most
+    // REPORT_SITES sites: the best signal first, the most recent contact when signals are close.
+    // The rest is counted, not listed, so many weak links never look like good coverage.
+    const useDbm = (cfg.thresholds || {}).usableDbm || -120;
+    const carry = shown.filter((q) => q.relation === 'PRIMARY' || (q.bestRssi >= useDbm && q.age !== 'OLD'));
+    const seen = (q) => Date.parse(q.observedUtc || '') || 0;
+    const better = (a, b) => (a.relation === 'PRIMARY') !== (b.relation === 'PRIMARY') ? (a.relation === 'PRIMARY' ? -1 : 1)
+      : Math.abs(a.bestRssi - b.bestRssi) >= 3 ? b.bestRssi - a.bestRssi : (seen(b) - seen(a)) || (b.bestRssi - a.bestRssi);
+    const bySite = new Map();
+    for (const q of [...carry].sort(better)) { const k = q.siteCode || q.serial; if (!bySite.has(k)) bySite.set(k, q); }
+    const useful = [...bySite.values()].slice(0, REPORT_SITES);
+    const weakHidden = shown.length - carry.length, moreHidden = carry.length - useful.length;
     const W = 1080, P = 56, big = document.createElement('canvas');
     big.width = W; big.height = 5400;
     const x = big.getContext('2d');
@@ -1800,6 +1817,10 @@
     const breaks = [];                          // places where a printed page may end (never inside a map or a line)
     let keep = false;                           // a heading stays with what follows it
     const brk = () => { if (keep) { keep = false; return; } breaks.push(Math.round(y) + 14); };   // below the descenders of the line above
+    const mark = (yy) => { if (keep) { keep = false; return; } breaks.push(Math.round(yy) + 14); };
+    // fixed page starts on paper: 1 the visit, 2 meter readings and VVS-dialog, 3 map, 4 measurement and receivers
+    const forced = [];
+    const force = () => { keep = false; forced.push(Math.round(y) + 14); };
     const section = (title) => { brk(); keep = true; y += 36; x.fillStyle = INK.light; x.fillRect(P, y, W - 2 * P, 2); y += 50; font(700, 30); text(title, P, y, INK.navy); y += 10; };
     const row = (label, value, color = INK.ink) => {
       brk();
@@ -1833,7 +1854,10 @@
     row(T('Data'), fmtTime(s.session.finishedUtc || s.session.startedUtc));
     row(T('Instalator'), s.session.technician);
     const g = s.session.gps;
-    if (s.session.address) row(T('Adresă'), s.session.address);
+    const fsx = fsFor(String(s.session.meterSerial).replace(/\D/g, ''));
+    const shownAddr = fsx && fsx.answer === 'yes' && fsFull(fsx) ? fsFull(fsx) : s.session.address;
+    if (shownAddr) row(T('Adresă'), shownAddr);
+    if (fsx || !s.session.demo) { const [fc, ft] = fsReportLine(fsx); row('VVS-dialog', ft, fc); }
     row(T('Poziție'), g && g.lat !== null ? `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}` + (g.accuracyM ? ` (±${g.accuracyM} m)` : '') + (g.source === 'saved' ? ' · ' + T('salvată la vizita din {0}', fmtTime(g.savedUtc)) : '') : T('neînregistrată'));
     if (isCheck) {
       row(T('Auzit ultima dată'), s.check.lastSeenUtc ? `${fmtTime(s.check.lastSeenUtc)} (${ago(s.check.lastSeenUtc)})` : '–');
@@ -1853,9 +1877,8 @@
     if (!isCheck) {
       // the El og syn fields, so the separate KMD form is not needed; the last two are filled by the app itself
       const es = (ui.vvs && ui.vvs.meter === s.session.meterSerial && ui.vvs.es) || {};
-      const vals = Object.fromEntries(filledReadings().filter((r) => r.value).map((r) => [r.k, true]));
-      const all3 = ['E1', 'V1', 'HR'].every((k) => vals[k]);
-      const nPh = instPhotos.count(), nUnit = instPhotos.countOf('unit');
+      const readKeys = filledReadings().filter((r) => r.value).map((r) => (r.k === '*' ? r.label || '?' : r.k));
+      const nPh = instPhotos.count(), ph = { mount: instPhotos.countOf('mount'), start: instPhotos.countOf('start'), unit: instPhotos.countOf('unit') };
       section(T('El og syn'));
       const miss = (v) => v || T('necompletat');
       row('Anlæg', miss(es.anlaeg), es.anlaeg ? INK.ink : INK.gray);
@@ -1864,15 +1887,19 @@
       if (es.model) row('Model', es.model);
       row('Hovedhaner lukket', miss(es.haner), es.haner ? INK.ink : INK.gray);
       row('Plomberet', miss(es.plomb), es.plomb === 'Ja' ? INK.green : es.plomb ? INK.amber : INK.gray);
-      row(T('Cele 3 registre citite'), all3 ? T('Da: E1, V1 și HR') : T('Nu: lipsește {0}', ['E1', 'V1', 'HR'].filter((k) => !vals[k]).join(', ')), all3 ? INK.green : INK.amber);
-      row(T('Foto'), nPh ? T('Da: {0} poze', nPh) + (nUnit ? '' : ' · ' + T('fără vandvarmer / unit')) : T('Nu'), nPh && nUnit ? INK.green : INK.amber);
+      row('Tælleværker', readKeys.length ? T('Da') + ' (' + readKeys.join(', ') + ')' : T('Nu'), readKeys.length ? INK.green : INK.amber);
+      row(T('Foto'), nPh ? T('{0} poze: {1} la montaj, {2} la punerea în funcțiune, {3} vandvarmer / unit', nPh, ph.mount, ph.start, ph.unit) : T('Nu'), nPh && ph.unit ? INK.green : INK.amber);
     }
 
-    y = await drawReadings(x, P, W, y, (t) => { section(t); return y; }, font, text);
+    force();
+    y = await drawReadings(x, P, W, y, (t) => { section(t); return y; }, font, text, mark);
+    keep = false;
     y = drawVvsSection(x, P, W, y, (t) => { section(t); return y; }, font, text);
+    keep = false;                               // the VVS lines have no breaks of their own
 
     const sm = { ...s, receivers: useful };
     const mapCanvas = await reportMap(sm, W - 2 * P, 620);
+    force();
     if (mapCanvas) {
       section(T('Hartă'));
       y += 34; font(700, 22); text(T('Toate site-urile'), P, y, INK.gray); y += 12;
@@ -1885,7 +1912,7 @@
       const near = sites.filter((l) => l.distanceM !== null).sort((a, b) => a.distanceM - b.distanceM);
       if (mapCanvas.crowded && near.length >= 2) {
         const fit = new Set(near.slice(0, Math.min(5, near.length)).map((l) => l.key));
-        const close = await reportMap(sm, W - 2 * P, 460, true, fit);
+        const close = fit.size < near.length ? await reportMap(sm, W - 2 * P, 460, true, fit) : null;   // same sites: same map
         if (close) {
           brk();
           y += 44; font(700, 22); text(T('Mărit: cele {0} site-uri cele mai apropiate de contor', fit.size), P, y, INK.gray); y += 12;
@@ -1897,10 +1924,10 @@
       y += 22;
       const REL = { PRIMARY: T('principal'), SAME_SITE: T('același site'), DISTINCT_SITE: T('alt site'), UNKNOWN_SITE: T('site necunoscut') };
       brk();
-      y += 8; font(700, 22); text(T('Numerele de pe hărți'), P, y + 14, INK.gray); y += 30;
+      brk();                                    // the short list stays together, under its heading
+      y += 24; font(700, 22); text(T('Numerele de pe hărți'), P, y + 14, INK.gray); y += 30;
       sites.forEach((l, i) => {
         if (y > big.height - 400) return;
-        brk();
         const col = linkStyle(l).color, rel = s.receivers.find((q) => q.serial === l.serial);
         x.fillStyle = col; x.beginPath(); x.arc(P + 16, y + 2, 15, 0, 2 * Math.PI); x.fill();
         font(800, 17); x.fillStyle = l.age === 'OLD' || col === SIG.mid ? INK.ink : '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(i + 1), P + 16, y + 3);
@@ -1917,6 +1944,7 @@
       row('', T(g && g.lat !== null ? 'Harta lipsește: registrul cu site-uri nu este încărcat pe acest dispozitiv.' : 'Harta lipsește: sesiunea nu are poziția contorului.'), INK.gray);
     }
 
+    force();
     if (!isCheck) {
     const internalOnly = !s.finalCheck && singleOf(s) && s.coarse.length <= 1;
     if (internalOnly) {
@@ -1980,7 +2008,7 @@
     row(T('Rezervă'), b ? [b.serial, dbm(b.bestRssi), T(RELATION_RO[b.redundancy] || 'site necunoscut'), b.siteName,
       occasional ? T('doar ocazional – nu contează ca redundanță') : null].filter(Boolean).join(' · ') : T('niciuna'), b && !occasional ? INK.ink : INK.gray);
     y += 16;
-    for (const q of useful.slice(0, 12)) {
+    for (const q of useful) {
       brk();
       y += 36; font(500, 23);
       const old = q.age === 'OLD', ageCol = q.age === 'CURRENT' ? INK.green : q.age === 'OCCASIONAL' ? INK.amber : INK.gray;
@@ -1992,34 +2020,36 @@
       font(500, 21);
       text((wrap(where(q) + (q.distanceM !== null ? ' · ' + meters(q.distanceM) : ''), W - 2 * P - 660)[0] || ''), P + 660, y, INK.gray);
     }
-    if (useful.length > 12) { y += 34; font(500, 20); text(T('… și încă {0}', useful.length - 12), P, y, INK.gray); }
-    if (weakHidden) {
+    const hid = [];
+    if (moreHidden) hid.push(T('{0} alte legături utilizabile (același site sau după cele mai bune {1} site-uri) nu sunt arătate.', moreHidden, REPORT_SITES));
+    if (weakHidden) hid.push(T('{0} legături sub {1} dBm sau fără contact de peste 8 ore nu contează și nu sunt arătate.', weakHidden, useDbm));
+    for (const h of hid) {
+      brk();
       y += 36; font(600, 21);
-      for (const l of wrap(T('{0} alte legături sub {1} dBm sau fără contact de peste 8 ore nu sunt arătate: nu pot duce datele în siguranță.', weakHidden, margDbm), W - 2 * P)) { text(l, P, y, INK.gray); y += 30; }
+      for (const l of wrap(h, W - 2 * P)) { text(l, P, y, INK.gray); y += 30; }
       y -= 30;
     }
     if (staleCount) {
+      brk();
       y += 34; font(500, 20);
       text(T(staleCount === 1 ? '1 concentrator văzut ultima dată acum peste {1} ore nu este inclus în raport.' : '{0} concentratoare văzute ultima dată acum peste {1} ore nu sunt incluse în raport.', staleCount, REPORT_MAX_AGE_H), P, y, INK.gray);
     }
+    brk();
     y += 18; font(500, 19);
     for (const l of wrap(limitsText(isCheck), W - 2 * P)) { y += 28; text(l, P, y, INK.gray); }
-    if (instPhotos.count()) {
-      section(T('Poze cu instalația'));
-      row('', instPhotos.count() === 1 ? T('1 poză pe pagina următoare') : T('{0} poze în paginile următoare: montaj, punere în funcțiune și vandvarmer / unit', instPhotos.count()));
-    }
     if (s.session.note) {
       section(T('Observații'));
       font(500, 26);
       for (const l of wrap(s.session.note, W - 2 * P)) { y += 38; text(l, P, y); }
     }
-    y += 70; font(400, 21);
+    y += 70; font(400, 21);                     // the version line stays with the limits above, never alone on a page
     text(`LinkIQ Field Assistant v${VERSION} · ${T('raport')} v${REPORT_VERSION} · ${T('generat {0}', fmtTime(new Date().toISOString()))}`, P, y, INK.gray);
     y += 44;
     const out = document.createElement('canvas');
     out.width = W; out.height = y;
     out.getContext('2d').drawImage(big, 0, 0);
     out.breaks = breaks.filter((b) => b > 0 && b < y);
+    out.forced = forced.filter((b) => b > 0 && b < y);
     return out;
   }
 
@@ -2051,7 +2081,9 @@
     while (start < report.height - 4) {
       const avail = A4H - foot - (pages.length ? head : 0);
       let end = start + avail;
-      if (end >= report.height) end = report.height;
+      const must = (report.forced || []).find((b) => b > start + 40 && b <= Math.min(end, report.height));
+      if (must) end = must;                     // a section that starts its own page
+      else if (end >= report.height) end = report.height;
       else {
         const fit = (report.breaks || []).filter((b) => b > start + avail * 0.25 && b <= end);
         if (fit.length) end = fit[fit.length - 1];
@@ -2331,7 +2363,23 @@
         + (previewUrl !== null ? ' ' + T('Dacă descărcarea nu pornește, ține apăsat pe imagine și alege „Salvează”.') : '');
     msg.hidden = false;
     if (saved) refreshReportDir();
-    if (S && /\.(pdf|png)$/i.test(name)) vqUpsert(saved || name, blob);
+    if (S && /\.(pdf|png)$/i.test(name)) await vqUpsert(saved || name, blob);
+    return saved || name;
+  }
+  const fileStamp = (t) => {
+    const d = new Date(t || Date.now()), two = (v) => String(v).padStart(2, '0');
+    return `${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}-${two(d.getHours())}${two(d.getMinutes())}`;
+  };
+  /** The whole history goes to the case with the report: the report as a picture too, the antenna
+   *  photo and every installation photo, each under a name that says what it is and when. */
+  async function vqHistory(report, savedName) {
+    if (!S) return;
+    const base = savedName.replace(/\.[a-z0-9]+$/i, ''), m = safeName(S.session.meterSerial), extra = [];
+    if (!/\.png$/i.test(savedName)) extra.push({ name: base + '.png', blob: await canvasBlob(report, 'image/png') });
+    const internal = ui.install && ui.install.antennaType === 'internal';
+    if (lastPhoto && S.session.status !== 'CHECK' && !internal) extra.push({ name: `${m}_antenne_${fileStamp()}.jpg`, blob: await canvasBlob(lastPhoto, 'image/jpeg') });
+    extra.push(...await instPhotos.vvsFiles());
+    await vqSetExtras(savedName, extra);
   }
   const canvasBlob = (canvas, type) => new Promise((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail(new Error('canvas'))), type, 0.9));
 
@@ -2372,7 +2420,11 @@
   $('report-btn').onclick = () => S && instPhotos.ask(() => askReadings(savePng));
   async function savePng() {
     if (!S) return;
-    try { await saveBlob(await canvasBlob(await buildReport(S), 'image/png'), reportName(S) + '.png', 'Raportul a fost salvat ca {0}.'); }
+    try {
+      const report = await buildReport(S);
+      const saved = await saveBlob(await canvasBlob(report, 'image/png'), reportName(S) + '.png', 'Raportul a fost salvat ca {0}.');
+      await vqHistory(report, saved);
+    }
     catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   }
   $('report-pdf-btn').onclick = () => S && instPhotos.ask(() => askReadings(savePdf));
@@ -2386,7 +2438,8 @@
       const inst = await instPhotos.pages();
       photos.push(...inst);
       const pages = paginate(report, S, photos);
-      await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', inst.length ? 'Raportul PDF, cu pozele instalației, a fost salvat ca {0}.' : pages.length > 1 ? 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.' : 'Raportul PDF a fost salvat ca {0}.', null);
+      const saved = await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', inst.length ? 'Raportul PDF, cu pozele instalației, a fost salvat ca {0}.' : pages.length > 1 ? 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.' : 'Raportul PDF a fost salvat ca {0}.', null);
+      await vqHistory(report, saved);
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   }
   $('photo-file').onchange = async (ev) => {
@@ -2620,6 +2673,14 @@
         draw();
       },
       count: () => list.length,
+      async vvsFiles() {                       // for the case in VVS-dialog: e.g. 84751491_unit_1_20261126-1549.jpg
+        await sync();
+        const m = safeName(S.session.meterSerial), out = [];
+        for (const st of ['mount', 'start', 'unit']) {
+          list.filter((p) => p.stage === st).forEach((p, i) => out.push({ name: `${m}_${FILE[st]}_${i + 1}_${fileStamp(p.at)}.jpg`, blob: p.blob }));
+        }
+        return out;
+      },
       countOf: (st) => list.filter((p) => p.stage === st).length,
       async files() {
         await sync();
@@ -2713,7 +2774,8 @@
   }
   const filledReadings = () => readings().filter((r) => r.value || r.img);
   const saveReadings = () => store.set('ui', ui);
-  const cleanValue = (v) => String(v || '').replace(/,/g, '.').replace(/[^0-9.\-]/g, '').slice(0, 16);
+  // a value needs at least one digit: dashes alone ("---" on a display that is changing) are no reading
+  const cleanValue = (v) => { const c = String(v || '').replace(/,/g, '.').replace(/[^0-9.\-]/g, '').slice(0, 16); return /\d/.test(c) ? c : ''; };
 
   function renderReadings() {
     setTimeout(renderLeave, 0);
@@ -2883,7 +2945,7 @@
           const region = frameRegion(v), res = grab(v, region);
           const want = regOf(target.k).n;
           // a row of only 1s is what the edge of a cut-off display looks like: never taken as a reading
-          const ok = res.text && res.text.indexOf('?') < 0 && !/^1{5,}$/.test(res.text.replace(/[^0-9]/g, ''));
+          const ok = res.text && /\d/.test(res.text) && res.text.indexOf('?') < 0 && !/^1{5,}$/.test(res.text.replace(/[^0-9]/g, ''));
           if (res.kind !== 'none') seenAt = Date.now();
           $('lcd-frame').className = 'lcd-frame' + (ok ? ' seen' : '');
           $('lcd-live').textContent = res.text || '…';
@@ -2901,12 +2963,13 @@
     function finish(res, how) {
       const r = target;
       close();
-      if (res && res.text) { r.value = cleanValue(res.text); r.read = r.value; r.src = how; }
-      else if (!r.value) r.src = null;
+      const v = res && res.text ? cleanValue(res.text) : '';
+      if (v) { r.value = v; r.read = v; r.src = how; }
+      else if (!r.value) r.src = null;                 // nothing readable: the picture only
       if (res && res.img) r.img = res.img;
       r.ts = new Date().toISOString();
       saveReadings(); renderReadings();
-      if (navigator.vibrate && res && res.text) navigator.vibrate(80);
+      if (navigator.vibrate && v) navigator.vibrate(80);
     }
     function close() {
       clearTimeout(timer);
@@ -2963,7 +3026,7 @@
           for (const cy of [0.45, 0.35, 0.55]) {
             const sw = W * f, sh = Math.min(H, sw / 2), region = [(W - sw) / 2, Math.max(0, Math.min(H - sh, H * cy - sh / 2)), sw, sh];
             const res = grab(bmp, region);
-            const score = res.text && res.text.indexOf('?') < 0 ? res.quality + digitCount(res.text) / 10 : 0;
+            const score = res.text && /\d/.test(res.text) && res.text.indexOf('?') < 0 ? res.quality + digitCount(res.text) / 10 : 0;
             if (score > (found ? found.score : 0)) found = { score, text: res.text, img: snapshot(bmp, region) };
           }
         }
@@ -2995,11 +3058,12 @@
   }
 
   /** Report section with the readings and the picture of the display beside each value. */
-  async function drawReadings(x, P, W, y, section, font, text) {
+  async function drawReadings(x, P, W, y, section, font, text, mark = () => {}) {
     const list = filledReadings();
     if (!list.length) return y;
     y = section(T('Citirile contorului'));
     for (const r of list) {
+      mark(y);
       const reg = regOf(r.k), top = y + 18;
       let img = null;
       if (r.img) { try { img = new Image(); img.src = r.img; await img.decode(); } catch { img = null; } }
@@ -3211,6 +3275,21 @@
       e.files.push(fileName);
       try { await kv.set('vvsf:' + id + ':' + fileName, blob); } catch { /* */ }
     }
+    await vqSave(q);
+  }
+  /** Keep the report just saved (and the PDF, if there is one); every other file of this visit is
+   *  replaced by the current set, so a deleted photo does not reach the case. */
+  async function vqSetExtras(mainName, extra) {
+    const id = vqId(), q = await vqLoad(), e = q.find((x) => x.id === id);
+    if (!e) return;
+    const keepF = e.files.filter((f) => f === mainName || /\.pdf$/i.test(f));
+    for (const f of e.files) if (!keepF.includes(f)) { try { await kv.set('vvsf:' + id + ':' + f, null); } catch { /* */ } }
+    e.files = keepF;
+    for (const x of extra) {
+      if (e.files.includes(x.name)) continue;
+      try { await kv.set('vvsf:' + id + ':' + x.name, x.blob); e.files.push(x.name); } catch { /* storage full: the report itself is kept */ }
+    }
+    if (e.state === 'sent') e.state = 'pending';
     await vqSave(q);
   }
   async function vvsQueueTouch() {                 // text/status changed after a report was saved
@@ -3452,7 +3531,7 @@
   // When that link is lost (phone apps), the meter, text and status travel in the tab name,
   // and the installer picks the files in the panel.
   const VVS_ORIGIN = 'https://vvsdialog.kmd.dk';
-  let vvsWin = null, vvsOffer = [];
+  let vvsWin = null, vvsOffer = [], vvsFs = null;
   // The work for li travels three ways: window.opener (with the files), the tab name, and the
   // address (?liq=…). On Android the installed app would open VVS-dialog in a small in-app
   // browser without bookmarks; an intent: address opens it straight in Chrome instead.
@@ -3479,9 +3558,9 @@
   }
 
   async function openVvs(items) {
-    vvsOffer = items.map((e) => e.id);
-    const first = items[0];
-    const work = b64url(new TextEncoder().encode(JSON.stringify(items.slice(0, 30).map((e) => ({ m: e.meter, s: e.status || '', t: e.text || '', id: e.id, a: e.addr || '' })))));
+    vvsOffer = items.map((e) => e.id); vvsFs = null;
+    const first = items[0], b = location.origin + location.pathname;
+    const work = b64url(new TextEncoder().encode(JSON.stringify(items.slice(0, 30).map((e, i) => ({ m: e.meter, s: e.status || '', t: e.text || '', id: e.id, ...(i ? {} : { b }) })))));
     const path = 'Home.aspx?liq=' + work;
     if (isAndroidApp() && openWay() !== 'tab') {
       location.href = androidUrl(openWay(), VVS_ORIGIN + '/' + path);
@@ -3516,6 +3595,12 @@
       ev.source.postMessage({ liq: 'code', code: window.LINKIQ_VVS_CODE || '' }, VVS_ORIGIN);
       return;
     }
+    if (ev.data.liq === 'hello' && vvsFs) {             // li asks for work: only the address of this meter
+      ev.source.postMessage({ liq: 'items', items: [{ id: 'fs-' + vvsFs, meter: vvsFs, kind: 'fs' }] }, VVS_ORIGIN);
+      vvsFs = null;
+      return;
+    }
+    if (ev.data.liq === 'fs') { fsSave(ev.data); return; }
     if (ev.data.liq === 'hello') {
       const items = [];
       for (const e of q.filter((x) => vvsOffer.includes(x.id))) {
@@ -3551,6 +3636,95 @@
     showView('sync');
     return true;
   }
+  // ---------------------------------------------------------------- Forbrugssted from VVS-dialog
+  // After the meter number is known, li reads the consumption site (Forbrugssted) of the meter in
+  // VVS-dialog - not the customer's own address, which can be a company seat elsewhere - and the
+  // installer confirms on site that this is where he stands. No match by text: addresses are
+  // written in many ways; the installer decides. No case in VVS-dialog is noted in the report.
+  const fsAll = () => store.get('fsaddr', {}) || {};
+  const fsMeter = () => String(S ? S.session.meterSerial : $('meter').value).replace(/\D/g, '');
+  function fsFor(m) { return m ? fsAll()[m] || null : null; }
+  function fsFull(x) { return [x.a, x.b].filter(Boolean).join(', '); }
+  function fsSave(d) {
+    const m = String(d.m || '').replace(/\D/g, '');
+    if (!/^\d{6,12}$/.test(m)) return;
+    const all = fsAll();
+    all[m] = { m, f: !!d.f, a: String(d.a || '').slice(0, 120), b: String(d.b || '').slice(0, 80), n: Number(d.n) || 0,
+      ty: String(d.ty || '').slice(0, 120), err: d.err ? String(d.err).slice(0, 160) : '', at: new Date().toISOString(), answer: null };
+    for (const k of Object.keys(all).sort((x, y) => (all[y].at || '').localeCompare(all[x].at || '')).slice(50)) delete all[k];
+    store.set('fsaddr', all);
+    if (!S && !$('meter').value.trim()) $('meter').value = m;
+    renderFs();
+    $('fs-box').scrollIntoView({ block: 'center' });
+  }
+  function fsAnswer(ans) {
+    const all = fsAll(), x = all[fsMeter()];
+    if (!x) return;
+    x.answer = ans; x.answeredAt = new Date().toISOString();
+    store.set('fsaddr', all);
+    if (ans === 'yes' && !S) $('addr').value = fsFull(x);
+    renderFs();
+  }
+  /** [colour, text] for the report. */
+  function fsReportLine(x) {
+    if (!x) return [INK.gray, T('neverificat')];
+    const when = fmtTime(x.at);
+    if (x.err) return [INK.amber, T('nu s-a putut verifica ({0})', when)];
+    if (!x.f) return [INK.red, T('Contorul nu există în VVS-dialog (verificat {0}).', when)];
+    const where = fsFull(x) || T('adresa nu a fost găsită pe pagină');
+    const cases = x.n ? '' : ' · ' + T('niciun caz deschis în VVS-dialog ({0})', when);
+    if (x.answer === 'yes') return [cases ? INK.amber : INK.green, T('locul de consum confirmat de montor') + cases];   // the address row above shows it
+    if (x.answer === 'no') return [INK.red, T('locul de consum: {0}', where) + ' · ' + T('montorul: NU este această adresă') + cases];
+    return [INK.amber, T('locul de consum: {0}', where) + ' · ' + T('neconfirmat') + cases];
+  }
+  function renderFs() {
+    const box = $('fs-box'), m = fsMeter(), x = fsFor(m);
+    const target = S ? $('elsyn-card') : $('addr-hint');          // at the start under the address; in a visit, in the report box
+    if (S) { if (box.nextElementSibling !== target) target.parentNode.insertBefore(box, target); }
+    else if (box.previousElementSibling !== target) target.after(box);
+    box.hidden = !/^\d{6,12}$/.test(m);
+    box.classList.remove('ok', 'bad');
+    $('fs-ask').hidden = true; $('fs-text').hidden = !x;
+    $('fs-btn').textContent = T(x ? 'Ia din nou din VVS-dialog' : 'Ia adresa din VVS-dialog');
+    if (!x) { $('fs-sub').textContent = T('Citește locul de consum al contorului {0} din VVS-dialog și confirmă că ești acolo.', m); return; }
+    if (x.err) {
+      $('fs-text').textContent = T('VVS-dialog nu a putut fi citit.');
+      $('fs-sub').textContent = x.err === 'LOGIN' ? T('Autentifică-te în VVS-dialog și încearcă din nou.') : x.err;
+      return;
+    }
+    if (!x.f) {
+      box.classList.add('bad');
+      $('fs-text').textContent = T('Contorul nu există în VVS-dialog.');
+      $('fs-sub').textContent = T('În raport se notează că nu există caz în VVS-dialog la data raportului.');
+      return;
+    }
+    $('fs-text').textContent = fsFull(x) || T('adresa nu a fost găsită pe pagină');
+    const cases = x.n ? T('{0} caz(uri) deschise: {1}', x.n, x.ty || '–') : T('Niciun caz deschis pentru contor în VVS-dialog: se notează în raport.');
+    if (x.answer === 'yes') { box.classList.add(x.n ? 'ok' : 'bad'); $('fs-sub').textContent = T('Confirmat: ești la această adresă.') + ' ' + cases; }
+    else if (x.answer === 'no') { box.classList.add('bad'); $('fs-sub').textContent = T('Ai răspuns că NU ești la această adresă. Verifică cazul înainte de montaj.') + ' ' + cases; }
+    else { $('fs-sub').textContent = T('Ești la această adresă?') + ' ' + cases; $('fs-ask').hidden = false; }
+  }
+  function openFs(m) {
+    const b = location.origin + location.pathname;
+    const work = b64url(new TextEncoder().encode(JSON.stringify([{ m, k: 'fs', id: 'fs-' + m, b }])));
+    const path = 'Home.aspx?liq=' + work;
+    vvsOffer = []; vvsFs = m;
+    $('fs-sub').textContent = T('În VVS-dialog apasă li. Adresa vine înapoi aici.');
+    if (isAndroidApp() && openWay() !== 'tab') { location.href = androidUrl(openWay(), VVS_ORIGIN + '/' + path); copyText('LIQ1:' + work); return; }
+    vvsWin = window.open(VVS_ORIGIN + '/' + path + '#linkiq=' + m, 'linkiq_j' + work + '|LIQBACK:' + encodeURIComponent(b) +
+      '|LIQCODE:' + encodeURIComponent(window.LINKIQ_VVS_CODE || ''));
+  }
+  function fsFromAddress() {                       // li sent the installer back with the address in the link
+    const h = location.hash.match(/liqfs=([\w-]+)/);
+    if (!h) return;
+    history.replaceState(null, '', location.pathname + location.search);
+    try { fsSave(JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(h[1].replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0))))); } catch { /* broken link */ }
+  }
+  $('fs-btn').onclick = () => { const m = fsMeter(); if (/^\d{6,12}$/.test(m)) openFs(m); };
+  $('fs-yes').onclick = () => fsAnswer('yes');
+  $('fs-no').onclick = () => fsAnswer('no');
+  $('meter').addEventListener('input', () => { if (!S) renderFs(); });
+
   $('vvsq-send').onclick = async () => {
     const q = await vqLoad(), waiting = q.filter((e) => e.state !== 'sent');
     if (waiting.length) openVvs(waiting);
@@ -3612,6 +3786,7 @@
     updateLocPerm().then(() => { if (locPerm === 'granted' && !gps) locate(true); });
     vqPrune();
     const back = vvsResultsFromAddress();       // results from li: the sync page is shown once boot is done
+    fsFromAddress();
     sweepPhotos();
     splashSetup().catch(() => {});
     setTimeout(splashDone, 2500);                // never longer, whatever the start does

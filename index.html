@@ -78,7 +78,17 @@
       </div>
       <label for="addr">Adresa (locul de consum)</label>
       <input id="addr" autocomplete="off" maxlength="120" placeholder="Se completează din adresa căutată">
-      <p class="hint" id="addr-hint">Se compară cu adresa cazului în VVS-dialog, ca un contor montat la altă adresă să fie observat.</p>
+      <p class="hint" id="addr-hint">Apare în raport. Verifică pe loc că ești la adresa din cazul VVS-dialog (apartament, etaj).</p>
+      <div id="fs-box" class="fsbox" hidden>
+        <p class="fs-title">Locul de consum în VVS-dialog</p>
+        <p id="fs-text" class="fs-addr" hidden></p>
+        <p id="fs-sub" class="hint"></p>
+        <div id="fs-ask" class="two" hidden>
+          <button type="button" id="fs-yes" class="primary">Da, sunt aici</button>
+          <button type="button" id="fs-no" class="secondary">Nu, altă adresă</button>
+        </div>
+        <button type="button" id="fs-btn" class="secondary">Ia adresa din VVS-dialog</button>
+      </div>
       <p id="gps-info" class="hint">Măsurarea funcționează și fără GPS. Poziția doar propune site-ul probabil și apare pe hartă.</p>
       <button type="submit" class="primary">Începe</button>
       <button type="button" id="check-btn" class="secondary">Verifică contorul, fără CALL</button>

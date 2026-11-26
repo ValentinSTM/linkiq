@@ -377,3 +377,12 @@ nav .badge { position: absolute; top: 3px; left: calc(50% + 22px); }
 .map-views[hidden] { display: none; }
 .map-views button { min-height: 40px; font-size: 15px; }
 .map-views button.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+/* Forbrugssted from VVS-dialog: read by li, confirmed by the installer on site */
+.fsbox { border: 2px solid #d5dde3; border-radius: 10px; padding: 10px 12px; margin: 12px 0; background: #fff; }
+.fsbox.ok { border-color: #1b8a3a; }
+.fsbox.bad { border-color: #c62828; }
+.fsbox .fs-title { font-weight: 700; margin: 0 0 4px; }
+.fsbox .fs-addr { font-size: 1.15em; font-weight: 700; margin: 4px 0; }
+.fsbox .two { margin: 8px 0; }
+.fsbox [hidden] { display: none !important; }
