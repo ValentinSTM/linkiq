@@ -109,6 +109,8 @@
   let S = null;                 // latest session summary from the server
   let ui = {};                  // client-only choices for this session (quick confirm, fine tune...)
   let gps = null;
+  // once a GPS fix is there the button only refreshes it (e.g. taken in the street, now at the meter)
+  const gpsLabel = (fix) => { $('gps-btn').textContent = T(fix ? 'Actualizează GPS' : 'GPS'); };
   let heading = null;
   let pollTimer = null, tickTimer = null, lastSummaryAt = 0, busy = false, armedRestart = false;
   let map = null, mapLayer = null, selectedSerial = null, wakeLock = null;
@@ -956,7 +958,7 @@
     $('scan-info').hidden = true; $('scan-chips').hidden = true;
     $('report-msg').hidden = true; $('report-preview').hidden = true; lastPhoto = null; instPhotos.forget();
     $('vvs-msg').textContent = T('Copiază seria contorului și deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță.');
-    gps = null;                                // the next meter is somewhere else
+    gps = null; gpsLabel(false);               // the next meter is somewhere else
     $('gps-info').textContent = T('Măsurarea funcționează și fără GPS. Poziția doar propune site-ul probabil și apare pe hartă.');
     if (locPerm === 'granted') locate(true); else if (locPerm === 'denied') $('gps-info').textContent = T(OFF_TXT);
     $('candidates').hidden = true;
@@ -995,7 +997,7 @@
     if (!silent) $('gps-info').textContent = T('Caut poziția…');
     return new Promise((ok) => navigator.geolocation.getCurrentPosition((p) => {
       if (silent && gps && gps.accuracyM === null) { ok(false); return; }   // an automatic fix never replaces a position chosen by hand
-      gps = { lat: p.coords.latitude, lon: p.coords.longitude, accuracyM: Math.round(p.coords.accuracy) };
+      gps = { lat: p.coords.latitude, lon: p.coords.longitude, accuracyM: Math.round(p.coords.accuracy) }; gpsLabel(true);
       $('gps-info').textContent = T('Poziție GPS luată, precizie ±{0} m.', gps.accuracyM);
       showCandidates(); updateLocPerm(); ok(true);
     }, (err) => {
@@ -1077,7 +1079,7 @@
       render();
       return;
     }
-    gps = { lat: picked.lat, lon: picked.lon, accuracyM: null };
+    gps = { lat: picked.lat, lon: picked.lon, accuracyM: null }; gpsLabel(false);
     if (pickedAddr) $('addr').value = pickedAddr;
     $('gps-info').textContent = T('Poziție aleasă pe hartă: {0}, {1}.', picked.lat.toFixed(5), picked.lon.toFixed(5));
     endPick();
@@ -1446,7 +1448,7 @@
   $('lang-btn').onclick = () => {
     lang = lang === 'da' ? 'ro' : 'da';
     store.set('lang', lang);
-    translatePage(); refreshData(); refreshReportDir(); if (S) drawInstall(); render();
+    translatePage(); gpsLabel(!!(gps && gps.accuracyM !== null)); refreshData(); refreshReportDir(); if (S) drawInstall(); render();
   };
   document.querySelectorAll('#tabs button').forEach((b) => { b.onclick = () => showView(b.dataset.view); });
   $('reg-need-scan').onclick = () => $('regqr-scan').click();
