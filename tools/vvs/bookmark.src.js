@@ -120,7 +120,7 @@
             for (var i = 0; i < bin.length; i++) { u[i] = bin.charCodeAt(i); }
             return { name: f.n, blob: new Blob([u], { type: f.t || 'application/octet-stream' }) };
           });
-          return { id: x.id, meter: x.m, status: x.s, text: x.t, files: fs, addr: x.a || '' };
+          return { id: x.id, meter: x.m, status: x.s, text: x.t, files: fs };
         });
       } catch (e) { /* fall through */ }
     }
@@ -129,10 +129,9 @@
   }
 
   // ---------- 2. the open case of a meter
-  var caseText = '';                        // the customer/case page text, for the address check
   async function findCase(m) {
     var here = location.pathname.match(/ShowCase\.aspx/i) && new URLSearchParams(location.search).get('cc');
-    if (here && document.body.innerText.indexOf(m) >= 0) { caseText = document.body.innerText; return here; }
+    if (here && document.body.innerText.indexOf(m) >= 0) { return here; }
     var home = await page('/Home.aspx');
     var form = home.doc.querySelector('form');
     var inputs = form ? Array.prototype.slice.call(form.querySelectorAll('input')) : [];
@@ -143,7 +142,6 @@
     var action = new URL(form.getAttribute('action') || 'Home.aspx', location.origin + '/Home.aspx');
     var r = await page(action.href, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formFields(form, ch).toString() });
     if (!/ShowCustomer\.aspx/i.test(r.url)) { throw new Error('Måler ' + m + ' blev ikke fundet entydigt.'); }
-    caseText = r.doc.body ? r.doc.body.textContent : '';
     var seen = {}, cases = [];
     Array.prototype.forEach.call(r.doc.querySelectorAll('[onclick*="ShowCase.aspx"]'), function (e) {
       var cc = ((e.getAttribute('onclick') || '').match(/cc=(\d+)/) || [])[1];
@@ -159,19 +157,6 @@
     return choose('LinkIQ: ' + cases.length + ' åbne sager for måler ' + m + '. Vælg sag:', cases.map(function (c) {
       return { label: c.date + ' · ' + c.status + ' · ' + c.type + (c.own ? ' · måler nævnt' : ''), value: c.cc };
     }).concat([{ label: 'Spring over', value: null }]));
-  }
-
-  // ---------- 2b. the address: does the meter sit where VVS-dialog says it should?
-  // LinkIQ knows the address the installer stood at; VVS-dialog the one the case is for. Street and
-  // house number must both be on the customer page, otherwise the installer decides.
-  function norm(t) { return ' ' + String(t || '').toLowerCase().replace(/[^0-9a-zæøåäöü]+/g, ' ').replace(/\s+/g, ' ').trim() + ' '; }
-  function addrOk(addr, page) {
-    var first = String(addr || '').split(',')[0];
-    var num = (first.match(/\d+\s*[a-zæøå]?\b/i) || [''])[0].replace(/\s+/g, '').toLowerCase();
-    var street = norm(first.replace(/\d.*$/, '')).trim();
-    if (!street || !num) { return true; }      // nothing to compare
-    var p = norm(page).replace(/(\d) ([a-zæøå]) /g, '$1$2 ');
-    return p.indexOf(' ' + street + ' ' + num + ' ') >= 0;
   }
 
   // ---------- 3a. files: only those not on the case yet
@@ -367,15 +352,6 @@
         reset('LinkIQ: ' + tag + 'søger måler ' + it.meter + ' …');
         var cc = await findCase(String(it.meter));
         if (!cc) { results.push(it.meter + ': sprunget over'); continue; }
-        if (it.addr && !addrOk(it.addr, caseText)) {
-          var go = await choose('LinkIQ: måler ' + it.meter + ' er målt på ' + it.addr + ', men den adresse står ikke på sagen i VVS-dialog. Sidder måleren på den rigtige adresse?', [
-            { label: 'Ja, send alligevel', value: true }, { label: 'Nej – spring over, og tjek sagen', value: false, main: true }]);
-          if (!go) {
-            results.push('✗ ' + it.meter + ': adressen passer ikke med sagen');
-            tell({ liq: 'result', id: it.id, ok: false, msg: 'Adressen (' + it.addr + ') passer ikke med sagen ' + cc + '. Tjek, at måleren sidder på den rigtige adresse.' });
-            continue;
-          }
-        }
         var files = it.files || [];
         if (!linked && !files.length && it.text !== undefined && !it.picked) {
           files = (await folderFiles(String(it.meter))) || await pickFiles(it.meter);

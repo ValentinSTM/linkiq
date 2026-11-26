@@ -660,7 +660,6 @@ window.LINKIQ_DA = {
  "Poza cu plăcuța de tip arată ce unitate e montată la adresă. Fă una înainte de raport.": "Billedet af typeskiltet viser, hvilken unit der sidder på adressen. Tag et før rapporten.",
  "Pozele de la montaj și de la punerea în funcțiune arată cum a fost lăsată instalația. Fă cel puțin una înainte de raport, și una cu vandvarmer / unit.": "Billeder fra montage og idriftsættelse viser, hvordan installationen blev efterladt. Tag mindst ét før rapporten, og ét af vandvarmer / unit.",
  "Adresa (locul de consum)": "Adresse (forbrugssted)",
- "Se compară cu adresa cazului în VVS-dialog, ca un contor montat la altă adresă să fie observat.": "Sammenlignes med sagens adresse i VVS-dialog, så en måler monteret på en forkert adresse bliver opdaget.",
  "Instalația (El og syn)": "Installationen (El og syn)",
  "Aceleași date ca în raportul El og syn: se scriu în raport și în Ny aktivitet, deci nu mai e nevoie de alt formular.": "Samme oplysninger som i El og syn-rapporten: de skrives i rapporten og i Ny aktivitet, så der ikke skal udfyldes en anden formular.",
  "Anlæg": "Anlæg",
@@ -675,4 +674,8 @@ window.LINKIQ_DA = {
  "Poza cu vandvarmer / unit": "Billede af vandvarmer / unit",
  "plăcuța de tip: ce unitate e montată": "typeskiltet: hvilken unit der er monteret",
  "{0} câmpuri necompletate": "{0} felter ikke udfyldt",
+ "Apare în raport. Verifică pe loc că ești la adresa din cazul VVS-dialog (apartament, etaj).": "Står i rapporten. Kontrollér på stedet, at du er på adressen fra sagen i VVS-dialog (lejlighed, etage).",
+ "O rezervă contează până la {0} dBm: fiecare valoare orară e trimisă de 18 ori pe oră, iar orele lipsă sunt recuperate.": "En reserve tæller ned til {0} dBm: hver timeværdi sendes 18 gange i timen, og manglende timer hentes senere.",
+ "{0} alte legături utilizabile (același site sau după cele mai bune {1} site-uri) nu sunt arătate.": "{0} andre brugbare forbindelser (samme site eller efter de {1} bedste sites) vises ikke.",
+ "{0} legături sub {1} dBm sau fără contact de peste 8 ore nu contează și nu sunt arătate.": "{0} forbindelser under {1} dBm eller uden kontakt i over 8 timer tæller ikke og vises ikke.",
 };

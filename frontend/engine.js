@@ -31,6 +31,10 @@
     rssiQuickConfirmDbm: -80,
     rssiGoodDbm: -95,
     rssiMarginalDbm: -110,
+    // A reserve can still be weak: the meter sends each hourly value 18 times an hour and the
+    // concentrators fetch the missing hours later (8 h of history), so a link down to this level
+    // can still bring the data home. Below it, a link does not count.
+    rssiUsableDbm: -120,
     primaryDegradationMaxDb: 6,
     // Age of the last contact (status check). LinkIQ meters keep 8 h of history, so a
     // receiver heard within 8 h can still collect the data; older contact is history only.
@@ -655,14 +659,16 @@
       });
       const others = rows.filter((r) => r !== p1 && r.age !== 'OLD');
       const current = others.filter((r) => r.age === 'CURRENT');
-      const pick = current.find((r) => r.relation === 'DISTINCT_SITE') || current[0]
+      const ok = (r) => r.bestRssi >= this.cfg.rssiUsableDbm;
+      const pick = current.find((r) => ok(r) && r.relation === 'DISTINCT_SITE') || current.find(ok)
+        || current.find((r) => r.relation === 'DISTINCT_SITE') || current[0]
         || others.find((r) => r.relation === 'DISTINCT_SITE') || others[0] || null;
-      const usable = (r) => r.age === 'CURRENT' && r.bestRssi >= this.cfg.rssiMarginalDbm;
+      const usable = (r) => r.age === 'CURRENT' && r.bestRssi >= this.cfg.rssiUsableDbm;
       const contact = { current: rows.filter((r) => r.age === 'CURRENT').length,
         usable: rows.filter(usable).length, weak: rows.filter((r) => r.age === 'CURRENT' && !usable(r)).length,
         usableSites: new Set(rows.filter(usable).map((r) => r.siteCode || r.serial)).size,
         goodPrimary: !!(rows[0] && usable(rows[0]) && rows[0].bestRssi >= this.cfg.rssiGoodDbm),
-        marginalDbm: this.cfg.rssiMarginalDbm, goodDbm: this.cfg.rssiGoodDbm,
+        marginalDbm: this.cfg.rssiMarginalDbm, goodDbm: this.cfg.rssiGoodDbm, usableDbm: this.cfg.rssiUsableDbm,
         occasional: rows.filter((r) => r.age === 'OCCASIONAL').length, old: rows.filter((r) => r.age === 'OLD').length,
         currentMaxMin: this.cfg.contactCurrentMaxMin, historyMaxH: this.cfg.contactHistoryMaxH };
       const lastSeenMs = parseTs(payload.LastSeenTimestampUtc);
@@ -678,7 +684,7 @@
         primary: p1 ? { serial: p1.serial, siteCode: p1.siteCode, siteName: p1.siteName, address: p1.address, rssi: p1.bestRssi } : null,
         backup: pick ? { serial: pick.serial, siteCode: pick.siteCode, siteName: pick.siteName, redundancy: pick.relation, bestRssi: pick.bestRssi,
           bestPhase: 'check', bestStep: null, age: pick.age, observedUtc: pick.observedUtc,
-          usable: pick.bestRssi >= this.cfg.rssiMarginalDbm && pick.age === 'CURRENT', primaryRssiThere: null,
+          usable: pick.bestRssi >= this.cfg.rssiUsableDbm && pick.age === 'CURRENT', primaryRssiThere: null,
           primaryDegradationDb: null, positionRecommendable: false } : null,
         receivers: rows, finalCheck: null, live: null, quickConfirmEligible: false,
         check: { lastSeenUtc: iso(lastSeenMs), hoursSinceLastSeen: typeof payload.HoursSinceLastSeen === 'number' ? payload.HoursSinceLastSeen : null,
@@ -807,12 +813,13 @@
       let backup = null;
       const others = receivers.filter((r) => r.relation !== 'PRIMARY');
       if (others.length) {
-        const pickB = others.find((r) => r.relation === 'DISTINCT_SITE') || others[0];
+        const ok = (r) => r.bestRssi >= cfg.rssiUsableDbm;   // a reserve on another site first, if it can carry the data
+        const pickB = others.find((r) => ok(r) && r.relation === 'DISTINCT_SITE') || others.find(ok) || others[0];
         const pos = agg[pickB.serial].bestPos;
         const there = pos.receivers[primarySerial];
         const degradation = there !== undefined ? round1(best.rssi - there) : null;
         backup = { serial: pickB.serial, siteCode: pickB.siteCode, siteName: pickB.siteName, redundancy: pickB.relation,
-          bestRssi: pickB.bestRssi, bestPhase: pos.phase, bestStep: pos.step, usable: pickB.bestRssi >= cfg.rssiMarginalDbm,
+          bestRssi: pickB.bestRssi, bestPhase: pos.phase, bestStep: pos.step, usable: pickB.bestRssi >= cfg.rssiUsableDbm,
           primaryRssiThere: there === undefined ? null : there, primaryDegradationDb: degradation,
           // Never recommend a backup position that costs the primary link too much.
           positionRecommendable: degradation !== null && degradation <= cfg.primaryDegradationMaxDb };
@@ -863,7 +870,7 @@
         return { authMode: 'none', kamstrupMode: this.db.demo ? 'sim' : 'live', standalone: true,
           pollIntervalS: this.cfg.pollMinIntervalS, warnAfterS: this.cfg.warnAfterS,
           coarseSteps: this.cfg.coarseSteps, fineSteps: this.cfg.fineSteps,
-          thresholds: { quickConfirmDbm: this.cfg.rssiQuickConfirmDbm, goodDbm: this.cfg.rssiGoodDbm, marginalDbm: this.cfg.rssiMarginalDbm, provisional: true,
+          thresholds: { quickConfirmDbm: this.cfg.rssiQuickConfirmDbm, goodDbm: this.cfg.rssiGoodDbm, marginalDbm: this.cfg.rssiMarginalDbm, usableDbm: this.cfg.rssiUsableDbm, provisional: true,
           contactCurrentMaxMin: this.cfg.contactCurrentMaxMin, contactHistoryMaxH: this.cfg.contactHistoryMaxH } };
       }
       if (route === '/api/me') return { technician: null };

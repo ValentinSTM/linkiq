@@ -51,8 +51,9 @@
     // limit. Many weak or old links are no reserve, however many there are.
     const parts = [];
     if (c.usable !== undefined) {
-      parts.push(T('{0} utilizabile (≥ {1} dBm, ultima oră)', c.usable, c.marginalDbm));
-      if (c.weak) parts.push(T('{0} slabe (< {1} dBm): nu contează', c.weak, c.marginalDbm));
+      const lim = c.usableDbm || c.marginalDbm;
+      parts.push(T('{0} utilizabile (≥ {1} dBm, ultima oră)', c.usable, lim));
+      if (c.weak) parts.push(T('{0} slabe (< {1} dBm): nu contează', c.weak, lim));
     } else if (c.current) parts.push(T('{0} cu contact în ultima oră', c.current));
     if (c.occasional) parts.push(T('{0} doar ocazional (1–{1} ore)', c.occasional, c.historyMaxH));
     if (c.old) parts.push(T('{0} fără contact de peste {1} ore (nu contează)', c.old, c.historyMaxH));
@@ -64,7 +65,7 @@
     if (!c || !s.receivers.length) return ['red', T('Niciun concentrator de-al nostru nu a auzit contorul.')];
     if (!s.primary) return ['red', T('Fără contact în ultimele {0} ore: datele din această perioadă se pierd.', c.historyMaxH)];
     if (c.usable !== undefined) {
-      if (!c.usable) return c.current ? ['red', T('Contact doar cu semnal slab (sub {0} dBm): datele orare se pot pierde.', c.marginalDbm)]
+      if (!c.usable) return c.current ? ['red', T('Contact doar cu semnal slab (sub {0} dBm): datele orare se pot pierde.', c.usableDbm || c.marginalDbm)]
         : ['yellow', T('Niciun contact în ultima oră: datele ajung cu întârziere.')];
       if (c.usable >= 2 && c.goodPrimary) return ['green', c.usableSites >= 2 ? T('Date orare, semnal bun și rezervă pe alt site.') : T('Date orare, semnal bun și rezervă pe același site.')];
       if (c.usable >= 2) return ['yellow', T('Date orare cu rezervă, dar semnalul principal e doar la limită.')];
@@ -77,7 +78,8 @@
   /** One line with the signal and contact-age limits, so a report can be read on its own. */
   function limitsText(withAge) {
     const th = cfg.thresholds || { goodDbm: -95, marginalDbm: -110 };
-    let t = T('Semnal: bun ≥ {0} dBm · la limită {0}…{1} dBm · slab < {1} dBm (praguri provizorii).', th.goodDbm, th.marginalDbm);
+    let t = T('Semnal: bun ≥ {0} dBm · la limită {0}…{1} dBm · slab < {1} dBm (praguri provizorii).', th.goodDbm, th.marginalDbm)
+      + ' ' + T('O rezervă contează până la {0} dBm: fiecare valoare orară e trimisă de 18 ori pe oră, iar orele lipsă sunt recuperate.', th.usableDbm || -120);
     if (withAge) t += ' ' + T('Contact: ultima oră ≤ {0} min · ocazional ≤ {1} ore · mai vechi de {1} ore nu contează.', th.contactCurrentMaxMin || 75, th.contactHistoryMaxH || 8);
     return t;
   }
@@ -1774,14 +1776,23 @@
   const REPORT_VERSION = '0.2';   // the report's own layout; changes without a new app version
   const isStale = (q) => q.ageMin !== null && q.ageMin !== undefined && q.ageMin > REPORT_MAX_AGE_H * 60;
 
+  const REPORT_SITES = 3;
   async function buildReport(s) {
     const staleCount = s.receivers.filter(isStale).length;
     const shown = s.receivers.filter((q) => !isStale(q));
-    // On paper only the links that can carry the data: the primary, and the others with at least
-    // the marginal signal and contact within the history window. The rest is counted, not listed.
-    const margDbm = (cfg.thresholds || { marginalDbm: -110 }).marginalDbm;
-    const useful = shown.filter((q) => q.relation === 'PRIMARY' || (q.bestRssi >= margDbm && q.age !== 'OLD'));
-    const weakHidden = shown.length - useful.length;
+    // On paper only the links that can carry the data: the primary, and the others down to the
+    // usable limit with contact within the history window. Of those, one per site and at most
+    // REPORT_SITES sites: the best signal first, the most recent contact when signals are close.
+    // The rest is counted, not listed, so many weak links never look like good coverage.
+    const useDbm = (cfg.thresholds || {}).usableDbm || -120;
+    const carry = shown.filter((q) => q.relation === 'PRIMARY' || (q.bestRssi >= useDbm && q.age !== 'OLD'));
+    const seen = (q) => Date.parse(q.observedUtc || '') || 0;
+    const better = (a, b) => (a.relation === 'PRIMARY') !== (b.relation === 'PRIMARY') ? (a.relation === 'PRIMARY' ? -1 : 1)
+      : Math.abs(a.bestRssi - b.bestRssi) >= 3 ? b.bestRssi - a.bestRssi : (seen(b) - seen(a)) || (b.bestRssi - a.bestRssi);
+    const bySite = new Map();
+    for (const q of [...carry].sort(better)) { const k = q.siteCode || q.serial; if (!bySite.has(k)) bySite.set(k, q); }
+    const useful = [...bySite.values()].slice(0, REPORT_SITES);
+    const weakHidden = shown.length - carry.length, moreHidden = carry.length - useful.length;
     const W = 1080, P = 56, big = document.createElement('canvas');
     big.width = W; big.height = 5400;
     const x = big.getContext('2d');
@@ -1800,6 +1811,7 @@
     const breaks = [];                          // places where a printed page may end (never inside a map or a line)
     let keep = false;                           // a heading stays with what follows it
     const brk = () => { if (keep) { keep = false; return; } breaks.push(Math.round(y) + 14); };   // below the descenders of the line above
+    const mark = (yy) => { if (keep) { keep = false; return; } breaks.push(Math.round(yy) + 14); };
     const section = (title) => { brk(); keep = true; y += 36; x.fillStyle = INK.light; x.fillRect(P, y, W - 2 * P, 2); y += 50; font(700, 30); text(title, P, y, INK.navy); y += 10; };
     const row = (label, value, color = INK.ink) => {
       brk();
@@ -1868,8 +1880,10 @@
       row(T('Foto'), nPh ? T('Da: {0} poze', nPh) + (nUnit ? '' : ' · ' + T('fără vandvarmer / unit')) : T('Nu'), nPh && nUnit ? INK.green : INK.amber);
     }
 
-    y = await drawReadings(x, P, W, y, (t) => { section(t); return y; }, font, text);
+    y = await drawReadings(x, P, W, y, (t) => { section(t); return y; }, font, text, mark);
+    keep = false;
     y = drawVvsSection(x, P, W, y, (t) => { section(t); return y; }, font, text);
+    keep = false;                               // the VVS lines have no breaks of their own
 
     const sm = { ...s, receivers: useful };
     const mapCanvas = await reportMap(sm, W - 2 * P, 620);
@@ -1885,7 +1899,7 @@
       const near = sites.filter((l) => l.distanceM !== null).sort((a, b) => a.distanceM - b.distanceM);
       if (mapCanvas.crowded && near.length >= 2) {
         const fit = new Set(near.slice(0, Math.min(5, near.length)).map((l) => l.key));
-        const close = await reportMap(sm, W - 2 * P, 460, true, fit);
+        const close = fit.size < near.length ? await reportMap(sm, W - 2 * P, 460, true, fit) : null;   // same sites: same map
         if (close) {
           brk();
           y += 44; font(700, 22); text(T('Mărit: cele {0} site-uri cele mai apropiate de contor', fit.size), P, y, INK.gray); y += 12;
@@ -1897,10 +1911,10 @@
       y += 22;
       const REL = { PRIMARY: T('principal'), SAME_SITE: T('același site'), DISTINCT_SITE: T('alt site'), UNKNOWN_SITE: T('site necunoscut') };
       brk();
-      y += 8; font(700, 22); text(T('Numerele de pe hărți'), P, y + 14, INK.gray); y += 30;
+      brk();                                    // the short list stays together, under its heading
+      y += 24; font(700, 22); text(T('Numerele de pe hărți'), P, y + 14, INK.gray); y += 30;
       sites.forEach((l, i) => {
         if (y > big.height - 400) return;
-        brk();
         const col = linkStyle(l).color, rel = s.receivers.find((q) => q.serial === l.serial);
         x.fillStyle = col; x.beginPath(); x.arc(P + 16, y + 2, 15, 0, 2 * Math.PI); x.fill();
         font(800, 17); x.fillStyle = l.age === 'OLD' || col === SIG.mid ? INK.ink : '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(i + 1), P + 16, y + 3);
@@ -1980,7 +1994,7 @@
     row(T('Rezervă'), b ? [b.serial, dbm(b.bestRssi), T(RELATION_RO[b.redundancy] || 'site necunoscut'), b.siteName,
       occasional ? T('doar ocazional – nu contează ca redundanță') : null].filter(Boolean).join(' · ') : T('niciuna'), b && !occasional ? INK.ink : INK.gray);
     y += 16;
-    for (const q of useful.slice(0, 12)) {
+    for (const q of useful) {
       brk();
       y += 36; font(500, 23);
       const old = q.age === 'OLD', ageCol = q.age === 'CURRENT' ? INK.green : q.age === 'OCCASIONAL' ? INK.amber : INK.gray;
@@ -1992,28 +2006,29 @@
       font(500, 21);
       text((wrap(where(q) + (q.distanceM !== null ? ' · ' + meters(q.distanceM) : ''), W - 2 * P - 660)[0] || ''), P + 660, y, INK.gray);
     }
-    if (useful.length > 12) { y += 34; font(500, 20); text(T('… și încă {0}', useful.length - 12), P, y, INK.gray); }
-    if (weakHidden) {
+    const hid = [];
+    if (moreHidden) hid.push(T('{0} alte legături utilizabile (același site sau după cele mai bune {1} site-uri) nu sunt arătate.', moreHidden, REPORT_SITES));
+    if (weakHidden) hid.push(T('{0} legături sub {1} dBm sau fără contact de peste 8 ore nu contează și nu sunt arătate.', weakHidden, useDbm));
+    for (const h of hid) {
+      brk();
       y += 36; font(600, 21);
-      for (const l of wrap(T('{0} alte legături sub {1} dBm sau fără contact de peste 8 ore nu sunt arătate: nu pot duce datele în siguranță.', weakHidden, margDbm), W - 2 * P)) { text(l, P, y, INK.gray); y += 30; }
+      for (const l of wrap(h, W - 2 * P)) { text(l, P, y, INK.gray); y += 30; }
       y -= 30;
     }
     if (staleCount) {
+      brk();
       y += 34; font(500, 20);
       text(T(staleCount === 1 ? '1 concentrator văzut ultima dată acum peste {1} ore nu este inclus în raport.' : '{0} concentratoare văzute ultima dată acum peste {1} ore nu sunt incluse în raport.', staleCount, REPORT_MAX_AGE_H), P, y, INK.gray);
     }
+    brk();
     y += 18; font(500, 19);
     for (const l of wrap(limitsText(isCheck), W - 2 * P)) { y += 28; text(l, P, y, INK.gray); }
-    if (instPhotos.count()) {
-      section(T('Poze cu instalația'));
-      row('', instPhotos.count() === 1 ? T('1 poză pe pagina următoare') : T('{0} poze în paginile următoare: montaj, punere în funcțiune și vandvarmer / unit', instPhotos.count()));
-    }
     if (s.session.note) {
       section(T('Observații'));
       font(500, 26);
       for (const l of wrap(s.session.note, W - 2 * P)) { y += 38; text(l, P, y); }
     }
-    y += 70; font(400, 21);
+    y += 70; font(400, 21);                     // the version line stays with the limits above, never alone on a page
     text(`LinkIQ Field Assistant v${VERSION} · ${T('raport')} v${REPORT_VERSION} · ${T('generat {0}', fmtTime(new Date().toISOString()))}`, P, y, INK.gray);
     y += 44;
     const out = document.createElement('canvas');
@@ -2331,7 +2346,23 @@
         + (previewUrl !== null ? ' ' + T('Dacă descărcarea nu pornește, ține apăsat pe imagine și alege „Salvează”.') : '');
     msg.hidden = false;
     if (saved) refreshReportDir();
-    if (S && /\.(pdf|png)$/i.test(name)) vqUpsert(saved || name, blob);
+    if (S && /\.(pdf|png)$/i.test(name)) await vqUpsert(saved || name, blob);
+    return saved || name;
+  }
+  const fileStamp = (t) => {
+    const d = new Date(t || Date.now()), two = (v) => String(v).padStart(2, '0');
+    return `${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}-${two(d.getHours())}${two(d.getMinutes())}`;
+  };
+  /** The whole history goes to the case with the report: the report as a picture too, the antenna
+   *  photo and every installation photo, each under a name that says what it is and when. */
+  async function vqHistory(report, savedName) {
+    if (!S) return;
+    const base = savedName.replace(/\.[a-z0-9]+$/i, ''), m = safeName(S.session.meterSerial), extra = [];
+    if (!/\.png$/i.test(savedName)) extra.push({ name: base + '.png', blob: await canvasBlob(report, 'image/png') });
+    const internal = ui.install && ui.install.antennaType === 'internal';
+    if (lastPhoto && S.session.status !== 'CHECK' && !internal) extra.push({ name: `${m}_antenne_${fileStamp()}.jpg`, blob: await canvasBlob(lastPhoto, 'image/jpeg') });
+    extra.push(...await instPhotos.vvsFiles());
+    await vqSetExtras(savedName, extra);
   }
   const canvasBlob = (canvas, type) => new Promise((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail(new Error('canvas'))), type, 0.9));
 
@@ -2372,7 +2403,11 @@
   $('report-btn').onclick = () => S && instPhotos.ask(() => askReadings(savePng));
   async function savePng() {
     if (!S) return;
-    try { await saveBlob(await canvasBlob(await buildReport(S), 'image/png'), reportName(S) + '.png', 'Raportul a fost salvat ca {0}.'); }
+    try {
+      const report = await buildReport(S);
+      const saved = await saveBlob(await canvasBlob(report, 'image/png'), reportName(S) + '.png', 'Raportul a fost salvat ca {0}.');
+      await vqHistory(report, saved);
+    }
     catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   }
   $('report-pdf-btn').onclick = () => S && instPhotos.ask(() => askReadings(savePdf));
@@ -2386,7 +2421,8 @@
       const inst = await instPhotos.pages();
       photos.push(...inst);
       const pages = paginate(report, S, photos);
-      await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', inst.length ? 'Raportul PDF, cu pozele instalației, a fost salvat ca {0}.' : pages.length > 1 ? 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.' : 'Raportul PDF a fost salvat ca {0}.', null);
+      const saved = await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', inst.length ? 'Raportul PDF, cu pozele instalației, a fost salvat ca {0}.' : pages.length > 1 ? 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.' : 'Raportul PDF a fost salvat ca {0}.', null);
+      await vqHistory(report, saved);
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   }
   $('photo-file').onchange = async (ev) => {
@@ -2620,6 +2656,14 @@
         draw();
       },
       count: () => list.length,
+      async vvsFiles() {                       // for the case in VVS-dialog: e.g. 84751491_unit_1_20261126-1549.jpg
+        await sync();
+        const m = safeName(S.session.meterSerial), out = [];
+        for (const st of ['mount', 'start', 'unit']) {
+          list.filter((p) => p.stage === st).forEach((p, i) => out.push({ name: `${m}_${FILE[st]}_${i + 1}_${fileStamp(p.at)}.jpg`, blob: p.blob }));
+        }
+        return out;
+      },
       countOf: (st) => list.filter((p) => p.stage === st).length,
       async files() {
         await sync();
@@ -2995,11 +3039,12 @@
   }
 
   /** Report section with the readings and the picture of the display beside each value. */
-  async function drawReadings(x, P, W, y, section, font, text) {
+  async function drawReadings(x, P, W, y, section, font, text, mark = () => {}) {
     const list = filledReadings();
     if (!list.length) return y;
     y = section(T('Citirile contorului'));
     for (const r of list) {
+      mark(y);
       const reg = regOf(r.k), top = y + 18;
       let img = null;
       if (r.img) { try { img = new Image(); img.src = r.img; await img.decode(); } catch { img = null; } }
@@ -3211,6 +3256,21 @@
       e.files.push(fileName);
       try { await kv.set('vvsf:' + id + ':' + fileName, blob); } catch { /* */ }
     }
+    await vqSave(q);
+  }
+  /** Keep the report just saved (and the PDF, if there is one); every other file of this visit is
+   *  replaced by the current set, so a deleted photo does not reach the case. */
+  async function vqSetExtras(mainName, extra) {
+    const id = vqId(), q = await vqLoad(), e = q.find((x) => x.id === id);
+    if (!e) return;
+    const keepF = e.files.filter((f) => f === mainName || /\.pdf$/i.test(f));
+    for (const f of e.files) if (!keepF.includes(f)) { try { await kv.set('vvsf:' + id + ':' + f, null); } catch { /* */ } }
+    e.files = keepF;
+    for (const x of extra) {
+      if (e.files.includes(x.name)) continue;
+      try { await kv.set('vvsf:' + id + ':' + x.name, x.blob); e.files.push(x.name); } catch { /* storage full: the report itself is kept */ }
+    }
+    if (e.state === 'sent') e.state = 'pending';
     await vqSave(q);
   }
   async function vvsQueueTouch() {                 // text/status changed after a report was saved
