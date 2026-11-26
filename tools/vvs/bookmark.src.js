@@ -114,13 +114,17 @@
     if (j) {
       try {
         var d = JSON.parse(decodeURIComponent(escape(unb64(j[1]))));
+        var b0 = (Array.isArray(d) ? d[0] : d) || {};
+        if (b0.b && !back) {                   // the way back, also when the tab name is lost (Android)
+          try { var bu0 = new URL(b0.b); if (LIQ_ORIGIN.test(bu0.origin)) { back = bu0.origin + bu0.pathname + bu0.search; } } catch (e) { /* none */ }
+        }
         return (Array.isArray(d) ? d : [d]).map(function (x) {
           var fs = (fileMap[x.id] || []).map(function (f) {
             var bin = atob(f.d), u = new Uint8Array(bin.length);
             for (var i = 0; i < bin.length; i++) { u[i] = bin.charCodeAt(i); }
             return { name: f.n, blob: new Blob([u], { type: f.t || 'application/octet-stream' }) };
           });
-          return { id: x.id, meter: x.m, status: x.s, text: x.t, files: fs };
+          return { id: x.id, meter: x.m, status: x.s, text: x.t, files: fs, kind: x.k || '' };
         });
       } catch (e) { /* fall through */ }
     }
@@ -129,9 +133,7 @@
   }
 
   // ---------- 2. the open case of a meter
-  async function findCase(m) {
-    var here = location.pathname.match(/ShowCase\.aspx/i) && new URLSearchParams(location.search).get('cc');
-    if (here && document.body.innerText.indexOf(m) >= 0) { return here; }
+  async function searchMeter(m) {             // the meter search on the front page; lands on the customer page
     var home = await page('/Home.aspx');
     var form = home.doc.querySelector('form');
     var inputs = form ? Array.prototype.slice.call(form.querySelectorAll('input')) : [];
@@ -140,10 +142,11 @@
     if (!meterInput || !searchBtn) { throw new Error('LOGIN'); }
     var ch = {}; ch[meterInput.name] = m; ch[searchBtn.name] = searchBtn.value;
     var action = new URL(form.getAttribute('action') || 'Home.aspx', location.origin + '/Home.aspx');
-    var r = await page(action.href, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formFields(form, ch).toString() });
-    if (!/ShowCustomer\.aspx/i.test(r.url)) { throw new Error('Måler ' + m + ' blev ikke fundet entydigt.'); }
+    return page(action.href, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formFields(form, ch).toString() });
+  }
+  function openCases(doc, m) {
     var seen = {}, cases = [];
-    Array.prototype.forEach.call(r.doc.querySelectorAll('[onclick*="ShowCase.aspx"]'), function (e) {
+    Array.prototype.forEach.call(doc.querySelectorAll('[onclick*="ShowCase.aspx"]'), function (e) {
       var cc = ((e.getAttribute('onclick') || '').match(/cc=(\d+)/) || [])[1];
       if (!cc || seen[cc]) { return; }
       seen[cc] = 1;
@@ -152,11 +155,43 @@
       if (CLOSED.indexOf(status.toLowerCase()) >= 0) { return; }
       cases.push({ cc: cc, date: cell('.ucCHCol1'), status: status, type: cell('.ucCHCol3'), own: e.textContent.indexOf(m) >= 0 });
     });
+    return cases;
+  }
+  async function findCase(m) {
+    var here = location.pathname.match(/ShowCase\.aspx/i) && new URLSearchParams(location.search).get('cc');
+    if (here && document.body.innerText.indexOf(m) >= 0) { return here; }
+    var r = await searchMeter(m);
+    if (!/ShowCustomer\.aspx/i.test(r.url)) { throw new Error('Måler ' + m + ' blev ikke fundet entydigt.'); }
+    var cases = openCases(r.doc, m);
     if (cases.length === 1) { return cases[0].cc; }
     if (!cases.length) { throw new Error('Ingen åben sag for måler ' + m + '.'); }
     return choose('LinkIQ: ' + cases.length + ' åbne sager for måler ' + m + '. Vælg sag:', cases.map(function (c) {
       return { label: c.date + ' · ' + c.status + ' · ' + c.type + (c.own ? ' · måler nævnt' : ''), value: c.cc };
     }).concat([{ label: 'Spring over', value: null }]));
+  }
+
+  // ---------- 2b. the consumption site (Forbrugssted) of a meter, for the installer to confirm on site
+  // The customer can be a company with its seat elsewhere: only the Forbrugssted address counts.
+  function fsAddress(doc) {
+    var all = Array.prototype.slice.call(doc.querySelectorAll('body *'));
+    var leaf = function (e) { return !e.children.length; };
+    var head = all.find(function (e) { return leaf(e) && /^\s*Forbrugssted\s*$/i.test(e.textContent); });
+    if (!head) { return null; }
+    function val(label) {                   // the first such label after the heading, and the cell next to it
+      var l = all.find(function (e) {
+        return leaf(e) && e.textContent.trim().toLowerCase() === label && (head.compareDocumentPosition(e) & 4);
+      });
+      if (!l) { return ''; }
+      var v = l.nextElementSibling || (l.parentElement && l.parentElement.nextElementSibling);
+      return v ? v.textContent.replace(/\s+/g, ' ').trim() : '';
+    }
+    return { addr: val('adresse:'), by: val('by:') };
+  }
+  async function lookupFs(m) {
+    var r = await searchMeter(m);
+    if (!/ShowCustomer\.aspx/i.test(r.url)) { return { f: 0 }; }
+    var a = fsAddress(r.doc) || { addr: '', by: '' }, cs = openCases(r.doc, m);
+    return { f: 1, a: a.addr, b: a.by, n: cs.length, ty: cs.map(function (c) { return c.type; }).filter(Boolean).join(', ') };
   }
 
   // ---------- 3a. files: only those not on the case yet
@@ -344,6 +379,32 @@
         x.files = ['pdf', 'img'].filter(function (k) { return best[k]; }).map(function (k) { return best[k]; });
         x.picked = true;
       });
+    }
+    if (items.length === 1 && items[0].kind === 'fs') {     // only the address: read it, show it, take it back
+      var fm = String(items[0].meter), fr;
+      reset('LinkIQ: henter forbrugssted for måler ' + fm + ' …');
+      try { fr = await lookupFs(fm); } catch (e) { fr = { err: e && e.message === 'LOGIN' ? 'LOGIN' : String(e && e.message ? e.message : e) }; }
+      fr.m = fm; fr.liq = 'fs';
+      if (/^linkiq_j/.test(String(window.name || ''))) { window.name = ''; }
+      try { if (window.opener && liqOrigin) { window.opener.postMessage(fr, liqOrigin); } } catch (e) { /* LinkIQ closed */ }
+      reset('LinkIQ: måler ' + fm);
+      if (fr.err === 'LOGIN') { line('Log ind i VVS-dialog (Chrome udfylder selv), og tryk på li igen.'); }
+      else if (fr.err) { line('Fejl: ' + fr.err); }
+      else if (!fr.f) { line('Måleren findes ikke i VVS-dialog.'); }
+      else {
+        var ad = [fr.a, fr.b].filter(Boolean).join(', ');
+        line(ad ? 'Forbrugssted: ' + ad : 'Forbrugssted: (ikke fundet på siden)', true);
+        line(fr.n ? 'Åbne sager: ' + fr.n + (fr.ty ? ' (' + fr.ty + ')' : '') : 'Ingen åben sag for måleren.');
+      }
+      if (fr.err !== 'LOGIN') {
+        var fb = btoa(unescape(encodeURIComponent(JSON.stringify(fr)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        button('Tilbage til LinkIQ', function () {
+          if (window.opener && liqOrigin) { try { window.opener.focus(); } catch (e) { /* */ } window.close(); }
+          if (back) { location.href = back + '#liqfs=' + fb; }
+        }, true);
+      }
+      closeBtn();
+      return;
     }
     var results = [], lastCc = null;
     for (var k = 0; k < items.length; k++) {
