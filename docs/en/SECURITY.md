@@ -1,6 +1,6 @@
 # Security and production approval
 
-[Dansk](../SIKKERHED.md) · **English** · [Română](../ro/SECURITATE.md)
+[Dansk](../SIKKERHED.md) · **English**
 
 Status of every recommendation from the security review of 26.11.2026, as of LinkIQ v0.25. Each item
 is marked **Done** (changed in the app), **Already met** (the app already did it, verified in code

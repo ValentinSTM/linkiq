@@ -1,6 +1,6 @@
 # LinkIQ Field Assistant
 
-[Dansk](README.md) · **English** · [Română](docs/ro/README.md)
+[Dansk](README.md) · **English**
 
 LinkIQ is a web app that can be installed on a phone (PWA). It guides the installer in aligning the
 antenna of a Kamstrup heat meter, based on real radio measurements. It replaces the Power Apps
@@ -65,7 +65,7 @@ The app looks for the registry in this order:
 A newer registry (built in or from the folder) replaces the old one once. A later manual import is
 not overwritten.
 
-In the card *Data on this device*:
+Under **Mere** (more) › *Register og data* (deleting and CSV import under **Avanceret**):
 
 - **Load sites / concentrators (CSV)**: the registry stays on the phone only. The columns
   `Breddegrad` / `Længdegrad`, decimal commas and files saved from Excel are accepted. Without a
@@ -119,13 +119,17 @@ Tests: `pip install -r requirements-dev.txt && pytest`. With Docker: `docker com
 | Pairing a phone with a personal QR code, revoking access (server mode) | yes |
 | Scanning the meter number from the QR code | yes (extraction rule to be confirmed on a real meter) |
 | QR code from a photo and picking the position on the map when the page does not run over HTTPS | yes |
-| User interface in Danish (default) and Romanian, switch in the header | yes |
+| User interface in Danish; Romanian can be chosen under Mere (More) | yes |
 | Report at the end: image `<meter>.png` with sweep, fine-tuning, final check and receivers | yes |
 | Photo of the antenna with the result written on it: `<meter>_antenne.jpg` | yes |
 | Map with meter–site lines, signal and distance; the same map in the report | yes |
 | Report also as PDF (`<meter>.pdf`) with the antenna photo and the installation photos on the following pages | yes |
 | Installation photos at mounting and commissioning (up to 6, with meter number and time), at every installation | yes |
 | Address search on the map (OpenStreetMap, only when the installer taps Search) | yes |
+| Tabs at the bottom (Måling, Modtagere, Kort, Rapporter, Mere) and the phone's back button | yes |
+| "Før du går" (before you leave): checklist of report, photos, meter readings and VVS-dialog | yes |
+| Reports and photos shown inside the app (PDF pages too), from the checklist, Rapporter and the folder | yes |
+| GPS taken by itself when allowed; otherwise address or map | yes |
 | Reports from the folder or from files can be added to the VVS list, so a forgotten day is not lost | yes |
 | Checking a meter without a session and without CALL: who hears it now, and since when (`<meter>_status.pdf`) | yes, without a server only |
 | Status check: each concentrator once; last contact within the last hour (≤ 75 min), occasional (≤ 8 h) or older (does not count); verdict on hourly data and redundancy; signal and contact limits written in the report | yes |
@@ -283,6 +287,5 @@ backend/app/              optional central server: the same rules in Python
 backend/scripts/          registry import, pairing codes, Kamstrup check
 backend/tests/            19 tests
 docs/en/                  guide, architecture, Android, security review and ideas in English
-docs/ro/                  the same documents in Romanian
 azure-pipelines.yml       tests, copy to Azure Repos and publishing to Azure
 ```

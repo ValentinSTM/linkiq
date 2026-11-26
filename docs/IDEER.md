@@ -1,6 +1,6 @@
 # Ideer og planlagte test
 
-**Dansk** · [English](en/IDEAS.md) · [Română](ro/IDEI.md) · Ikke påbegyndt. Noteret 18.11.2026.
+**Dansk** · [English](en/IDEAS.md) · Ikke påbegyndt. Noteret 18.11.2026.
 
 ## 1. Døgntest: registrerer alle koncentratorer den samme kontakt?
 

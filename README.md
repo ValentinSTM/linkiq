@@ -1,6 +1,6 @@
 # LinkIQ Field Assistant
 
-**Dansk** · [English](README.en.md) · [Română](docs/ro/README.md)
+**Dansk** · [English](README.en.md)
 
 LinkIQ er en webapp, der kan installeres på telefonen (PWA). Den hjælper montøren med at rette
 antennen ind på en Kamstrup-varmemåler ud fra rigtige radiomålinger. Appen erstatter
@@ -63,7 +63,7 @@ Appen leder efter registret i denne rækkefølge:
 Et nyere register (indbygget eller fra mappen) erstatter det gamle én gang. En senere manuel import
 bliver ikke overskrevet.
 
-I kortet *Data på denne enhed*:
+Under **Mere** › *Register og data* (sletning og CSV-import under **Avanceret**):
 
 - **Indlæs sites / koncentratorer (CSV)**: registret bliver kun på telefonen. Kolonnerne
   `Breddegrad` / `Længdegrad`, decimalkomma og filer gemt fra Excel accepteres. Uden register
@@ -117,13 +117,17 @@ Test: `pip install -r requirements-dev.txt && pytest`. Med Docker: `docker compo
 | Parring af telefon med personlig QR-kode, tilbagekaldelse af adgang (servertilstand) | ja |
 | Scanning af målernummer fra QR-kode | ja (reglen for udtræk skal bekræftes på en rigtig måler) |
 | QR-kode fra et foto og valg af position på kortet, når siden ikke kører via HTTPS | ja |
-| Brugerflade på dansk (standard) og rumænsk, skift i toppen | ja |
+| Brugerflade på dansk; rumænsk kan vælges under Mere | ja |
 | Rapport ved afslutning: billede `<målernummer>.png` med rotation, finjustering, slutbekræftelse og modtagere | ja |
 | Foto af antennen med resultatet skrevet på: `<målernummer>_antenne.jpg` | ja |
 | Kort med linjer måler–site, signal og afstand; samme kort i rapporten | ja |
 | Rapport også som PDF (`<målernummer>.pdf`) med antennefotoet og installationsbillederne på de følgende sider | ja |
 | Billeder af installationen ved montage og idriftsættelse (op til 6, med målernummer og tidspunkt), ved hver installation | ja |
 | Adressesøgning på kortet (OpenStreetMap, kun på installatørens tryk) | ja |
+| Faner nederst (Måling, Modtagere, Kort, Rapporter, Mere) og telefonens tilbage-knap | ja |
+| „Før du går": tjekliste over rapport, billeder, målerstande og VVS-dialog | ja |
+| Rapporter og billeder vises inde i appen (også PDF-sider), fra tjeklisten, Rapporter og mappen | ja |
+| GPS hentes af sig selv, når det er tilladt; ellers adresse eller kort | ja |
 | Rapporter fra mappen eller fra filer kan føjes til VVS-listen, så en glemt dag ikke går tabt | ja |
 | Kontrol af en måler uden session og uden CALL: hvem hører den nu, og siden hvornår (`<målernummer>_status.pdf`) | ja, kun uden server |
 | Statuskontrol: hver koncentrator én gang; seneste kontakt inden for den seneste time (≤ 75 min), lejlighedsvis (≤ 8 t) eller ældre (tæller ikke); dom om timedata og redundans; grænser for signal og kontakt skrevet i rapporten | ja |
@@ -288,6 +292,6 @@ docs/ARKITEKTUR.md        valgt løsning, licenser, API, trusselsmodel
 docs/SIKKERHED.md         sikkerhedsgennemgang, status og beslutninger før drift
 docs/IDEER.md             ideer og planlagte test
 docs/ANDROID.md           fuld funktion på Android uden hosting
-docs/en/, docs/ro/        de samme dokumenter på engelsk og rumænsk
+docs/en/                  de samme dokumenter på engelsk
 azure-pipelines.yml       test, kopi til Azure Repos og udgivelse på Azure
 ```

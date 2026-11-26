@@ -2,8 +2,14 @@
 
 **Dansk** · [English](en/GUIDE.md)
 
-1. Åbn appen. Står der et gult felt **Før du går i gang** øverst, så tryk **Tillad kamera** og/eller **Tillad at gemme i mappen** (kameraet spørges der om én gang; mappen ved hver opstart). Scan målerens QR-kode, eller indtast målernummeret. Skriv dit navn.
-2. Position er valgfri: tryk **GPS**, eller **Vælg på kort**. På kortet kan du trykke ved måleren, skrive koordinater eller skrive adressen (fx *Søndergade 1, 8000 Aarhus C*) og trykke **Søg**. Adressen slås op i OpenStreetMap; kontrollér punktet på kortet.
+**Navigation.** Nederst er der altid fem faner: **Måling** (start eller den måling, der er i gang),
+**Modtagere**, **Kort**, **Rapporter** (det røde tal er rapporter, der venter på VVS-dialog) og **Mere**
+(register, rapportmappe, bogmærket li, feedback, sprog). Telefonens tilbage-knap går et skridt tilbage
+i appen. Registret, sletteknapperne og demotilstanden ligger under **Mere**; sletteknapperne er gemt
+under **Avanceret**, så de ikke trykkes ved et uheld.
+
+1. Åbn appen. Står der et gult felt **Før du går i gang** øverst, så tryk **Tillad kamera**, **Tillad position** og/eller **Tillad at gemme i mappen** (kamera og position spørges der om én gang; mappen ved hver opstart). Står der **Registret mangler**, så scan registrets QR-kode først: uden registret kan der ikke måles. Scan målerens QR-kode, eller indtast målernummeret. Skriv dit navn.
+2. Position: er GPS tilladt, hentes den af sig selv ved start og for hver ny måler. Er GPS slået fra (fx på en pc, hvor firmaets politik slår placering fra), så tryk **Adresse eller kort**, skriv adressen (fx *Søndergade 1, 8000 Aarhus C*), og tryk **Søg**, eller tryk på kortet ved måleren. Adressen slås op i OpenStreetMap; kontrollér punktet. Uden position vises koncentratorerne stadig på kortet, men uden linjer og afstande; positionen kan også angives senere med **Målerens position: adresse eller kort** under **Kort**.
 3. Tryk **Start**, og vælg **Antenne: Intern eller Ekstern** – CALL-knappen er låst, indtil du har valgt. **Intern:** én måling, ingen drejning (vises som én cirkel). **Ekstern:** vælg **Drejning (4 felter)** eller **Én position** (fastskruet antenne, eller stedet ingeniøren peger på: ét CALL og svar med det samme). Ved drejning: tryk på et felt for at springe det over, fx hvis antennen ville ramme væggen. Tryk derefter **CALL** på måleren, og bekræft i appen, når CALL vises i displayet.
 4. **Vent – flyt ikke antennen**, mens appen måler. Appen går videre, så snart de koncentratorer, der plejer at høre måleren, har svaret (ellers efter én cyklus på ca. 35 s). Er der kommet en måling, kan du trykke **Videre med det, der er kommet**. Under drejningen kan du altid trykke **Spring felt X over**.
 5. Drej antennen til næste felt, når appen beder om det (felter, du har sprunget over, springes over).
@@ -14,9 +20,10 @@
 10. Valgfrit: **Målerstande**. Vis E1 på måleren, tryk på kameraet ved E1, og hold hele displayet inde i rammen. Når tallet er læst sikkert, vibrerer telefonen, og værdien står i feltet. Kontrollér tallet mod displayet, og ret det, hvis det er forkert. Gentag for V1, driftstimer, E8 og E9. Andre registre: åbn **Andre registre**, og sæt flueben ved dem, du vil have med. Ved genskin: vip telefonen lidt, eller tryk **☀ −**. I mørke: tryk **☀ +** (lysere billede) eller **Lygte**, men undgå, at lyset spejler sig i glasset. Knapperne vises kun, hvis telefonens kamera tillader det. Du kan også tage billedet med telefonens Kamera-app (blitz, nattilstand) og trykke **Vælg et billede fra galleriet**. Kan tallet ikke læses: tryk **Gem billedet, jeg skriver selv værdien**.
 11. **Billeder af installationen** – ved hver installation, uanset antenne: tryk **Ved montage** og **Ved idriftsættelse**, og fotografér hele installationen (måleren, rørene, antennen og omgivelserne). Op til 6 billeder; hvert får målernummer, tidspunkt og montagedata skrevet på. Dårligt lys: tag billedet med telefonens Kamera-app (blitz eller nattilstand), og vælg det fra galleriet med linkene i kortet. Kortet kan bruges, mens appen måler. Billederne kommer med i PDF-rapporten som historik og dokumentation for korrekt montage. Mangler de, spørger appen én gang, før rapporten gemmes.
 12. Ekstern antenne: tryk **Fotografér antennen** (gemmes som `<målernummer>_antenne.jpg` med måledata på billedet). Vælg derefter resultat og status for VVS-dialog, og tryk **Hent rapporten (PDF)** (gemmes som `<målernummer>.pdf`, med antennefotoet og installationsbillederne på de følgende sider). Inden den første rapport spørger appen én gang, om målerstandene skal med.
-13. Tryk **Send til VVS-dialog**, og tryk **li** i VVS-dialog. Rapporten, teksten i Ny aktivitet og status kommer selv på sagen. Fanen **VVS** viser, hvad der er sendt, og hvad der venter.
+13. Tryk **Send til VVS-dialog**, og tryk **li** i VVS-dialog. Rapporten, teksten i Ny aktivitet og status kommer selv på sagen. Fanen **Rapporter** viser, hvad der er sendt, og hvad der venter.
+14. **Før du går**, nederst i rapportboksen: ✓ ved rapporten, billederne, målerstandene og VVS-dialog. Tryk på en linje for at se rapporten eller billederne i appen (bladr med pilene eller ved at stryge), og luk med **Luk** eller telefonens tilbage-knap. Rapporter og billeder åbnes altid inde i appen, også fra listen under **Rapporter** og fra rapportmappen, så du aldrig skal lukke appen for at komme tilbage.
 
-**Glemt at sende en dag?** Åbn fanen **VVS**, og tryk **Søg efter rapporter i mappen** (pc) eller **Tilføj rapporter fra filer** (telefon: vælg PDF'erne i Overførsler). Appen finder én rapport pr. måler (den nyeste) ud fra målernummeret i filnavnet; rapporter, der allerede er på listen eller på en sag, er ikke markeret. Vælg resultat og status på hver, og send. Uden resultat lægger li kun filen på sagen.
+**Glemt at sende en dag?** Åbn fanen **Rapporter**, og tryk **Søg efter rapporter i mappen** (pc) eller **Tilføj rapporter fra filer** (telefon: vælg PDF'erne i Overførsler). Appen finder én rapport pr. måler (den nyeste) ud fra målernummeret i filnavnet; rapporter, der allerede er på listen eller på en sag, er ikke markeret. Vælg resultat og status på hver, og send. Uden resultat lægger li kun filen på sagen.
 
 Åbner VVS-dialog uden adresselinje? Tryk **⋮**, og vælg **Åbn i Chrome**.
 
@@ -24,22 +31,22 @@
 
 Arbejdstelefonen må ikke gemme filer fra Teams eller mail. Registret kommer derfor som en QR-kode:
 
-1. En kollega med registret i appen (fx på pc'en) trykker **Lav en QR-kode af registret til kolleger** i kortet *Data på denne enhed* og viser koden på skærmen eller udskriver den.
-2. Du trykker **Scan registret fra QR-kode** og holder telefonen 20–30 cm fra koden.
+1. En kollega med registret i appen (fx på pc'en) trykker **Lav en QR-kode af registret til kolleger** under **Mere** › *Register og data* og viser koden på skærmen eller udskriver den.
+2. Du trykker **Scan registret (QR-kode)** på startskærmen (eller under **Mere**) og holder telefonen 20–30 cm fra koden.
 3. Har du fået koden som billede (fx et skærmbillede), så tryk **Vælg et billede med QR-koden**.
 
 Appen skriver *Register læst fra QR-koden fra …* med antal sites og koncentratorer. QR-koden indeholder koncentratorernes placering: del den kun internt.
 
 ## Bogmærket li (oprettes én gang)
 
-1. I appen: tryk **Opret bogmærket li** på startskærmen, og tryk **Kopiér koden**.
+1. I appen: tryk **Opret bogmærket li** under **Mere**, og tryk **Kopiér koden**.
 2. I Chrome: åbn en vilkårlig side, tryk **⋮** og stjernen.
 3. Tryk **Rediger**. Navn: `li`. Slet adressen, og indsæt koden.
 4. Tjek, at adressen begynder med `javascript:` – ellers skriv det foran.
 
 Bogmærket virker kun fra adresselinjen, ikke fra bogmærkelisten. Det søger på målernummeret og åbner den sag, der ikke er *Afsluttet* eller *Lukket*. Er der flere åbne sager, vælger du selv. Det uploader, ændrer og sletter ikke noget.
 
-Sprog skiftes med knappen **RO/DA** øverst.
+Sprog skiftes under **Mere** › *Sprog*.
 
 ## Rapportmappen
 

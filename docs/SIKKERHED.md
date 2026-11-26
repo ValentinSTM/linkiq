@@ -1,6 +1,6 @@
 # Sikkerhed og driftsgodkendelse
 
-**Dansk** · [English](en/SECURITY.md) · [Română](ro/SECURITATE.md)
+**Dansk** · [English](en/SECURITY.md)
 
 Status for hver anbefaling fra sikkerhedsgennemgangen 26.11.2026, pr. LinkIQ v0.25. Hvert punkt er
 markeret **Gjort** (ændret i appen), **Opfyldt** (appen gjorde det allerede, kontrolleret i kode og

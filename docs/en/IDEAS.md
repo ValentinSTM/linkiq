@@ -1,6 +1,6 @@
 # Ideas and planned tests
 
-[Dansk](../IDEER.md) · **English** · [Română](../ro/IDEI.md) · Not started. Noted 18.11.2026.
+[Dansk](../IDEER.md) · **English** · Not started. Noted 18.11.2026.
 
 ## 1. 24-hour test: do all concentrators register the same contact?
 

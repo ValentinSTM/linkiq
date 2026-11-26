@@ -1,6 +1,6 @@
 # Android: full features without hosting
 
-[Dansk](../ANDROID.md) · **English** · [Română](../ro/ANDROID.md)
+[Dansk](../ANDROID.md) · **English**
 
 The browser gives GPS and the live camera only to pages from a secure address. `https://…` is one;
 `http://localhost` is another. A file opened straight from the phone's storage is not.

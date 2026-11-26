@@ -759,9 +759,9 @@ ul.rows .val { font-weight: 700; font-variant-numeric: tabular-nums; }
 
 #map { height: 58vh; border-radius: 12px; border: 1px solid var(--line); z-index: 0; }
 
-nav { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+nav { display: grid; grid-template-columns: repeat(5, 1fr); background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
 nav[hidden] { display: none; }
-nav button { background: none; border-radius: 0; color: var(--gray); min-height: 56px; padding: 0 4px; font-size: 15px; border-top: 4px solid transparent; }
+nav button { background: none; border-radius: 0; color: var(--gray); min-height: 56px; padding: 0 2px; font-size: 13px; font-weight: 650; border-top: 4px solid transparent; position: relative; }
 nav button.on { color: var(--blue); border-top-color: var(--blue); }
 
 .with-btn { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
@@ -857,7 +857,7 @@ ul.rows li.legend { display: block; font-size: 13px; color: var(--gray); border-
 #readings-card { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--light); padding-top: 10px; }
 #readings-card h3 { margin: 0; }
 #readings-card .sub { font-weight: 500; color: var(--gray); font-size: 15px; }
-#readings-card.flash, #iphoto-card.flash, #data-card.flash { animation: flash 1.2s ease-out 2; }
+#readings-card.flash, #iphoto-card.flash, #data-card.flash, #reg-need.flash { animation: flash 1.2s ease-out 2; }
 @keyframes flash { 0% { background: #fff6d6; } 100% { background: transparent; } }
 ul.readings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 ul.readings li { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; align-items: center; border: 2px solid var(--light); border-radius: 12px; padding: 8px; }
@@ -951,17 +951,60 @@ ul.vvsq .st.err { color: var(--red); }
 #iphoto-card.inside { margin: 10px 0; padding: 10px 0 0; border: 0; box-shadow: none; border-top: 1px solid #dde5ea; border-radius: 0; }
 #iphoto-card.inside.need { border: 3px solid #ffd23f; border-radius: 12px; padding: 10px; }
 
+/* settings, start cards, badge */
+.warn-card { border: 2px solid var(--yellow, #f2b705); }
+details.adv { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+details.adv > summary { cursor: pointer; font-weight: 650; color: var(--gray); padding: 6px 0; }
+details.adv[open] { display: flex; flex-direction: column; gap: 8px; }
+.badge { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--red); color: #fff; font-size: 11px; line-height: 18px; }
+.badge[hidden] { display: none; }
+#data-card, #dir-card, #vvs-card, #fb-card { display: flex; flex-direction: column; gap: 8px; }
+#data-card[hidden], #dir-card[hidden] { display: none; }
+#data-card h2, #dir-card h2, #vvs-card h2, #fb-card h2 { margin-bottom: 0; }
+
+/* before you leave */
+#leave-card { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+#leave-card h3 { margin: 0 0 4px; }
+.checklist { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.checklist li { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; }
+.checklist li .mk { font-size: 20px; text-align: center; }
+.checklist li.ok .mk { color: var(--green, #2e7d32); }
+.checklist li.no .mk { color: var(--red); }
+.checklist li.opt .mk { color: var(--gray); }
+.checklist li small { display: block; color: var(--gray); font-size: 13px; }
+.checklist li[role=button] { cursor: pointer; }
+.checklist li .go { color: var(--blue); font-weight: 650; }
+
+/* in-app viewer for saved reports and photos */
+#viewer { position: fixed; inset: 0; z-index: 60; background: #000; display: flex; flex-direction: column; }
+#viewer[hidden] { display: none; }
+.vw-top { color: #fff; padding: 12px 16px; padding-top: calc(12px + env(safe-area-inset-top)); display: flex; gap: 8px; align-items: baseline; }
+.vw-top strong { flex: 1; font-size: 15px; word-break: break-all; }
+.vw-top span { opacity: .7; font-size: 14px; }
+.vw-stage { flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center; touch-action: pinch-zoom; }
+.vw-stage img { max-width: 100%; max-height: 100%; object-fit: contain; background: #fff; }
+.vw-stage .hint { color: #ddd; padding: 20px; text-align: center; }
+.vw-bottom { display: grid; grid-template-columns: 64px 1fr 64px; gap: 10px; padding: 12px 16px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+.vw-bottom button { font-size: 22px; }
+.vw-bottom #vw-close { font-size: 17px; }
+.vw-ext { color: #fff !important; text-align: center; padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important; }
+.sync-item .file-link { all: unset; color: var(--blue); text-decoration: underline; cursor: pointer; margin-right: 10px; display: inline-block; padding: 4px 0; }
+.empty-state { text-align: center; color: var(--gray); padding: 24px 12px; }
+#report-box h3, #iphoto-card h3, #leave-card h3 { font-size: 16px; margin: 0 0 6px; }
+#iphoto-card h3 .sub { font-weight: 500; color: var(--gray); font-size: 14px; }
+nav .badge { position: absolute; top: 6px; right: 8px; }
+#iphoto-card .hint { margin: 4px 0; }
+
 </style>
 </head>
 <body>
 <header>
   <h1>LinkIQ Field Assistant <small id="ver"></small></h1>
-  <button id="lang-btn" class="lang" type="button" aria-label="Sprog / Limbă">RO</button>
   <span id="net" class="pill" hidden>fără conexiune</span>
   <span id="mode" class="pill demo" hidden>SIMULATOR</span>
 </header>
 
-<main>
+<main id="main-scroll">
   <!-- Pairing -->
   <section id="view-pair" class="view" hidden>
     <div class="card">
@@ -981,9 +1024,15 @@ ul.vvsq .st.err { color: var(--red); }
   <section id="view-start" class="view">
     <div id="perm-card" class="card allow" hidden>
       <h2>Înainte de lucru</h2>
-      <p class="hint">Aplicația are nevoie de cameră (codul QR, citirile contorului) și, dacă ai ales un dosar, de voie să scrie rapoartele acolo. Browserul întreabă o singură dată; dosarul, la fiecare pornire.</p>
+      <p class="hint">Aplicația are nevoie de cameră (codul QR, citirile contorului), de poziție (harta cu concentratoarele) și, dacă ai ales un dosar, de voie să scrie rapoartele acolo. Browserul întreabă o singură dată; dosarul, la fiecare pornire.</p>
       <div id="perm-cam" class="perm-row"><span class="pl">Camera</span><button type="button" class="primary">Permite camera</button><span class="ok" hidden>✓</span></div>
+      <div id="perm-loc" class="perm-row" hidden><span class="pl">Poziția (GPS)</span><button type="button" class="primary">Permite poziția</button><span class="ok" hidden>✓</span></div>
       <div id="dir-allow" class="perm-row" hidden><span class="pl">Dosarul de rapoarte</span><button type="button" class="primary">Permite salvarea în dosar</button><span class="ok" hidden>✓</span></div>
+    </div>
+    <div id="reg-need" class="card warn-card" hidden>
+      <h2>Registrul lipsește</h2>
+      <p class="hint">Fără registrul concentratoarelor Kredsløb nu se poate măsura. Scanează codul QR primit de la un coleg.</p>
+      <button type="button" id="reg-need-scan" class="primary">Scanează registrul (cod QR)</button>
     </div>
     <form id="start-form" class="card">
       <label for="meter">Seria contorului</label>
@@ -999,27 +1048,43 @@ ul.vvsq .st.err { color: var(--red); }
       <label>Poziția contorului (opțional)</label>
       <div class="two">
         <button type="button" id="gps-btn" class="secondary">GPS</button>
-        <button type="button" id="pick-btn" class="secondary">Alege pe hartă</button>
+        <button type="button" id="pick-btn" class="secondary">Adresă sau hartă</button>
       </div>
       <p id="gps-info" class="hint">Măsurarea funcționează și fără GPS. Poziția doar propune site-ul probabil și apare pe hartă.</p>
       <button type="submit" class="primary">Începe</button>
       <button type="button" id="check-btn" class="secondary">Verifică contorul, fără CALL</button>
       <p id="start-error" class="error" hidden></p>
     </form>
+    <div id="pending-card" class="card" hidden>
+      <h2>Rapoarte</h2>
+      <p id="vvsq-sum" class="hint"></p>
+      <button type="button" id="vvsq-open" class="secondary">Deschide rapoartele</button>
+    </div>
+    <div id="candidates" class="card" hidden>
+      <h2>Site-uri apropiate</h2>
+      <ul id="candidate-list" class="rows"></ul>
+    </div>
+  </section>
+
+  <!-- Settings -->
+  <section id="view-more" class="view" hidden>
     <div id="data-card" class="card" hidden>
-      <h2>Date pe acest dispozitiv</h2>
+      <h2>Registru și date</h2>
       <p id="reg-info" class="hint"></p>
       <p id="store-warn" class="hint warn" hidden>Aplicația este deschisă într-un mod care nu poate păstra date între deschideri. Folosește fișierul aplicației cu registrul inclus sau deschide aplicația de la o adresă web.</p>
-      <label class="file-btn">Încarcă site-uri (CSV)<input type="file" id="sites-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
-      <label class="file-btn">Încarcă concentratoare (CSV)<input type="file" id="conc-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
       <button type="button" id="regqr-scan" class="secondary">Scanează registrul de pe codul QR</button>
       <label class="file-btn">Alege o imagine cu codul QR<input type="file" id="regqr-image" accept="image/*" hidden></label>
       <p id="reg-msg" class="hint" hidden></p>
       <p class="hint"><button type="button" id="regqr-make" class="link" hidden>Fă un cod QR al registrului pentru colegi</button></p>
-      <p class="hint"><button type="button" id="reg-clear" class="link">Scoate site-urile și concentratoarele din aplicație</button></p>
-      <p id="sess-info" class="hint"></p>
-      <p class="hint"><button type="button" id="sess-clear" class="link">Șterge măsurătorile salvate</button></p>
-      <button type="button" id="export-btn" class="secondary">Exportă măsurătorile (CSV)</button>
+      <details class="adv">
+        <summary>Avansat</summary>
+        <label class="file-btn">Încarcă site-uri (CSV)<input type="file" id="sites-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
+        <label class="file-btn">Încarcă concentratoare (CSV)<input type="file" id="conc-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
+        <p class="hint"><button type="button" id="reg-clear" class="link">Scoate site-urile și concentratoarele din aplicație</button></p>
+        <p id="sess-info" class="hint"></p>
+        <p class="hint"><button type="button" id="sess-clear" class="link">Șterge măsurătorile salvate</button></p>
+        <button type="button" id="export-btn" class="secondary">Exportă măsurătorile (CSV)</button>
+      </details>
       <label class="check"><input type="checkbox" id="demo-toggle"> Mod demonstrație, fără contor</label>
     </div>
     <div id="dir-card" class="card" hidden>
@@ -1034,17 +1099,17 @@ ul.vvsq .st.err { color: var(--red); }
       <h2>VVS-dialog</h2>
       <p class="hint">După raport, aplicația deschide VVS-dialog, iar bookmark-ul li găsește cazul deschis al contorului. Bookmark-ul se creează o singură dată în Chrome.</p>
       <button type="button" id="vvs-setup-open" class="secondary">Creează bookmark-ul li</button>
-      <p id="vvsq-sum" class="hint"></p>
-      <button type="button" id="vvsq-open" class="secondary">Sincronizare cu VVS-dialog</button>
     </div>
     <div id="fb-card" class="card">
       <h2>Feedback și propuneri</h2>
       <p class="hint">Spune-ne ce nu merge sau ce ar trebui îmbunătățit. Mesajul se trimite prin Teams sau se copiază; aplicația nu trimite nimic singură.</p>
       <button type="button" id="fb-open" class="secondary">Trimite feedback</button>
     </div>
-    <div id="candidates" class="card" hidden>
-      <h2>Site-uri apropiate</h2>
-      <ul id="candidate-list" class="rows"></ul>
+    <div class="card">
+      <h2>Limbă</h2>
+      <p class="hint">Daneza este limba aplicației. Româna rămâne pentru colegii vorbitori de română.</p>
+      <button type="button" id="lang-btn" class="secondary">RO</button>
+      <p class="hint" id="about"></p>
     </div>
   </section>
 
@@ -1123,6 +1188,11 @@ ul.vvsq .st.err { color: var(--red); }
       <p id="vvs-msg" class="hint">Deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță: raportul, textul și statusul ajung singure pe caz.</p>
       <p class="hint">Se deschide fără bară de adrese? Apasă ⋮ și alege „Deschide în Chrome”.</p>
       <p class="hint"><button type="button" id="vvs-setup-open2" class="link">Prima dată: creează bookmark-ul li</button></p>
+      <div id="leave-card">
+        <h3>Înainte să pleci</h3>
+        <p class="hint">Verifică dacă e totul salvat. Atinge un rând ca să vezi fișierul.</p>
+        <ul id="leave-list" class="checklist"></ul>
+      </div>
     </div>
     <button id="main-btn" class="primary big"></button>
     <button id="alt-btn" class="secondary" hidden></button>
@@ -1179,7 +1249,7 @@ ul.vvsq .st.err { color: var(--red); }
   <!-- Map -->
   <section id="view-sync" class="view" hidden>
     <div class="card">
-      <h2>Sincronizare cu VVS-dialog</h2>
+      <h2>Rapoarte și VVS-dialog</h2>
       <p class="hint">Fiecare raport salvat așteaptă aici până când li îl pune pe caz: fișierele, textul din Ny aktivitet și statusul. Un singur li le trimite pe toate cele care așteaptă.</p>
       <p id="sync-sum" class="sync-sum"></p>
       <button type="button" id="sync-import" class="secondary">Adaugă rapoarte din fișiere</button>
@@ -1189,7 +1259,7 @@ ul.vvsq .st.err { color: var(--red); }
       <button type="button" id="vvsq-send" class="primary" hidden>Trimite cele care așteaptă</button>
       <button type="button" id="sync-clean" class="secondary" hidden>Șterge fișierele care sunt deja pe caz</button>
       <p id="sync-clean-msg" class="hint" hidden></p>
-      <button type="button" id="sync-back" class="secondary">Înapoi</button>
+      <button type="button" id="sync-back" class="secondary" hidden>Înapoi</button>
     </div>
     <div id="sync-list"></div>
   </section>
@@ -1209,6 +1279,7 @@ ul.vvsq .st.err { color: var(--red); }
     </div>
     <div id="map"></div>
     <p id="map-info" class="hint card">Harta explică doar geometria. Măsurătoarea radio rămâne decisivă.</p>
+    <button type="button" id="map-pos" class="primary" hidden>Poziția contorului: adresă sau hartă</button>
   </section>
 </main>
 
@@ -1242,6 +1313,17 @@ ul.vvsq .st.err { color: var(--red); }
     <button type="button" class="link lcd-gal" data-gallery="lcd-photo">Alege o poză din galerie</button>
     <input type="file" id="lcd-photo" accept="image/*" capture="environment" hidden>
   </div>
+</div>
+
+<div id="viewer" hidden>
+  <div class="vw-top"><strong id="vw-title"></strong><span id="vw-count"></span></div>
+  <div class="vw-stage"><img id="vw-img" alt=""><p id="vw-empty" class="hint" hidden></p></div>
+  <div class="vw-bottom">
+    <button type="button" id="vw-prev" class="secondary" aria-label="Forrige">‹</button>
+    <button type="button" id="vw-close" class="primary">Închide</button>
+    <button type="button" id="vw-next" class="secondary" aria-label="Næste">›</button>
+  </div>
+  <button type="button" id="vw-ext" class="link vw-ext" hidden>Deschide în altă aplicație</button>
 </div>
 
 <div id="readings-ask" hidden>
@@ -1334,11 +1416,12 @@ ul.vvsq .st.err { color: var(--red); }
   </div>
 </div>
 
-<nav id="tabs" hidden>
-  <button data-view="align" class="on">Aliniere</button>
-  <button data-view="recv">Receptoare</button>
-  <button data-view="map">Hartă</button>
-  <button data-view="sync">VVS</button>
+<nav id="tabs">
+  <button type="button" data-view="home" class="on">Măsurare</button>
+  <button type="button" data-view="recv">Receptoare</button>
+  <button type="button" data-view="map">Hartă</button>
+  <button type="button" data-view="sync">Rapoarte <span id="tab-badge" class="badge" hidden></span></button>
+  <button type="button" data-view="more">Mai mult</button>
 </nav>
 
 <script>
@@ -1922,6 +2005,45 @@ window.LINKIQ_DA = {
  "Registrul nu are coloana de proprietar (Ownership / Ejer): toate concentratoarele din el sunt socotite ale Kredsløb.": "Registret har ingen ejerkolonne (Ownership / Ejer): alle koncentratorer i det regnes som Kredsløbs.",
  "Registrul nu este încărcat. Fără el nu se poate face nicio măsurătoare: LinkIQ nu poate ști care concentratoare sunt ale Kredsløb. Doar modul demonstrativ merge fără registru.": "Registret er ikke indlæst. Uden det kan der ikke måles: LinkIQ kan ikke vide, hvilke koncentratorer der tilhører Kredsløb. Kun demotilstanden virker uden register.",
  "Registrul concentratoarelor Kredsløb nu este încărcat sau nu are niciun concentrator activ al Kredsløb. Fără el nu se poate decide care concentratoare sunt ale noastre, deci măsurătoarea nu poate fi aprobată. Încarcă registrul (cod QR) pe ecranul de start.": "Kredsløbs koncentratorregister er ikke indlæst eller har ingen aktive Kredsløb-koncentratorer. Uden det kan LinkIQ ikke afgøre, hvilke koncentratorer der tilhører Kredsløb, så målingen kan ikke godkendes. Indlæs registret (QR-kode) på startskærmen.",
+ "Nicio măsurătoare în curs. Harta arată site-urile din registru.": "Ingen måling i gang. Kortet viser registrets sites.",
+ "Nicio măsurătoare în curs.": "Ingen måling i gang.",
+ "Alege poziția contorului (adresă sau hartă) ca să apară liniile și distanțele.": "Angiv målerens position (adresse eller kort), så linjer og afstande vises.",
+ "Nicio măsurătoare în curs. Începe una la „Măsurare”.": "Ingen måling i gang. Start en under „Måling“.",
+ "Nu am putut lua poziția ({0}). Folosește „Adresă sau hartă” sau continuă fără.": "Positionen kunne ikke hentes ({0}). Brug „Adresse eller kort“, eller fortsæt uden.",
+ "Poziția GPS nu este disponibilă pe acest dispozitiv (de exemplu oprită prin politica firmei). Apasă „Adresă sau hartă” și scrie adresa contorului.": "GPS-position er ikke tilgængelig på denne enhed (fx slået fra af firmaets politik). Tryk „Adresse eller kort“, og skriv målerens adresse.",
+ "Fișierul nu se poate arăta aici.": "Filen kan ikke vises her.",
+ "Raportul salvat": "Rapporten gemt",
+ "Apasă „Descarcă raportul (PDF)”.": "Tryk „Hent rapporten (PDF)“.",
+ "{0} poze": "{0} billeder",
+ "Nicio poză încă.": "Ingen billeder endnu.",
+ "Poza antenei": "Antennefoto",
+ "făcută": "taget",
+ "opțională": "valgfrit",
+ "opționale": "valgfrie",
+ "Pe caz în VVS-dialog": "På sagen i VVS-dialog",
+ "așteaptă: apasă „Trimite la VVS-dialog”": "venter: tryk „Send til VVS-dialog“",
+ "încă nu": "endnu ikke",
+ "fișierele șterse de pe telefon": "filerne slettet fra telefonen",
+ "Aplicația are nevoie de cameră (codul QR, citirile contorului), de poziție (harta cu concentratoarele) și, dacă ai ales un dosar, de voie să scrie rapoartele acolo. Browserul întreabă o singură dată; dosarul, la fiecare pornire.": "Appen skal bruge kameraet (QR-koden, måleraflæsninger), positionen (kortet med koncentratorerne) og, hvis du har valgt en mappe, lov til at gemme rapporterne der. Browseren spørger én gang; mappen ved hver start.",
+ "Poziția (GPS)": "Position (GPS)",
+ "Permite poziția": "Tillad position",
+ "Registrul lipsește": "Registret mangler",
+ "Fără registrul concentratoarelor Kredsløb nu se poate măsura. Scanează codul QR primit de la un coleg.": "Uden Kredsløbs koncentratorregister kan der ikke måles. Scan QR-koden fra en kollega.",
+ "Scanează registrul (cod QR)": "Scan registret (QR-kode)",
+ "Adresă sau hartă": "Adresse eller kort",
+ "Rapoarte": "Rapporter",
+ "Deschide rapoartele": "Åbn rapporterne",
+ "Registru și date": "Register og data",
+ "Avansat": "Avanceret",
+ "Limbă": "Sprog",
+ "Daneza este limba aplicației. Româna rămâne pentru colegii vorbitori de română.": "Dansk er appens sprog. Rumænsk er til de rumænsktalende kolleger.",
+ "Înainte să pleci": "Før du går",
+ "Verifică dacă e totul salvat. Atinge un rând ca să vezi fișierul.": "Tjek, at alt er gemt. Tryk på en linje for at se filen.",
+ "Rapoarte și VVS-dialog": "Rapporter og VVS-dialog",
+ "Poziția contorului: adresă sau hartă": "Målerens position: adresse eller kort",
+ "Deschide în altă aplicație": "Åbn i en anden app",
+ "Mai mult": "Mere",
+ "1 poză": "1 billede",
 };
 
 </script>
@@ -15613,7 +15735,7 @@ var qrcode = function() {
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.25';
+  const VERSION = '0.26';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -15693,7 +15815,7 @@ var qrcode = function() {
       if (!el.dataset.ph) el.dataset.ph = el.placeholder;
       el.placeholder = T(el.dataset.ph);
     });
-    $('lang-btn').textContent = lang === 'da' ? 'RO' : 'DA';   // the language you can switch to
+    $('lang-btn').textContent = lang === 'da' ? 'Română' : 'Dansk';   // the language you can switch to
   }
 
   let cfg = { pollIntervalS: 5, warnAfterS: 60, coarseSteps: 6, fineSteps: 5, authMode: 'none' };
@@ -15894,6 +16016,7 @@ var qrcode = function() {
   }
 
   function render() {
+    setTimeout(renderLeave, 0);
     if (!S) return;
     const s = S, a = nextAction(s), cur = s.current;
     const act = (path, body) => async () => { apply(await api(`/api/sessions/${s.session.id}/${path}`, 'POST', body)); };
@@ -16303,9 +16426,25 @@ var qrcode = function() {
   const linkText = (l) => `${Math.round(l.best)} dBm` + (l.distanceM !== null ? ` · ${meters(l.distanceM)}` : '') + (l.age === 'OLD' ? ` · ${T('peste 8 ore')}` : '');
   let lastFit = '';
 
-  function drawMap() {
+  async function drawMap() {
     if (!ensureMap()) { $('map-info').textContent = T('Harta nu este disponibilă.'); return; }
     mapLayer.clearLayers();
+    $('map-pos').hidden = !S || picking || S.session.gps.lat !== null;
+    if (!S) {                                   // no measurement: the sites in the registry
+      let sites = [];
+      try { sites = (await api('/api/sites')).filter((x) => x.latitude !== null); } catch { /* */ }
+      if (S || picking) return;               // the view changed meanwhile
+      for (const x of sites) L.circleMarker([x.latitude, x.longitude], { radius: 7, color: '#fff', weight: 3, fillColor: '#55626b', fillOpacity: 1 }).bindTooltip(tipNode(x.name || x.siteCode)).addTo(mapLayer);
+      $('map-info').textContent = sites.length ? T('Nicio măsurătoare în curs. Harta arată site-urile din registru.') : T('Nicio măsurătoare în curs.');
+      setTimeout(() => {
+        map.invalidateSize();
+        if (lastFit === 'sites') return;
+        lastFit = 'sites';
+        if (sites.length > 1) map.fitBounds(sites.map((x) => [x.latitude, x.longitude]), { padding: [40, 40] });
+        else map.setView(sites.length ? [sites[0].latitude, sites[0].longitude] : [56, 10.5], sites.length ? 14 : 7);
+      }, 0);
+      return;
+    }
     const g = S && S.session.gps.lat !== null ? S.session.gps : null;
     const links = S ? siteLinks(S) : [];
     const pts = [];
@@ -16328,7 +16467,7 @@ var qrcode = function() {
     if (links.length) {
       info = T('{0} site-uri au auzit contorul. Linia groasă este receptorul principal; verde = semnal bun, galben = la limită, roșu = slab.', links.length)
         + (S.session.status === 'CHECK' ? ' ' + T('Linie gri = fără contact de peste 8 ore.') : '')
-        + (g ? '' : ' ' + T('Alege poziția contorului la început ca să apară liniile și distanțele.'));
+        + (g ? '' : ' ' + T('Alege poziția contorului (adresă sau hartă) ca să apară liniile și distanțele.'));
     } else if (S && S.warnings.includes('REGISTRY_EMPTY')) info = T('Încarcă registrul (site-uri și concentratoare) pe ecranul de start ca să apară concentratoarele pe hartă.');
     else if (!pts.length) info = T('Fără poziție GPS și fără receptoare cu coordonate. ') + info;
     $('map-info').textContent = info;
@@ -16375,17 +16514,34 @@ var qrcode = function() {
     }
   }
 
-  let lastView = 'start';
-  function showView(name) {
-    for (const v of ['pair', 'start', 'align', 'recv', 'map', 'sync']) $('view-' + v).hidden = v !== name;
-    if (name !== 'sync') lastView = name;
+  // Views. The tab bar is always there (except while pairing or picking a position), and every
+  // change of view is a step in the browser history, so the phone's back button goes back.
+  let lastView = 'start', currentView = null;
+  const VIEWS = ['pair', 'start', 'align', 'recv', 'map', 'sync', 'more'];
+  function showView(name, opts = {}) {
+    if (name === 'home') name = S ? 'align' : 'start';
+    if (name === 'align' && !S) name = 'start';
+    for (const v of VIEWS) $('view-' + v).hidden = v !== name;
+    if (name !== 'sync' && name !== 'more') lastView = name;
     if (name === 'sync') vqLoad().then(renderVq);
-    $('tabs').hidden = name === 'start' || name === 'pair' || picking;
+    if (name === 'recv' && !S) { $('recv-list').replaceChildren(); $('recv-empty').textContent = T('Nicio măsurătoare în curs. Începe una la „Măsurare”.'); $('recv-empty').hidden = false; $('recv-warn').hidden = true; $('backup-card').hidden = true; }
+    $('tabs').hidden = name === 'pair' || picking;
     $('pick-bar').hidden = !(picking && name === 'map');
     $('map-info').hidden = picking;
-    document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.view === name));
+    const tab = name === 'start' || name === 'align' ? 'home' : name;
+    document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.view === tab));
     if (name === 'map') { if (picking) drawPickMap(); else drawMap(); }
+    if (opts.push !== false && currentView && currentView !== name) { try { history.pushState({ v: name }, ''); } catch { /* */ } }
+    else if (!currentView) { try { history.replaceState({ v: name }, ''); } catch { /* */ } }
+    currentView = name;
+    $('main-scroll').scrollTop = 0;
   }
+  window.addEventListener('popstate', (e) => {
+    if (!$('viewer').hidden) { viewer.close(false); return; }
+    const v = (e.state && e.state.v) || (S ? 'align' : 'start');
+    if (picking) { picking = false; if (pickMarker) { pickMarker.remove(); pickMarker = null; } }
+    showView(v, { push: false });
+  });
 
   function enterSession(summary) {
     apply(summary);
@@ -16409,6 +16565,10 @@ var qrcode = function() {
     $('scan-info').hidden = true; $('scan-chips').hidden = true;
     $('report-msg').hidden = true; $('report-preview').hidden = true; lastPhoto = null; instPhotos.forget();
     $('vvs-msg').textContent = T('Copiază seria contorului și deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță.');
+    gps = null;                                // the next meter is somewhere else
+    $('gps-info').textContent = T('Măsurarea funcționează și fără GPS. Poziția doar propune site-ul probabil și apare pe hartă.');
+    if (locPerm === 'granted') locate(true); else if (locPerm === 'denied') $('gps-info').textContent = T(OFF_TXT);
+    $('candidates').hidden = true;
     refreshData();
     showView('start');
   }
@@ -16431,20 +16591,37 @@ var qrcode = function() {
     } catch { /* candidates are optional */ }
   }
 
-  $('gps-btn').onclick = () => {
+  // Position: GPS when the device allows it; otherwise (e.g. a PC where company policy turns
+  // location off) the address or a tap on the map, which give the same map and distances.
+  let locPerm = 'unknown';
+  const OFF_TXT = 'Poziția GPS nu este disponibilă pe acest dispozitiv (de exemplu oprită prin politica firmei). Apasă „Adresă sau hartă” și scrie adresa contorului.';
+  function locate(silent) {
     if (!navigator.geolocation || !window.isSecureContext) {
-      $('gps-info').textContent = T('GPS-ul telefonului cere o adresă sigură (HTTPS sau localhost). Folosește „Alege pe hartă”.');
-      return;
+      if (!silent) $('gps-info').textContent = T(OFF_TXT);
+      return Promise.resolve(false);
     }
-    $('gps-info').textContent = T('Caut poziția…');
-    navigator.geolocation.getCurrentPosition((p) => {
+    if (!silent) $('gps-info').textContent = T('Caut poziția…');
+    return new Promise((ok) => navigator.geolocation.getCurrentPosition((p) => {
+      if (silent && gps && gps.accuracyM === null) { ok(false); return; }   // an automatic fix never replaces a position chosen by hand
       gps = { lat: p.coords.latitude, lon: p.coords.longitude, accuracyM: Math.round(p.coords.accuracy) };
       $('gps-info').textContent = T('Poziție GPS luată, precizie ±{0} m.', gps.accuracyM);
-      showCandidates();
+      showCandidates(); updateLocPerm(); ok(true);
     }, (err) => {
-      $('gps-info').textContent = T('Nu am putut lua poziția ({0}). Folosește „Alege pe hartă” sau continuă fără.', err.message);
-    }, { enableHighAccuracy: true, timeout: 15000 });
-  };
+      if (err.code === 1) locPerm = 'denied';
+      if (!silent || err.code !== 3) $('gps-info').textContent = err.code === 3 ? T('Nu am putut lua poziția ({0}). Folosește „Adresă sau hartă” sau continuă fără.', err.message) : T(OFF_TXT);
+      updateLocPerm(); ok(false);
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 120000 }));
+  }
+  async function updateLocPerm() {
+    try {
+      const st = await navigator.permissions.query({ name: 'geolocation' });
+      if (locPerm !== 'denied' || st.state !== 'prompt') locPerm = st.state;
+      st.onchange = () => { locPerm = st.state; showPerm(); if (st.state === 'granted' && !gps) locate(true); };
+    } catch { if (!navigator.geolocation) locPerm = 'denied'; }
+    showPerm();
+  }
+  $('gps-btn').onclick = () => locate(false);
+  $('perm-loc').querySelector('button').onclick = () => locate(false);
 
   // ---- position without GPS: tap the map, or paste coordinates
   let picking = false, picked = null, pickMarker = null;
@@ -16491,6 +16668,7 @@ var qrcode = function() {
   }
   $('pick-btn').onclick = () => { picking = true; picked = null; $('pick-ok').disabled = true; $('pick-info').textContent = T('Nicio poziție aleasă.'); showView('map'); };
   $('pick-cancel').onclick = endPick;
+  $('map-pos').onclick = () => $('pos-btn').click();
   $('pos-btn').onclick = () => { picking = true; picked = null; $('pick-ok').disabled = true; $('pick-info').textContent = T('Nicio poziție aleasă.'); showView('map'); };
   $('pick-ok').onclick = async () => {
     store.set('lastPos', picked);
@@ -16583,8 +16761,10 @@ var qrcode = function() {
   };
   // no registry: point at the card where it is loaded
   function needRegistry(e) {
-    if (e.code !== 'REGISTRY_EMPTY' || $('data-card').hidden) return;
-    const c = $('data-card');
+    if (e.code !== 'REGISTRY_EMPTY') return;
+    const c = $('reg-need');
+    c.hidden = false;
+    c.scrollIntoView({ behavior: 'smooth', block: 'center' });
     c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
   }
 
@@ -16872,6 +17052,7 @@ var qrcode = function() {
     translatePage(); refreshData(); refreshReportDir(); if (S) drawInstall(); render();
   };
   document.querySelectorAll('#tabs button').forEach((b) => { b.onclick = () => showView(b.dataset.view); });
+  $('reg-need-scan').onclick = () => $('regqr-scan').click();
   window.addEventListener('hashchange', () => { if (location.hash.startsWith('#pair=')) location.reload(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && S) poll(); });
   window.addEventListener('deviceorientationabsolute', (e) => {
@@ -16981,6 +17162,7 @@ var qrcode = function() {
     $('reg-clear').hidden = !r.concentrators;
     $('regqr-make').hidden = !r.concentrators;
     $('mode').hidden = !engine.demo;
+    $('reg-need').hidden = engine.demo || r.eligible > 0;
     cfg.kamstrupMode = engine.demo ? 'sim' : 'live';
   }
 
@@ -17441,11 +17623,13 @@ var qrcode = function() {
     showPerm();
   }
   function showPerm() {
-    const cam = $('perm-cam'), dir = $('dir-allow');
+    const cam = $('perm-cam'), dir = $('dir-allow'), loc = $('perm-loc');
+    loc.hidden = locPerm !== 'prompt';
+    if (locPerm === 'denied' && !gps) $('gps-info').textContent = T(OFF_TXT);
     cam.hidden = camPerm === 'granted' || !navigator.mediaDevices;
     cam.querySelector('button').hidden = camPerm === 'denied';
     cam.querySelector('.pl').textContent = camPerm === 'denied' ? T('Camera este blocată: permite-o din setările browserului (lacătul de lângă adresă).') : T('Camera');
-    $('perm-card').hidden = cam.hidden && dir.hidden;
+    $('perm-card').hidden = cam.hidden && dir.hidden && loc.hidden;
   }
   $('perm-cam').querySelector('button').onclick = async () => {
     try {
@@ -17514,7 +17698,7 @@ var qrcode = function() {
       const n = document.createElement('span'); n.textContent = f.name;
       const d = document.createElement('span'); d.className = 'sub'; d.textContent = fmtTime(new Date(f.at).toISOString());
       li.append(n, document.createElement('span'), d);
-      li.onclick = async () => { try { window.open(URL.createObjectURL(await f.h.getFile()), '_blank'); } catch { /* removed meanwhile */ } };
+      li.onclick = async () => { try { viewer.open([{ name: f.name, blob: await f.h.getFile() }]); } catch { /* removed meanwhile */ } };
       list.appendChild(li);
     }
   }
@@ -17617,6 +17801,7 @@ var qrcode = function() {
     try {
       lastPhoto = await stampPhoto(file, S);
       await saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + '_antenne.jpg', 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
+      renderLeave();
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   };
 
@@ -17630,6 +17815,120 @@ var qrcode = function() {
       inp.click();
     };
   });
+
+  // ---------------------------------------------------------------- viewer for saved files
+  // Reports and photos open inside the app, so the installer never has to leave it to check what
+  // was saved. LinkIQ's own PDFs hold one JPEG per page: those pages are shown as pictures.
+  function pdfPages(buf) {
+    const b = new Uint8Array(buf), t = new TextDecoder('latin1').decode(b), out = [];
+    const re = /\/Filter \/DCTDecode \/Length (\d+) >>\nstream\n/g;
+    for (let m = re.exec(t); m; m = re.exec(t)) {
+      const at = m.index + m[0].length, n = Number(m[1]);
+      if (at + n <= b.length) out.push(new Blob([b.slice(at, at + n)], { type: 'image/jpeg' }));
+    }
+    return out;
+  }
+  const viewer = (() => {
+    let items = [], at = 0, url = null, pushed = false;
+    async function expand(list) {
+      const out = [];
+      for (const f of list) {
+        const pdf = /\.pdf$/i.test(f.name) || f.blob.type === 'application/pdf';
+        if (pdf) {
+          let pages = [];
+          try { pages = pdfPages(await f.blob.arrayBuffer()); } catch { pages = []; }
+          if (pages.length) pages.forEach((p, k) => out.push({ title: pages.length > 1 ? `${f.name} · ${k + 1}/${pages.length}` : f.name, blob: p, src: f }));
+          else out.push({ title: f.name, blob: null, src: f });
+        } else out.push({ title: f.name, blob: /^image\//.test(f.blob.type) || /\.(png|jpe?g|webp)$/i.test(f.name) ? f.blob : null, src: f });
+      }
+      return out;
+    }
+    function show() {
+      const it = items[at];
+      if (url) { URL.revokeObjectURL(url); url = null; }
+      $('vw-title').textContent = it.title;
+      $('vw-count').textContent = items.length > 1 ? `${at + 1} / ${items.length}` : '';
+      if (it.blob) { url = URL.createObjectURL(it.blob); $('vw-img').src = url; $('vw-img').hidden = false; $('vw-empty').hidden = true; }
+      else { $('vw-img').hidden = true; $('vw-img').removeAttribute('src'); $('vw-empty').textContent = T('Fișierul nu se poate arăta aici.'); $('vw-empty').hidden = false; }
+      $('vw-ext').hidden = !!it.blob;
+      $('vw-prev').disabled = at === 0; $('vw-next').disabled = at >= items.length - 1;
+    }
+    async function open(list, start = 0) {
+      if (!list.length) return;
+      const ex = await expand(list);
+      const first = ex.findIndex((x) => x.src === list[start]);
+      items = ex; at = Math.max(0, first);
+      $('viewer').hidden = false;
+      try { history.pushState({ v: currentView, ov: 'viewer' }, ''); pushed = true; } catch { pushed = false; }
+      show();
+    }
+    function close(button) {
+      if ($('viewer').hidden) return;
+      $('viewer').hidden = true;
+      if (url) { URL.revokeObjectURL(url); url = null; }
+      $('vw-img').removeAttribute('src');
+      items = [];
+      if (button && pushed) { pushed = false; history.back(); } else pushed = false;
+    }
+    $('vw-close').onclick = () => close(true);
+    $('vw-prev').onclick = () => { if (at > 0) { at--; show(); } };
+    $('vw-next').onclick = () => { if (at < items.length - 1) { at++; show(); } };
+    $('vw-ext').onclick = () => { const it = items[at]; if (it && it.src) window.open(URL.createObjectURL(it.src.blob), '_blank'); };
+    let x0 = null;                              // swipe left / right between pages and photos
+    $('viewer').addEventListener('touchstart', (e) => { x0 = e.touches.length === 1 ? e.touches[0].clientX : null; }, { passive: true });
+    $('viewer').addEventListener('touchend', (e) => {
+      if (x0 === null) return;
+      const dx = e.changedTouches[0].clientX - x0; x0 = null;
+      if (dx < -60) $('vw-next').click(); else if (dx > 60) $('vw-prev').click();
+    }, { passive: true });
+    return { open, close };
+  })();
+
+  // ---------------------------------------------------------------- before you leave
+  // What the installer must have before leaving the site, each line opening what was saved.
+  async function renderLeave() {
+    const ul = $('leave-list');
+    if (!ul || !S || $('report-box').hidden) return;
+    const internal = ui.install && ui.install.antennaType === 'internal', check = S.session.status === 'CHECK';
+    let entry = null;
+    try { entry = (await vqLoad()).find((e) => e.id === vqId()) || null; } catch { /* */ }
+    const pdf = entry && entry.files.find((f) => /\.pdf$/i.test(f)), png = entry && entry.files.find((f) => /\.png$/i.test(f));
+    const files = async () => {
+      const out = [];
+      for (const f of entry ? entry.files : []) { try { const b = await kv.get('vvsf:' + entry.id + ':' + f); if (b) out.push({ name: f, blob: b }); } catch { /* */ } }
+      return out;
+    };
+    const rows = [];
+    rows.push({ ok: !!(pdf || png), label: T('Raportul salvat'), sub: pdf || png || T('Apasă „Descarcă raportul (PDF)”.'), open: pdf || png ? async () => viewer.open(await files()) : null });
+    if (!check) {
+      const n = instPhotos.count();
+      rows.push({ ok: n > 0, label: T('Poze cu instalația'), sub: n === 1 ? T('1 poză') : n ? T('{0} poze', n) : T('Nicio poză încă.'), open: n ? async () => viewer.open(await instPhotos.files()) : null });
+      if (!internal) rows.push({ ok: !!lastPhoto, opt: true, label: T('Poza antenei'), sub: lastPhoto ? T('făcută') : T('opțională'), open: lastPhoto ? async () => viewer.open([{ name: T('Poza antenei'), blob: await canvasBlob(lastPhoto, 'image/jpeg') }]) : null });
+    }
+    const rd = (ui.readings || []).filter((r) => r.value);
+    rows.push({ ok: rd.length > 0, opt: true, label: T('Citirile contorului'), sub: rd.length ? rd.map((r) => `${r.k === '*' ? (r.label || '?') : r.k} ${r.value}`).join(' · ') : T('opționale'),
+      open: rd.some((r) => r.img) ? () => viewer.open(rd.filter((r) => r.img).map((r) => ({ name: `${r.k === '*' ? (r.label || '?') : r.k} ${r.value}`, blob: dataUrlBlob(r.img) }))) : null });
+    const sent = entry && entry.state === 'sent';
+    rows.push({ ok: sent, label: T('Pe caz în VVS-dialog'), sub: sent ? T('✓ pe caz {0}', entry.cc || '') : entry ? T('așteaptă: apasă „Trimite la VVS-dialog”') : T('încă nu'),
+      open: () => showView('sync') });
+    ul.replaceChildren();
+    for (const r of rows) {
+      const li = document.createElement('li');
+      li.className = r.ok ? 'ok' : r.opt ? 'opt' : 'no';
+      const mk = document.createElement('span'); mk.className = 'mk'; mk.textContent = r.ok ? '✓' : r.opt ? '○' : '!';
+      const tx = document.createElement('span'); tx.textContent = r.label;
+      const sm = document.createElement('small'); sm.textContent = r.sub; tx.append(sm);
+      const go = document.createElement('span'); go.className = 'go'; go.textContent = r.open ? '›' : '';
+      li.append(mk, tx, go);
+      if (r.open) { li.setAttribute('role', 'button'); li.tabIndex = 0; li.onclick = r.open; }
+      ul.append(li);
+    }
+  }
+  function dataUrlBlob(d) {
+    const [head, body] = String(d).split(','), bin = atob(body || ''), b = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
+    return new Blob([b], { type: (head.match(/data:([^;]+)/) || [])[1] || 'image/jpeg' });
+  }
 
   // ---------------------------------------------------------------- installation photos
   // Every installation, whatever the antenna: photos taken at mounting and at commissioning,
@@ -17681,7 +17980,7 @@ var qrcode = function() {
         img.src = p.url || (p.url = URL.createObjectURL(p.blob)); img.alt = T(STAGES[p.stage]);
         const cap = document.createElement('small'); cap.textContent = T(STAGES[p.stage]) + ' · ' + fmtTime(p.at).split(' ').pop();
         const del = document.createElement('button'); del.type = 'button'; del.textContent = '×'; del.setAttribute('aria-label', T('Șterge poza'));
-        del.onclick = () => { if (!confirm(T('Ștergi poza?'))) return; URL.revokeObjectURL(p.url); list.splice(i, 1); keep(); draw(); };
+        del.onclick = () => { if (!confirm(T('Ștergi poza?'))) return; URL.revokeObjectURL(p.url); list.splice(i, 1); keep(); draw(); renderLeave(); };
         li.append(img, cap, del); ul.append(li);
       });
       const nm = list.filter((p) => p.stage === 'mount').length, ns = list.length - nm;
@@ -17698,7 +17997,7 @@ var qrcode = function() {
         const blob = await stamp(file, S, stage);
         const n = list.filter((p) => p.stage === stage).length + 1;
         list.push({ stage, at: new Date(file.lastModified || Date.now()).toISOString(), blob });
-        await keep(); draw();
+        await keep(); draw(); renderLeave();
         let saved = null;                    // a copy in the report folder, when there is one; never a pile of downloads
         if (await dirReady(false)) { try { saved = await writeToDir(blob, `${safeName(S.session.meterSerial)}_${FILE[stage]}_${n}.jpg`); refreshReportDir(); } catch { saved = null; } }
         msg.textContent = (saved ? T('Poza e salvată în dosarul „{0}” ca {1}.', reportDir.name, saved) + ' ' : '') + T('Poza intră în raportul PDF.');
@@ -17721,6 +18020,11 @@ var qrcode = function() {
         draw();
       },
       count: () => list.length,
+      async files() {
+        await sync();
+        const name = { mount: T('La montaj'), start: T('La punerea în funcțiune') };
+        return list.map((p, i) => ({ name: `${name[p.stage]} ${i + 1}`, blob: p.blob }));
+      },
       async pages() {
         await sync();
         const out = [];
@@ -17804,6 +18108,7 @@ var qrcode = function() {
   const cleanValue = (v) => String(v || '').replace(/,/g, '.').replace(/[^0-9.\-]/g, '').slice(0, 16);
 
   function renderReadings() {
+    setTimeout(renderLeave, 0);
     const list = $('readings-list');
     list.replaceChildren();
     readings().forEach((r, i) => {
@@ -18264,6 +18569,8 @@ var qrcode = function() {
     const errors = q.filter((e) => e.state === 'error').length;
     const sum = T('Azi: {0} pe caz · {1} așteaptă', sentToday, waiting.length) + (errors ? ' · ' + T('{0} cu eroare', errors) : '');
     $('vvsq-sum').textContent = q.length ? sum : T('Niciun raport în listă.');
+    $('pending-card').hidden = !waiting.length;
+    $('tab-badge').hidden = !waiting.length; $('tab-badge').textContent = waiting.length;
     $('sync-sum').textContent = sum;
     syncImportLabels();
     $('vvsq-send').hidden = !waiting.length;
@@ -18292,8 +18599,21 @@ var qrcode = function() {
       st.textContent = e.state === 'sent' ? T('✓ pe caz {0}', e.cc || '') : e.state === 'error' ? T('eroare') : T('așteaptă');
       top.append(a, st); card.append(top);
       const meta = document.createElement('div'); meta.className = 'meta';
-      meta.textContent = [fmtTime(e.imported && e.state !== 'sent' ? e.created : e.updated || e.created), e.imported ? T('din dosar') : '', e.status || '', e.files.length ? e.files.join(', ') + (e.cleaned ? ' (' + T('șterse de pe telefon') + ')' : '') : T('fără fișiere')].filter(Boolean).join(' · ');
+      meta.textContent = [fmtTime(e.imported && e.state !== 'sent' ? e.created : e.updated || e.created), e.imported ? T('din dosar') : '', e.status || '', e.files.length ? (e.cleaned ? T('fișierele șterse de pe telefon') : '') : T('fără fișiere')].filter(Boolean).join(' · ');
       card.append(meta);
+      if (e.files.length && !e.cleaned) {
+        const fl = document.createElement('div');
+        for (const f of e.files) {
+          const b = document.createElement('button'); b.type = 'button'; b.className = 'file-link'; b.textContent = f;
+          b.onclick = async () => {
+            const blobs = [];
+            for (const g of e.files) { try { const x = await kv.get('vvsf:' + e.id + ':' + g); if (x) blobs.push({ name: g, blob: x }); } catch { /* */ } }
+            viewer.open(blobs, Math.max(0, blobs.findIndex((x) => x.name === f)));
+          };
+          fl.append(b);
+        }
+        card.append(fl);
+      }
       if (e.imported && e.state !== 'sent') card.append(importForm(e));
       else if (e.text) { const pre = document.createElement('pre'); pre.textContent = e.text; card.append(pre); }
       if (e.state === 'error' && e.msg) { const m = document.createElement('div'); m.className = 'error'; m.textContent = e.msg; card.append(m); }
@@ -18313,6 +18633,7 @@ var qrcode = function() {
       acts.append(send, del); card.append(acts);
       list.append(card);
     }
+    renderLeave();
   }
   // A report added from the folder has no session behind it: the installer picks the fixed words
   // and the status here. Nothing chosen: li only puts the file on the case.
@@ -18623,6 +18944,7 @@ var qrcode = function() {
     try { reportDir = (await kv.get('reportDir')) || null; } catch { /* no storage: ask again when needed */ }
     refreshReportDir();
     updateCamPerm();
+    updateLocPerm().then(() => { if (locPerm === 'granted' && !gps) locate(true); });
     vqPrune();
     const back = vvsResultsFromAddress();       // results from li: the sync page is shown once boot is done
     sweepPhotos();

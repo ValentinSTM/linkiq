@@ -1,6 +1,6 @@
 # Android: fuld funktion uden hosting
 
-**Dansk** · [English](en/ANDROID.md) · [Română](ro/ANDROID.md)
+**Dansk** · [English](en/ANDROID.md)
 
 Browseren giver kun sider fra en sikker adresse adgang til GPS og live-kamera. `https://…` er én;
 `http://localhost` er en anden. En fil åbnet direkte fra telefonens hukommelse er ikke.

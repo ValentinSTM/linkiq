@@ -1,6 +1,6 @@
 # Arkitektur og løsningen uden licenser
 
-**Dansk** · [English](en/ARCHITECTURE.md) · [Română](ro/ARHITECTURA.md)
+**Dansk** · [English](en/ARCHITECTURE.md)
 
 ## Hvorfor ikke Power Apps
 

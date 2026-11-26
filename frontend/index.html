@@ -15,12 +15,11 @@
 <body>
 <header>
   <h1>LinkIQ Field Assistant <small id="ver"></small></h1>
-  <button id="lang-btn" class="lang" type="button" aria-label="Sprog / Limbă">RO</button>
   <span id="net" class="pill" hidden>fără conexiune</span>
   <span id="mode" class="pill demo" hidden>SIMULATOR</span>
 </header>
 
-<main>
+<main id="main-scroll">
   <!-- Pairing -->
   <section id="view-pair" class="view" hidden>
     <div class="card">
@@ -40,9 +39,15 @@
   <section id="view-start" class="view">
     <div id="perm-card" class="card allow" hidden>
       <h2>Înainte de lucru</h2>
-      <p class="hint">Aplicația are nevoie de cameră (codul QR, citirile contorului) și, dacă ai ales un dosar, de voie să scrie rapoartele acolo. Browserul întreabă o singură dată; dosarul, la fiecare pornire.</p>
+      <p class="hint">Aplicația are nevoie de cameră (codul QR, citirile contorului), de poziție (harta cu concentratoarele) și, dacă ai ales un dosar, de voie să scrie rapoartele acolo. Browserul întreabă o singură dată; dosarul, la fiecare pornire.</p>
       <div id="perm-cam" class="perm-row"><span class="pl">Camera</span><button type="button" class="primary">Permite camera</button><span class="ok" hidden>✓</span></div>
+      <div id="perm-loc" class="perm-row" hidden><span class="pl">Poziția (GPS)</span><button type="button" class="primary">Permite poziția</button><span class="ok" hidden>✓</span></div>
       <div id="dir-allow" class="perm-row" hidden><span class="pl">Dosarul de rapoarte</span><button type="button" class="primary">Permite salvarea în dosar</button><span class="ok" hidden>✓</span></div>
+    </div>
+    <div id="reg-need" class="card warn-card" hidden>
+      <h2>Registrul lipsește</h2>
+      <p class="hint">Fără registrul concentratoarelor Kredsløb nu se poate măsura. Scanează codul QR primit de la un coleg.</p>
+      <button type="button" id="reg-need-scan" class="primary">Scanează registrul (cod QR)</button>
     </div>
     <form id="start-form" class="card">
       <label for="meter">Seria contorului</label>
@@ -58,27 +63,43 @@
       <label>Poziția contorului (opțional)</label>
       <div class="two">
         <button type="button" id="gps-btn" class="secondary">GPS</button>
-        <button type="button" id="pick-btn" class="secondary">Alege pe hartă</button>
+        <button type="button" id="pick-btn" class="secondary">Adresă sau hartă</button>
       </div>
       <p id="gps-info" class="hint">Măsurarea funcționează și fără GPS. Poziția doar propune site-ul probabil și apare pe hartă.</p>
       <button type="submit" class="primary">Începe</button>
       <button type="button" id="check-btn" class="secondary">Verifică contorul, fără CALL</button>
       <p id="start-error" class="error" hidden></p>
     </form>
+    <div id="pending-card" class="card" hidden>
+      <h2>Rapoarte</h2>
+      <p id="vvsq-sum" class="hint"></p>
+      <button type="button" id="vvsq-open" class="secondary">Deschide rapoartele</button>
+    </div>
+    <div id="candidates" class="card" hidden>
+      <h2>Site-uri apropiate</h2>
+      <ul id="candidate-list" class="rows"></ul>
+    </div>
+  </section>
+
+  <!-- Settings -->
+  <section id="view-more" class="view" hidden>
     <div id="data-card" class="card" hidden>
-      <h2>Date pe acest dispozitiv</h2>
+      <h2>Registru și date</h2>
       <p id="reg-info" class="hint"></p>
       <p id="store-warn" class="hint warn" hidden>Aplicația este deschisă într-un mod care nu poate păstra date între deschideri. Folosește fișierul aplicației cu registrul inclus sau deschide aplicația de la o adresă web.</p>
-      <label class="file-btn">Încarcă site-uri (CSV)<input type="file" id="sites-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
-      <label class="file-btn">Încarcă concentratoare (CSV)<input type="file" id="conc-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
       <button type="button" id="regqr-scan" class="secondary">Scanează registrul de pe codul QR</button>
       <label class="file-btn">Alege o imagine cu codul QR<input type="file" id="regqr-image" accept="image/*" hidden></label>
       <p id="reg-msg" class="hint" hidden></p>
       <p class="hint"><button type="button" id="regqr-make" class="link" hidden>Fă un cod QR al registrului pentru colegi</button></p>
-      <p class="hint"><button type="button" id="reg-clear" class="link">Scoate site-urile și concentratoarele din aplicație</button></p>
-      <p id="sess-info" class="hint"></p>
-      <p class="hint"><button type="button" id="sess-clear" class="link">Șterge măsurătorile salvate</button></p>
-      <button type="button" id="export-btn" class="secondary">Exportă măsurătorile (CSV)</button>
+      <details class="adv">
+        <summary>Avansat</summary>
+        <label class="file-btn">Încarcă site-uri (CSV)<input type="file" id="sites-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
+        <label class="file-btn">Încarcă concentratoare (CSV)<input type="file" id="conc-file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
+        <p class="hint"><button type="button" id="reg-clear" class="link">Scoate site-urile și concentratoarele din aplicație</button></p>
+        <p id="sess-info" class="hint"></p>
+        <p class="hint"><button type="button" id="sess-clear" class="link">Șterge măsurătorile salvate</button></p>
+        <button type="button" id="export-btn" class="secondary">Exportă măsurătorile (CSV)</button>
+      </details>
       <label class="check"><input type="checkbox" id="demo-toggle"> Mod demonstrație, fără contor</label>
     </div>
     <div id="dir-card" class="card" hidden>
@@ -93,17 +114,17 @@
       <h2>VVS-dialog</h2>
       <p class="hint">După raport, aplicația deschide VVS-dialog, iar bookmark-ul li găsește cazul deschis al contorului. Bookmark-ul se creează o singură dată în Chrome.</p>
       <button type="button" id="vvs-setup-open" class="secondary">Creează bookmark-ul li</button>
-      <p id="vvsq-sum" class="hint"></p>
-      <button type="button" id="vvsq-open" class="secondary">Sincronizare cu VVS-dialog</button>
     </div>
     <div id="fb-card" class="card">
       <h2>Feedback și propuneri</h2>
       <p class="hint">Spune-ne ce nu merge sau ce ar trebui îmbunătățit. Mesajul se trimite prin Teams sau se copiază; aplicația nu trimite nimic singură.</p>
       <button type="button" id="fb-open" class="secondary">Trimite feedback</button>
     </div>
-    <div id="candidates" class="card" hidden>
-      <h2>Site-uri apropiate</h2>
-      <ul id="candidate-list" class="rows"></ul>
+    <div class="card">
+      <h2>Limbă</h2>
+      <p class="hint">Daneza este limba aplicației. Româna rămâne pentru colegii vorbitori de română.</p>
+      <button type="button" id="lang-btn" class="secondary">RO</button>
+      <p class="hint" id="about"></p>
     </div>
   </section>
 
@@ -182,6 +203,11 @@
       <p id="vvs-msg" class="hint">Deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță: raportul, textul și statusul ajung singure pe caz.</p>
       <p class="hint">Se deschide fără bară de adrese? Apasă ⋮ și alege „Deschide în Chrome”.</p>
       <p class="hint"><button type="button" id="vvs-setup-open2" class="link">Prima dată: creează bookmark-ul li</button></p>
+      <div id="leave-card">
+        <h3>Înainte să pleci</h3>
+        <p class="hint">Verifică dacă e totul salvat. Atinge un rând ca să vezi fișierul.</p>
+        <ul id="leave-list" class="checklist"></ul>
+      </div>
     </div>
     <button id="main-btn" class="primary big"></button>
     <button id="alt-btn" class="secondary" hidden></button>
@@ -238,7 +264,7 @@
   <!-- Map -->
   <section id="view-sync" class="view" hidden>
     <div class="card">
-      <h2>Sincronizare cu VVS-dialog</h2>
+      <h2>Rapoarte și VVS-dialog</h2>
       <p class="hint">Fiecare raport salvat așteaptă aici până când li îl pune pe caz: fișierele, textul din Ny aktivitet și statusul. Un singur li le trimite pe toate cele care așteaptă.</p>
       <p id="sync-sum" class="sync-sum"></p>
       <button type="button" id="sync-import" class="secondary">Adaugă rapoarte din fișiere</button>
@@ -248,7 +274,7 @@
       <button type="button" id="vvsq-send" class="primary" hidden>Trimite cele care așteaptă</button>
       <button type="button" id="sync-clean" class="secondary" hidden>Șterge fișierele care sunt deja pe caz</button>
       <p id="sync-clean-msg" class="hint" hidden></p>
-      <button type="button" id="sync-back" class="secondary">Înapoi</button>
+      <button type="button" id="sync-back" class="secondary" hidden>Înapoi</button>
     </div>
     <div id="sync-list"></div>
   </section>
@@ -268,6 +294,7 @@
     </div>
     <div id="map"></div>
     <p id="map-info" class="hint card">Harta explică doar geometria. Măsurătoarea radio rămâne decisivă.</p>
+    <button type="button" id="map-pos" class="primary" hidden>Poziția contorului: adresă sau hartă</button>
   </section>
 </main>
 
@@ -301,6 +328,17 @@
     <button type="button" class="link lcd-gal" data-gallery="lcd-photo">Alege o poză din galerie</button>
     <input type="file" id="lcd-photo" accept="image/*" capture="environment" hidden>
   </div>
+</div>
+
+<div id="viewer" hidden>
+  <div class="vw-top"><strong id="vw-title"></strong><span id="vw-count"></span></div>
+  <div class="vw-stage"><img id="vw-img" alt=""><p id="vw-empty" class="hint" hidden></p></div>
+  <div class="vw-bottom">
+    <button type="button" id="vw-prev" class="secondary" aria-label="Forrige">‹</button>
+    <button type="button" id="vw-close" class="primary">Închide</button>
+    <button type="button" id="vw-next" class="secondary" aria-label="Næste">›</button>
+  </div>
+  <button type="button" id="vw-ext" class="link vw-ext" hidden>Deschide în altă aplicație</button>
 </div>
 
 <div id="readings-ask" hidden>
@@ -393,11 +431,12 @@
   </div>
 </div>
 
-<nav id="tabs" hidden>
-  <button data-view="align" class="on">Aliniere</button>
-  <button data-view="recv">Receptoare</button>
-  <button data-view="map">Hartă</button>
-  <button data-view="sync">VVS</button>
+<nav id="tabs">
+  <button type="button" data-view="home" class="on">Măsurare</button>
+  <button type="button" data-view="recv">Receptoare</button>
+  <button type="button" data-view="map">Hartă</button>
+  <button type="button" data-view="sync">Rapoarte <span id="tab-badge" class="badge" hidden></span></button>
+  <button type="button" data-view="more">Mai mult</button>
 </nav>
 
 <script src="vendor/leaflet.js"></script>

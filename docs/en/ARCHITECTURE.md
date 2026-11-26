@@ -1,6 +1,6 @@
 # Architecture and the licence-free solution
 
-[Dansk](../ARKITEKTUR.md) · **English** · [Română](../ro/ARHITECTURA.md)
+[Dansk](../ARKITEKTUR.md) · **English**
 
 ## Why not Power Apps
 
