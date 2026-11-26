@@ -1775,8 +1775,12 @@
       if (line) out.push(line);
       return out;
     };
-    const section = (title) => { y += 36; x.fillStyle = INK.light; x.fillRect(P, y, W - 2 * P, 2); y += 50; font(700, 30); text(title, P, y, INK.navy); y += 10; };
+    const breaks = [];                          // places where a printed page may end (never inside a map or a line)
+    let keep = false;                           // a heading stays with what follows it
+    const brk = () => { if (keep) { keep = false; return; } breaks.push(Math.round(y)); };
+    const section = (title) => { brk(); keep = true; y += 36; x.fillStyle = INK.light; x.fillRect(P, y, W - 2 * P, 2); y += 50; font(700, 30); text(title, P, y, INK.navy); y += 10; };
     const row = (label, value, color = INK.ink) => {
+      brk();
       y += 44; font(500, 25); text(label, P, y, INK.gray);
       font(600, 27);
       wrap(value, W - 2 * P - 300).forEach((l, i) => { if (i) y += 36; text(l, P + 300, y, color); });
@@ -1830,10 +1834,11 @@
     const mapCanvas = await reportMap(sm, W - 2 * P, 620);
     if (mapCanvas) {
       section(T('Hartă'));
-      y += 14;
+      y += 34; font(700, 22); text(T('Toate site-urile'), P, y, INK.gray); y += 12;
       x.drawImage(mapCanvas, P, y);
       x.strokeStyle = INK.light; x.lineWidth = 2; x.strokeRect(P, y, W - 2 * P, 620);
       y += 620;
+      keep = false;
       const sites = siteLinks(sm);
       // sites crowd together near the meter: a second map, close up, with the nearest ones
       const near = sites.filter((l) => l.distanceM !== null).sort((a, b) => a.distanceM - b.distanceM);
@@ -1841,7 +1846,8 @@
         const fit = new Set(near.slice(0, Math.min(5, near.length)).map((l) => l.key));
         const close = await reportMap(sm, W - 2 * P, 460, true, fit);
         if (close) {
-          y += 18; font(700, 22); text(T('Aproape de contor'), P, y + 4, INK.gray); y += 14;
+          brk();
+          y += 44; font(700, 22); text(T('Mărit: cele {0} site-uri cele mai apropiate de contor', fit.size), P, y, INK.gray); y += 12;
           x.drawImage(close, P, y); x.strokeStyle = INK.light; x.lineWidth = 2; x.strokeRect(P, y, W - 2 * P, 460);
           y += 460;
         }
@@ -1849,8 +1855,11 @@
       // the numbers on the map
       y += 22;
       const REL = { PRIMARY: T('principal'), SAME_SITE: T('același site'), DISTINCT_SITE: T('alt site'), UNKNOWN_SITE: T('site necunoscut') };
+      brk();
+      y += 8; font(700, 22); text(T('Numerele de pe hărți'), P, y + 14, INK.gray); y += 30;
       sites.forEach((l, i) => {
         if (y > big.height - 400) return;
+        brk();
         const col = linkStyle(l).color, rel = s.receivers.find((q) => q.serial === l.serial);
         x.fillStyle = col; x.beginPath(); x.arc(P + 16, y + 2, 15, 0, 2 * Math.PI); x.fill();
         font(800, 17); x.fillStyle = l.age === 'OLD' || col === SIG.mid ? INK.ink : '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(i + 1), P + 16, y + 3);
@@ -1950,7 +1959,7 @@
     for (const l of wrap(limitsText(isCheck), W - 2 * P)) { y += 28; text(l, P, y, INK.gray); }
     if (instPhotos.count()) {
       section(T('Poze cu instalația'));
-      row('', T('{0} poze în paginile următoare: montaj și punere în funcțiune', instPhotos.count()));
+      row('', instPhotos.count() === 1 ? T('1 poză pe pagina următoare') : T('{0} poze în paginile următoare: montaj și punere în funcțiune', instPhotos.count()));
     }
     if (s.session.note) {
       section(T('Observații'));
@@ -1963,6 +1972,64 @@
     const out = document.createElement('canvas');
     out.width = W; out.height = y;
     out.getContext('2d').drawImage(big, 0, 0);
+    out.breaks = breaks.filter((b) => b > 0 && b < y);
+    return out;
+  }
+
+  // ---------------------------------------------------------------- printable pages
+  // The report is one long picture on screen; on paper it is cut into A4 pages, only where a
+  // section or a line starts (never through a map), with the meter number and page number on each.
+  const A4W = 1080, A4H = Math.round(1080 * 297 / 210);
+  function pageCanvas() {
+    const c = document.createElement('canvas'); c.width = A4W; c.height = A4H;
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, A4W, A4H);
+    return c;
+  }
+  function pageFrame(c, s, n, total, first) {
+    const x = c.getContext('2d');
+    x.font = `500 20px ${SANS}`; x.fillStyle = INK.gray; x.textBaseline = 'alphabetic';
+    if (!first) {
+      x.fillStyle = INK.navy; x.fillRect(0, 0, A4W, 64);
+      x.font = `700 24px ${SANS}`; x.fillStyle = '#fff'; x.textAlign = 'left';
+      x.fillText(`LinkIQ · ${T('Contor')} ${s.session.meterSerial}`, 56, 41);
+    }
+    x.font = `500 20px ${SANS}`; x.fillStyle = INK.gray; x.textAlign = 'right';
+    x.fillText(T('Pagina {0} din {1}', n, total), A4W - 56, A4H - 26);
+    x.textAlign = 'left';
+    x.fillText(`${T('Contor')} ${s.session.meterSerial} · ${fmtTime(new Date().toISOString())}`, 56, A4H - 26);
+  }
+  function paginate(report, s, extra) {
+    const foot = 64, head = 84, pages = [];
+    let start = 0;
+    while (start < report.height - 4) {
+      const avail = A4H - foot - (pages.length ? head : 0);
+      let end = start + avail;
+      if (end >= report.height) end = report.height;
+      else {
+        const fit = (report.breaks || []).filter((b) => b > start + avail * 0.25 && b <= end);
+        if (fit.length) end = fit[fit.length - 1];
+      }
+      pages.push([start, end]);
+      start = end;
+    }
+    const total = pages.length + extra.length;
+    const out = pages.map(([a, b], i) => {
+      const c = pageCanvas(), x = c.getContext('2d');
+      x.drawImage(report, 0, a, A4W, b - a, 0, i ? head : 0, A4W, b - a);
+      pageFrame(c, s, i + 1, total, i === 0);
+      return c;
+    });
+    extra.forEach((ph, k) => {                  // a photo on its own page, as large as it fits
+      const c = pageCanvas(), x = c.getContext('2d');
+      const n = out.length + 1, top = head + 50, maxW = A4W - 112, maxH = A4H - top - 100;
+      const sc = Math.min(maxW / ph.canvas.width, maxH / ph.canvas.height);
+      const w = Math.round(ph.canvas.width * sc), h = Math.round(ph.canvas.height * sc);
+      x.font = `700 28px ${SANS}`; x.fillStyle = INK.navy; x.textAlign = 'left'; x.fillText(ph.title, 56, head + 34);
+      x.drawImage(ph.canvas, (A4W - w) / 2, top, w, h);
+      x.strokeStyle = INK.light; x.lineWidth = 2; x.strokeRect((A4W - w) / 2, top, w, h);
+      pageFrame(c, s, n, total, false);
+      out.push(c);
+    });
     return out;
   }
 
@@ -2265,11 +2332,13 @@
   async function savePdf() {
     if (!S) return;
     try {
-      const pages = [await buildReport(S)];
+      const report = await buildReport(S);
       const internal = ui.install && ui.install.antennaType === 'internal';
-      if (lastPhoto && S.session.status !== 'CHECK' && !internal) pages.push(lastPhoto);
+      const photos = [];
+      if (lastPhoto && S.session.status !== 'CHECK' && !internal) photos.push({ canvas: lastPhoto, title: T('Antena') });
       const inst = await instPhotos.pages();
-      pages.push(...inst);
+      photos.push(...inst);
+      const pages = paginate(report, S, photos);
       await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', inst.length ? 'Raportul PDF, cu pozele instalației, a fost salvat ca {0}.' : pages.length > 1 ? 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.' : 'Raportul PDF a fost salvat ca {0}.', null);
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   }
@@ -2508,15 +2577,18 @@
         await sync();
         const out = [];
         for (const st of ['mount', 'start']) {
-          for (const p of list.filter((q) => q.stage === st)) {
-            try {
-              const bmp = await createImageBitmap(p.blob), c = document.createElement('canvas');
-              c.width = bmp.width; c.height = bmp.height; c.getContext('2d').drawImage(bmp, 0, 0);
-              out.push(c);
-            } catch { /* unreadable: left out */ }
-          }
+          list.filter((q) => q.stage === st).forEach((p, k, arr) => out.push(p));
         }
-        return out;
+        const res = [];
+        for (const p of out) {
+          try {
+            const bmp = await createImageBitmap(p.blob), c = document.createElement('canvas');
+            c.width = bmp.width; c.height = bmp.height; c.getContext('2d').drawImage(bmp, 0, 0);
+            const same = out.filter((q) => q.stage === p.stage);
+            res.push({ canvas: c, title: T(STAGES[p.stage]) + (same.length > 1 ? ` ${same.indexOf(p) + 1}` : '') });
+          } catch { /* unreadable: left out */ }
+        }
+        return res;
       },
       // asked once per session before a report is saved without any installation photo
       async ask(then) {

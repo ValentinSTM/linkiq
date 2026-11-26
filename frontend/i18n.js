@@ -629,4 +629,9 @@ window.LINKIQ_DA = {
  "raport": "rapport",
  "{0} site-uri au auzit contorul. Numerele de pe hartă sunt în lista de mai jos; atinge un rând ca să vezi site-ul.": "{0} sites hørte måleren. Tallene på kortet står i listen nedenfor; tryk på en linje for at se sitet.",
  "Toate site-urile": "Alle sites",
+ "Mărit: cele {0} site-uri cele mai apropiate de contor": "Forstørret: de {0} sites nærmest måleren",
+ "Numerele de pe hărți": "Numrene på kortene",
+ "Pagina {0} din {1}": "Side {0} af {1}",
+ "Antena": "Antennen",
+ "1 poză pe pagina următoare": "1 billede på næste side",
 };
