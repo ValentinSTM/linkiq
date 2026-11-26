@@ -1030,6 +1030,24 @@ nav .badge { position: absolute; top: 3px; left: calc(50% + 22px); }
 #splash-card { display: flex; flex-direction: column; gap: 8px; }
 .splash-prev { width: 120px; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); align-self: center; }
 
+/* numbered site markers (map and list) and the meter */
+.site-pin { display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 3px solid #fff; color: #fff; font: 800 14px system-ui, sans-serif; box-shadow: 0 1px 4px rgba(0,0,0,.35); box-sizing: border-box; }
+.site-pin.sig-good { background: #1b8a3a; } .site-pin.sig-mid { background: #e07800; color: #0b1f2a; }
+.site-pin.sig-weak { background: #c62828; } .site-pin.sig-old { background: #9aa5ad; color: #0b1f2a; }
+.site-pin.primary { outline: 2px solid #0b1f2a; font-size: 16px; }
+.meter-pin { background: #1565c0; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 2px #1565c0, 0 1px 6px rgba(0,0,0,.4); }
+.meter-pin span { display: none; }
+.map-sites { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.map-sites[hidden] { display: none; }
+.map-sites li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: center; padding: 6px 4px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.map-sites .site-pin { width: 28px; height: 28px; }
+.map-sites .st b { display: block; font-size: 15px; }
+.map-sites .st small { display: block; color: var(--gray); font-size: 13px; }
+.map-views { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.map-views[hidden] { display: none; }
+.map-views button { min-height: 40px; font-size: 15px; }
+.map-views button.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+
 </style>
 </head>
 <body>
@@ -1334,6 +1352,11 @@ nav .badge { position: absolute; top: 3px; left: calc(50% + 22px); }
     <div id="map"></div>
     <div id="map-info" class="card">
       <p id="map-info-text" class="hint">Harta explică doar geometria. Măsurătoarea radio rămâne decisivă.</p>
+      <div id="map-views" class="map-views" hidden>
+        <button type="button" id="map-near" class="secondary on">Aproape de contor</button>
+        <button type="button" id="map-all" class="secondary">Toate site-urile</button>
+      </div>
+      <ol id="map-sites" class="map-sites" hidden></ol>
       <div id="map-legend" class="legend" hidden></div>
     </div>
     <button type="button" id="map-pos" class="primary" hidden>Poziția contorului: adresă sau hartă</button>
@@ -2121,6 +2144,11 @@ window.LINKIQ_DA = {
  "Arată imaginea la pornire": "Vis startbilledet",
  "Zoom ud": "Zoom ud",
  "Zoom ind": "Zoom ind",
+ "Aproape de contor": "Tæt på måleren",
+ "{0} concentratoare": "{0} koncentratorer",
+ "raport": "rapport",
+ "{0} site-uri au auzit contorul. Numerele de pe hartă sunt în lista de mai jos; atinge un rând ca să vezi site-ul.": "{0} sites hørte måleren. Tallene på kortet står i listen nedenfor; tryk på en linje for at se sitet.",
+ "Toate site-urile": "Alle sites",
 };
 
 </script>
@@ -16533,7 +16561,7 @@ var qrcode = function() {
 
   async function drawMap() {
     if (!ensureMap()) { mapInfo(T('Harta nu este disponibilă.')); return; }
-    mapLayer.clearLayers();
+    mapLayer.clearLayers(); layoutPins = () => {}; if (leaders) leaders.clearLayers();
     $('map-pos').hidden = !S || picking || S.session.gps.lat !== null;
     if (!S) {                                   // no measurement: the sites in the registry
       let sites = [];
@@ -16553,36 +16581,105 @@ var qrcode = function() {
     const g = S && S.session.gps.lat !== null ? S.session.gps : null;
     const links = S ? siteLinks(S) : [];
     const pts = [];
-    links.forEach((l, i) => {
-      const st = linkStyle(l), color = st.color;
+    // Each site a numbered marker; the numbers are explained in the list under the map, so no
+    // text sits on the lines and nothing hides the meter. Tap a marker or a line for its details.
+    const pins = new Map();
+    [...links].reverse().forEach((l) => {           // weakest first, strong lines on top
+      const st = linkStyle(l);
       if (g) {
-        // meter -> site: signal and distance written on the line
-        const line = L.polyline([[g.lat, g.lon], [l.lat, l.lon]], { color, weight: l.primary ? 6 : 3, dashArray: st.dashL, opacity: l.age === 'OLD' ? 0.7 : 0.9 }).addTo(mapLayer);
-        line.bindTooltip(tipNode(linkText(l)), { permanent: i < 6 || l.primary, direction: 'center', className: 'link-label ' + sigClass(l) + (l.primary ? ' primary' : '') });
+        L.polyline([[g.lat, g.lon], [l.lat, l.lon]], { color: st.color, weight: l.primary ? 6 : 3, dashArray: st.dashL, opacity: l.age === 'OLD' ? 0.7 : 0.9 })
+          .bindTooltip(tipNode(linkText(l)), { sticky: true, className: 'link-label ' + sigClass(l) }).addTo(mapLayer);
       }
-      L.circleMarker([l.lat, l.lon], { radius: l.primary ? 10 : 7, color: '#fff', weight: 3, fillColor: color, fillOpacity: 1 })
-        .bindTooltip(tipNode(`${[l.name, l.address].filter(Boolean).join(', ') || l.serial} · ${linkText(l)}`)).addTo(mapLayer);
+    });
+    links.forEach((l, i) => {
+      const el = document.createElement('span'); el.textContent = String(i + 1);
+      const icon = L.divIcon({ className: 'site-pin ' + sigClass(l) + (l.primary ? ' primary' : ''), html: el, iconSize: l.primary ? [34, 34] : [28, 28] });
+      const mk = L.marker([l.lat, l.lon], { icon, zIndexOffset: l.primary ? 500 : 100 - i, keyboard: false, home: [l.lat, l.lon] })
+        .bindTooltip(tipNode(`${i + 1} · ${[l.name, l.address].filter(Boolean).join(', ') || l.serial} · ${linkText(l)}`), { direction: 'top', offset: [0, -14] }).addTo(mapLayer);
+      pins.set(l.key, mk);
       pts.push([l.lat, l.lon]);
     });
     if (g) {
-      L.circleMarker([g.lat, g.lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#1565c0', fillOpacity: 1 }).bindTooltip(tipNode(T('Contor / telefon'))).addTo(mapLayer);
+      L.marker([g.lat, g.lon], { icon: L.divIcon({ className: 'meter-pin', html: document.createElement('span'), iconSize: [18, 18] }), zIndexOffset: 1000, keyboard: false })
+        .bindTooltip(tipNode(T('Contor')), { direction: 'top', offset: [0, -10] }).addTo(mapLayer);
       pts.push([g.lat, g.lon]);
     }
+    layoutPins = () => spreadPins(pins, g);
+    layoutPins();
+    // the list: number, signal, distance, site; a tap shows the site on the map
+    const ol = $('map-sites'); ol.replaceChildren(); ol.hidden = !links.length;
+    links.forEach((l, i) => {
+      const li = document.createElement('li'); li.setAttribute('role', 'button'); li.tabIndex = 0;
+      const n = document.createElement('span'); n.className = 'site-pin ' + sigClass(l) + (l.primary ? ' primary' : ''); n.textContent = String(i + 1);
+      const t = document.createElement('span'); t.className = 'st';
+      const a = document.createElement('b'); a.textContent = linkText(l) + (l.count > 1 ? ' · ' + T('{0} concentratoare', l.count) : '') + (l.primary ? ' · ' + T('principal') : '');
+      const b = document.createElement('small'); b.textContent = [l.name, (l.address || '').split(',').slice(0, 2).join(',')].filter(Boolean).join(', ') || l.serial;
+      t.append(a, b); li.append(n, t);
+      li.onclick = () => { const mk = pins.get(l.key); map.setView([l.lat, l.lon], Math.max(map.getZoom(), 14)); if (mk) mk.openTooltip(); $('map').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+      ol.append(li);
+    });
     let info = T('Harta explică doar geometria. Măsurătoarea radio rămâne decisivă.');
     if (links.length) {
-      info = T('{0} site-uri au auzit contorul.', links.length)
+      info = T('{0} site-uri au auzit contorul. Numerele de pe hartă sunt în lista de mai jos; atinge un rând ca să vezi site-ul.', links.length)
         + (g ? '' : ' ' + T('Alege poziția contorului (adresă sau hartă) ca să apară liniile și distanțele.'));
     } else if (S && S.warnings.includes('REGISTRY_EMPTY')) info = T('Încarcă registrul (site-uri și concentratoare) pe ecranul de start ca să apară concentratoarele pe hartă.');
     else if (!pts.length) info = T('Fără poziție GPS și fără receptoare cu coordonate. ') + info;
     mapInfo(info, links.length ? { lines: !!g, old: links.some((l) => l.age === 'OLD'), meter: !!g } : null);
+    // Many sites far apart crowd around the meter: start close to the meter (the 5 nearest sites),
+    // with a button for all of them.
+    const nearPts = g ? [[g.lat, g.lon], ...links.filter((l) => l.distanceM !== null).sort((p, q) => p.distanceM - q.distanceM).slice(0, 5).map((l) => [l.lat, l.lon])] : pts;
+    const twoViews = !!g && links.length > 5;
+    $('map-views').hidden = !twoViews;
+    const show = (which) => {
+      mapScope = which;
+      $('map-near').classList.toggle('on', which === 'near'); $('map-all').classList.toggle('on', which === 'all');
+      const p = which === 'near' && twoViews ? nearPts : pts;
+      if (p.length > 1) map.fitBounds(p, { padding: [40, 40] });
+      else map.setView(p[0] || [56, 10.5], p.length ? 16 : 6);
+    };
+    $('map-near').onclick = () => show('near');
+    $('map-all').onclick = () => show('all');
     const fit = pts.map((q) => q.join(',')).join(';');
     setTimeout(() => {
       map.invalidateSize();
       if (fit === lastFit) return;              // keep the installer's own pan and zoom
       lastFit = fit;
-      if (pts.length > 1) map.fitBounds(pts, { padding: [50, 50] });
-      else map.setView(pts[0] || [56, 10.5], pts.length ? 16 : 6);
+      show(twoViews ? 'near' : 'all');
+      layoutPins();
     }, 0);
+  }
+  let mapScope = 'near';
+  // Markers that would overlap each other or the meter at this zoom are moved apart on screen,
+  // with a thin line to their true place; zooming in brings them back.
+  let layoutPins = () => {}, leaders = null;
+  function spreadPins(pins, g) {
+    if (!map) return;
+    if (leaders) leaders.clearLayers(); else leaders = L.layerGroup().addTo(map);
+    const R = 15, list = [...pins.values()].map((mk) => {
+      const p = map.latLngToContainerPoint(mk.options.home);
+      return { mk, px: p.x, py: p.y, x: p.x, y: p.y };
+    });
+    const m = g ? map.latLngToContainerPoint([g.lat, g.lon]) : null;
+    for (let it = 0; it < 60; it++) {
+      let moved = false;
+      for (let i = 0; i < list.length; i++) {
+        const a = list[i];
+        for (let j = i + 1; j < list.length; j++) {
+          const b = list[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.01, need = 2 * R + 4;
+          if (d < need) { const k = (need - d) / 2 / d; a.x -= dx * k; a.y -= dy * k; b.x += dx * k; b.y += dy * k; moved = true; }
+        }
+        if (m) {
+          const dx = a.x - m.x, dy = a.y - m.y, d = Math.hypot(dx, dy) || 0.01, need = R + 16;
+          if (d < need) { a.x += dx / d * (need - d); a.y += dy / d * (need - d); moved = true; }
+        }
+      }
+      if (!moved) break;
+    }
+    for (const q of list) {
+      const shifted = Math.hypot(q.x - q.px, q.y - q.py) > 2;
+      q.mk.setLatLng(shifted ? map.containerPointToLatLng([q.x, q.y]) : q.mk.options.home);
+      if (shifted) L.polyline([q.mk.options.home, map.containerPointToLatLng([q.x, q.y])], { color: '#0b1f2a', weight: 1.5, interactive: false }).addTo(leaders);
+    }
   }
 
   // ---------------------------------------------------------------- session plumbing
@@ -16735,6 +16832,7 @@ var qrcode = function() {
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
     mapLayer = L.layerGroup().addTo(map);
     map.on('click', (e) => { if (picking) setPick(e.latlng.lat, e.latlng.lng, false); });
+    map.on('zoomend', () => layoutPins());
     return true;
   }
   function setPick(lat, lon, recenter) {
@@ -16747,7 +16845,7 @@ var qrcode = function() {
   }
   async function drawPickMap() {
     if (!ensureMap()) { $('pick-info').textContent = T('Harta nu este disponibilă.'); return; }
-    mapLayer.clearLayers();
+    mapLayer.clearLayers(); layoutPins = () => {}; if (leaders) leaders.clearLayers();
     let sites = [];
     try { sites = (await api('/api/sites')).filter((x) => x.latitude !== null); } catch { /* map still usable */ }
     for (const x of sites) {
@@ -17348,19 +17446,23 @@ var qrcode = function() {
   }
 
   /** Map for the report: OpenStreetMap background when it loads, plain grid otherwise. */
-  async function reportMap(s, W, H, useTiles = true) {
-    const g = s.session.gps, links = siteLinks(s);
-    if (!g || g.lat === null || !links.length) return null;
+  // Report map: every site a numbered marker (the same numbers as in the list under the map), no
+  // text on the lines, the meter drawn last so nothing covers it. Markers that would overlap are
+  // moved apart with a thin leader line to their true place. `fit`: the sites the view must hold.
+  async function reportMap(s, W, H, useTiles = true, fit = null) {
+    const g = s.session.gps, all = siteLinks(s);
+    if (!g || g.lat === null || !all.length) return null;
+    const num = new Map(all.map((l, i) => [l.key, i + 1])), links = all;
     const merc = (lat, lon, z) => {
       const n = 256 * 2 ** z, sl = Math.sin(lat * Math.PI / 180);
       return [(lon + 180) / 360 * n, (0.5 - Math.log((1 + sl) / (1 - sl)) / (4 * Math.PI)) * n];
     };
-    const pts = [[g.lat, g.lon], ...links.map((l) => [l.lat, l.lon])];
+    const pts = [[g.lat, g.lon], ...links.filter((l) => !fit || fit.has(l.key)).map((l) => [l.lat, l.lon])];
     let z = 17, box;
     for (; z >= 4; z--) {
       const q = pts.map((p) => merc(p[0], p[1], z));
       box = [Math.min(...q.map((v) => v[0])), Math.min(...q.map((v) => v[1])), Math.max(...q.map((v) => v[0])), Math.max(...q.map((v) => v[1]))];
-      if (box[2] - box[0] <= W - 260 && box[3] - box[1] <= H - 170) break;
+      if (box[2] - box[0] <= W - 120 && box[3] - box[1] <= H - 130) break;
     }
     const ox = (box[0] + box[2]) / 2 - W / 2, oy = (box[1] + box[3]) / 2 - H / 2;
     const c = document.createElement('canvas');
@@ -17386,7 +17488,7 @@ var qrcode = function() {
         x.fillStyle = 'rgba(255,255,255,0.45)'; x.fillRect(0, 0, W, H);
         x.getImageData(0, 0, 1, 1);               // throws if the tiles may not be exported
         tiles = true;
-      } catch { return reportMap(s, W, H, false); }
+      } catch { return reportMap(s, W, H, false, fit); }
     }
     if (!tiles) {
       x.strokeStyle = '#d5dde2'; x.lineWidth = 1;
@@ -17395,34 +17497,60 @@ var qrcode = function() {
     }
     const P = (lat, lon) => { const m = merc(lat, lon, z); return [m[0] - ox, m[1] - oy]; };
     const [mx, my] = P(g.lat, g.lon);
-    const boxed = (str, bx, by, color, bold) => {
-      x.font = `${bold ? 700 : 600} 21px ${SANS}`;
-      const w = x.measureText(str).width + 16;
-      const lx = Math.max(4, Math.min(W - w - 4, bx - w / 2)), ly = Math.max(4, Math.min(H - 34, by - 15));
-      x.fillStyle = '#fff'; x.strokeStyle = color; x.lineWidth = 2;
-      x.beginPath(); x.roundRect(lx, ly, w, 30, 6); x.fill(); x.stroke();
-      x.fillStyle = INK.ink; x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillText(str, lx + 8, ly + 16);
-    };
-    [...links].reverse().forEach((l) => {          // weakest first, so the strong links stay on top
-      const [sx, sy] = P(l.lat, l.lon), st = linkStyle(l), color = st.color;
-      x.strokeStyle = color; x.lineWidth = l.primary ? 7 : 3; x.setLineDash(st.dash);
-      x.beginPath(); x.moveTo(mx, my); x.lineTo(sx, sy); x.stroke(); x.setLineDash([]);
-      x.fillStyle = color; x.strokeStyle = '#fff'; x.lineWidth = 3;
-      x.beginPath(); x.arc(sx, sy, l.primary ? 12 : 9, 0, 2 * Math.PI); x.fill(); x.stroke();
+    // marker places, pushed apart where they would overlap each other or the meter
+    const R = 17, marks = links.map((l) => { const [px, py] = P(l.lat, l.lon); return { l, px, py, x: px, y: py }; });
+    for (let it = 0; it < 80; it++) {
+      let moved = false;
+      for (let i = 0; i < marks.length; i++) {
+        const a = marks[i];
+        for (let j = i + 1; j < marks.length; j++) {
+          const b = marks[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.01, need = 2 * R + 6;
+          if (d < need) { const k = (need - d) / 2 / d; a.x -= dx * k; a.y -= dy * k; b.x += dx * k; b.y += dy * k; moved = true; }
+        }
+        const dx = a.x - mx, dy = a.y - my, d = Math.hypot(dx, dy) || 0.01, need = R + 34;
+        if (d < need) { a.x += dx / d * (need - d); a.y += dy / d * (need - d); moved = true; }
+      }
+      if (!moved) break;
+    }
+    [...marks].reverse().forEach(({ l, px, py }) => {          // weakest first, so the strong links stay on top
+      const st = linkStyle(l);
+      x.strokeStyle = st.color; x.lineWidth = l.primary ? 7 : 3; x.setLineDash(st.dash);
+      x.beginPath(); x.moveTo(mx, my); x.lineTo(px, py); x.stroke(); x.setLineDash([]);
     });
-    links.forEach((l, i) => {
-      if (i >= 8 && !l.primary) return;
-      const [sx, sy] = P(l.lat, l.lon);
-      boxed(linkText(l), mx + (sx - mx) * 0.62, my + (sy - my) * 0.62, linkStyle(l).color, l.primary);
-      x.font = `600 18px ${SANS}`; x.fillStyle = INK.ink; x.textAlign = 'center'; x.textBaseline = 'top';
-      x.lineWidth = 4; x.strokeStyle = 'rgba(255,255,255,0.9)';
-      const nm = (l.name || (l.address || '').split(',')[0] || l.serial).slice(0, 26);
-      x.strokeText(nm, sx, sy + 15); x.fillText(nm, sx, sy + 15);
+    [...marks].reverse().forEach((m) => {
+      const st = linkStyle(m.l), n = num.get(m.l.key);
+      if (Math.hypot(m.x - m.px, m.y - m.py) > 3) {             // moved: a thin line to the true place
+        x.strokeStyle = INK.ink; x.lineWidth = 1.5; x.beginPath(); x.moveTo(m.px, m.py); x.lineTo(m.x, m.y); x.stroke();
+        x.fillStyle = INK.ink; x.beginPath(); x.arc(m.px, m.py, 3, 0, 2 * Math.PI); x.fill();
+      }
+      x.fillStyle = st.color; x.strokeStyle = '#fff'; x.lineWidth = m.l.primary ? 5 : 3;
+      x.beginPath(); x.arc(m.x, m.y, m.l.primary ? R + 3 : R, 0, 2 * Math.PI); x.fill(); x.stroke();
+      if (m.l.primary) { x.strokeStyle = INK.ink; x.lineWidth = 2; x.beginPath(); x.arc(m.x, m.y, R + 6, 0, 2 * Math.PI); x.stroke(); }
+      x.font = `800 ${n > 9 ? 17 : 20}px ${SANS}`; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillStyle = m.l.age === 'OLD' || st.color === SIG.mid ? INK.ink : '#fff'; x.fillText(String(n), m.x, m.y + 1);
     });
-    x.fillStyle = INK.blue; x.strokeStyle = '#fff'; x.lineWidth = 4;
-    x.beginPath(); x.arc(mx, my, 12, 0, 2 * Math.PI); x.fill(); x.stroke();
-    x.font = `700 19px ${SANS}`; x.textAlign = 'center'; x.textBaseline = 'bottom'; x.lineWidth = 4; x.strokeStyle = 'rgba(255,255,255,0.9)';
-    x.strokeText(T('Contor'), mx, my - 15); x.fillStyle = INK.ink; x.fillText(T('Contor'), mx, my - 15);
+    // the meter last, on top of everything, with its name in a white box
+    x.fillStyle = INK.blue; x.strokeStyle = '#fff'; x.lineWidth = 5;
+    x.beginPath(); x.arc(mx, my, 13, 0, 2 * Math.PI); x.fill(); x.stroke();
+    x.strokeStyle = INK.blue; x.lineWidth = 2; x.beginPath(); x.arc(mx, my, 18, 0, 2 * Math.PI); x.stroke();
+    x.font = `800 19px ${SANS}`;
+    const mw = x.measureText(T('Contor')).width + 14, mh = 26;
+    // the label goes on the side of the meter where it covers no marker and no line end
+    let mlx = 0, mly = 0, bestFree = -1;
+    for (const [dx, dy] of [[0, -1], [0, 1], [1, 0], [-1, 0], [1, -1], [-1, -1], [1, 1], [-1, 1]]) {
+      const cx = mx + dx * (mw / 2 + 28), cy = my + dy * 34;
+      const lx = Math.max(4, Math.min(W - mw - 4, cx - mw / 2)), ly = Math.max(4, Math.min(H - mh - 44, cy - mh / 2));
+      const free = Math.min(999, ...marks.map((m) => {
+        const qx = Math.max(lx, Math.min(lx + mw, m.x)), qy = Math.max(ly, Math.min(ly + mh, m.y));
+        return Math.hypot(m.x - qx, m.y - qy) - R;
+      }));
+      if (free > bestFree + 0.5) { bestFree = free; mlx = lx; mly = ly; }
+      if (free > 12) break;
+    }
+    x.fillStyle = 'rgba(255,255,255,0.95)'; x.strokeStyle = INK.blue; x.lineWidth = 2;
+    x.beginPath(); x.roundRect(mlx, mly, mw, mh, 6); x.fill(); x.stroke();
+    x.fillStyle = INK.blue; x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillText(T('Contor'), mlx + 7, mly + 14);
+    c.crowded = marks.some((m) => Math.hypot(m.x - m.px, m.y - m.py) > 3);
     // legend, scale, north, attribution
     const legend = [[linkColor(-50), T('bun')], [linkColor(-100), T('la limită')], [linkColor(-130), T('slab')]];
     if (s.session.status === 'CHECK') legend.push([OLD_GRAY, T('peste 8 ore')]);
@@ -17456,6 +17584,7 @@ var qrcode = function() {
   // report: they cannot carry hourly data, and they may stem from the meter being switched
   // on before installation (heard on the road or in the van).
   const REPORT_MAX_AGE_H = 9;
+  const REPORT_VERSION = '0.1';   // the report's own layout; changes without a new app version
   const isStale = (q) => q.ageMin !== null && q.ageMin !== undefined && q.ageMin > REPORT_MAX_AGE_H * 60;
 
   async function buildReport(s) {
@@ -17527,13 +17656,42 @@ var qrcode = function() {
     y = await drawReadings(x, P, W, y, (t) => { section(t); return y; }, font, text);
     y = drawVvsSection(x, P, W, y, (t) => { section(t); return y; }, font, text);
 
-    const mapCanvas = await reportMap({ ...s, receivers: shown }, W - 2 * P, 620);
+    const sm = { ...s, receivers: shown };
+    const mapCanvas = await reportMap(sm, W - 2 * P, 620);
     if (mapCanvas) {
       section(T('Hartă'));
       y += 14;
       x.drawImage(mapCanvas, P, y);
       x.strokeStyle = INK.light; x.lineWidth = 2; x.strokeRect(P, y, W - 2 * P, 620);
       y += 620;
+      const sites = siteLinks(sm);
+      // sites crowd together near the meter: a second map, close up, with the nearest ones
+      const near = sites.filter((l) => l.distanceM !== null).sort((a, b) => a.distanceM - b.distanceM);
+      if (mapCanvas.crowded && near.length >= 2) {
+        const fit = new Set(near.slice(0, Math.min(5, near.length)).map((l) => l.key));
+        const close = await reportMap(sm, W - 2 * P, 460, true, fit);
+        if (close) {
+          y += 18; font(700, 22); text(T('Aproape de contor'), P, y + 4, INK.gray); y += 14;
+          x.drawImage(close, P, y); x.strokeStyle = INK.light; x.lineWidth = 2; x.strokeRect(P, y, W - 2 * P, 460);
+          y += 460;
+        }
+      }
+      // the numbers on the map
+      y += 22;
+      const REL = { PRIMARY: T('principal'), SAME_SITE: T('același site'), DISTINCT_SITE: T('alt site'), UNKNOWN_SITE: T('site necunoscut') };
+      sites.forEach((l, i) => {
+        if (y > big.height - 400) return;
+        const col = linkStyle(l).color, rel = s.receivers.find((q) => q.serial === l.serial);
+        x.fillStyle = col; x.beginPath(); x.arc(P + 16, y + 2, 15, 0, 2 * Math.PI); x.fill();
+        font(800, 17); x.fillStyle = l.age === 'OLD' || col === SIG.mid ? INK.ink : '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(i + 1), P + 16, y + 3);
+        x.textBaseline = 'alphabetic';
+        font(l.primary ? 800 : 700, 21);
+        text(`${dbm(l.best)}${l.distanceM !== null ? ' · ' + meters(l.distanceM) : ''}${rel && REL[rel.relation] ? ' · ' + REL[rel.relation] : ''}${l.count > 1 ? ' · ' + T('{0} concentratoare', l.count) : ''}`, P + 44, y + 8, INK.ink);
+        font(500, 19);
+        const where = [l.name, (l.address || '').split(',').slice(0, 2).join(',')].filter(Boolean).join(', ') || l.serial;
+        text(where.slice(0, 80), P + 44, y + 34, INK.gray);
+        y += 58;
+      });
     } else {
       section(T('Hartă'));
       row('', T(g && g.lat !== null ? 'Harta lipsește: registrul cu site-uri nu este încărcat pe acest dispozitiv.' : 'Harta lipsește: sesiunea nu are poziția contorului.'), INK.gray);
@@ -17630,7 +17788,7 @@ var qrcode = function() {
       for (const l of wrap(s.session.note, W - 2 * P)) { y += 38; text(l, P, y); }
     }
     y += 70; font(400, 21);
-    text(`LinkIQ Field Assistant v${VERSION} · ${T('generat {0}', fmtTime(new Date().toISOString()))}`, P, y, INK.gray);
+    text(`LinkIQ Field Assistant v${VERSION} · ${T('raport')} v${REPORT_VERSION} · ${T('generat {0}', fmtTime(new Date().toISOString()))}`, P, y, INK.gray);
     y += 44;
     const out = document.createElement('canvas');
     out.width = W; out.height = y;

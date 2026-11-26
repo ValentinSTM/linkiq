@@ -624,4 +624,9 @@ window.LINKIQ_DA = {
  "Arată imaginea la pornire": "Vis startbilledet",
  "Zoom ud": "Zoom ud",
  "Zoom ind": "Zoom ind",
+ "Aproape de contor": "Tæt på måleren",
+ "{0} concentratoare": "{0} koncentratorer",
+ "raport": "rapport",
+ "{0} site-uri au auzit contorul. Numerele de pe hartă sunt în lista de mai jos; atinge un rând ca să vezi site-ul.": "{0} sites hørte måleren. Tallene på kortet står i listen nedenfor; tryk på en linje for at se sitet.",
+ "Toate site-urile": "Alle sites",
 };
