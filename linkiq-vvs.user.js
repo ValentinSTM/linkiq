@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LinkIQ til VVS-dialog
 // @namespace    linkiq
-// @version      0.24
+// @version      0.26
 // @description  Lægger LinkIQ-rapporten på sagen: filer, Ny aktivitet med faste ord og status.
 // @match        https://vvsdialog.kmd.dk/*
 // @downloadURL  https://valentinstm.github.io/linkiq/linkiq-vvs.user.js
@@ -83,12 +83,17 @@
   }
 
   // ---------- 1. the work
+  // Only LinkIQ may hand over work or receive results: its hosts, and this computer for tests.
+  // Moving LinkIQ to Azure: add its exact host here (never all of *.azurestaticapps.net).
+  var LIQ_ORIGIN = /^https:\/\/(valentinstm\.github\.io|[a-z0-9-]+\.kredslob\.dk)$|^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+  var liqOrigin = null;                     // the LinkIQ that answered, once it has
   async function fromOpener() {
     if (!window.opener) { return null; }
     return new Promise(function (ok) {
       var done = false;
       window.addEventListener('message', function on(ev) {
-        if (ev.source !== window.opener || !ev.data || ev.data.liq !== 'items') { return; }
+        if (ev.source !== window.opener || !LIQ_ORIGIN.test(ev.origin) || !ev.data || ev.data.liq !== 'items') { return; }
+        liqOrigin = ev.origin;
         done = true; window.removeEventListener('message', on); ok(ev.data.items || []);
       });
       try { window.opener.postMessage({ liq: 'hello', v: 2 }, '*'); } catch (e) { ok(null); return; }
@@ -97,12 +102,16 @@
   }
   var back = null, sent = [];               // where LinkIQ is, and what to report there
   function tell(msg) {
-    if (msg.id) { sent.push({ id: msg.id, ok: msg.ok, cc: msg.cc, msg: msg.msg }); } try { if (window.opener) { window.opener.postMessage(msg, '*'); } } catch (e) { /* LinkIQ closed */ } }
+    if (msg.id) { sent.push({ id: msg.id, ok: msg.ok, cc: msg.cc, msg: msg.msg }); } try { if (window.opener && liqOrigin) { window.opener.postMessage(msg, liqOrigin); } } catch (e) { /* LinkIQ closed */ } }
   function unb64(s) { return atob(s.replace(/-/g, '+').replace(/_/g, '/')); }
   function fromName(clip) {
     var n = String(window.name || '').split('|LIQCODE:')[0];
     var bk = n.split('|LIQBACK:');
-    if (bk[1]) { back = decodeURIComponent(bk[1]); n = bk[0]; }
+    if (bk[1]) {                           // only a LinkIQ address: the results never go anywhere else
+      var bu = null; try { bu = new URL(decodeURIComponent(bk[1])); } catch (e) { bu = null; }
+      if (bu && LIQ_ORIGIN.test(bu.origin)) { back = bu.origin + bu.pathname + bu.search; }
+      n = bk[0];
+    }
     var parts = n.split('|LIQFILES:'), fileMap = {};
     if (parts[1]) {                       // the report files, put in the tab name by LinkIQ
       try { fileMap = JSON.parse(decodeURIComponent(escape(unb64(parts[1])))); } catch (e) { fileMap = {}; }

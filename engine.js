@@ -38,6 +38,10 @@
     contactHistoryMaxH: 8,
     simSpeed: 4,
     keepSessions: 200,
+    // Retention on the phone (Kredsløb decides the numbers): older sessions and saved meter
+    // positions are deleted when the app saves.
+    keepSessionsDays: 365,
+    keepPositionsDays: 365,
   };
   const OUTCOMES = ['OPTIMAL_CONFIRMED', 'GOOD_WITH_SITE_REDUNDANCY', 'GOOD_WITH_EQUIPMENT_REDUNDANCY',
     'GOOD_PRIMARY_ONLY', 'MARGINAL', 'NO_RELIABLE_LINK', 'INCONCLUSIVE', 'ABORTED'];
@@ -241,6 +245,11 @@
     }
 
     save() {
+      const now = this.clock(), day = 864e5;
+      for (const [id, x] of Object.entries(this.db.sessions)) {
+        if (x.status !== 'ACTIVE' && now - x.startedMs > this.cfg.keepSessionsDays * day) delete this.db.sessions[id];
+      }
+      for (const [m, p] of Object.entries(this.db.positions)) if (!p.atMs || now - p.atMs > this.cfg.keepPositionsDays * day) delete this.db.positions[m];
       const ids = Object.keys(this.db.sessions).sort((a, b) => this.db.sessions[a].startedMs - this.db.sessions[b].startedMs);
       while (ids.length > this.cfg.keepSessions) delete this.db.sessions[ids.shift()];
       this.storage.set('db', this.db);
@@ -253,7 +262,29 @@
     registryInfo() {
       const conc = Object.values(this.db.concentrators);
       return { sites: Object.keys(this.db.sites).length, concentrators: conc.length,
-        review: conc.filter((c) => c.status === 'REVIEW' || c.status === 'MISSING_LOCATION').length };
+        review: conc.filter((c) => c.status === 'REVIEW' || c.status === 'MISSING_LOCATION').length,
+        eligible: conc.filter((c) => this._eligible(c)).length,
+        inactive: conc.filter((c) => c.active === false).length };
+    }
+    /**
+     * May this concentrator count in a verdict? Only when it is in the registry and not marked
+     * inactive. Everything in the imported list is approved infrastructure for Kredsløb (its own
+     * and partners' shared under agreement); anything else never counts. Never guessed.
+     */
+    _eligible(c) {
+      return !!c && c.active !== false;
+    }
+    _owned(serial, demo) {
+      // the demo without a registry: the simulator's receivers are all "ours"; with one, the same rules
+      if (demo && !Object.keys(this.db.concentrators).length) return true;
+      return this._eligible(this.db.concentrators[serial]);
+    }
+    /** Fail closed: without a usable Kredsløb registry no measurement can be judged. */
+    _needRegistry(demo) {
+      if (demo) return;
+      if (!Object.values(this.db.concentrators).some((c) => this._eligible(c))) {
+        throw new EngineError(409, 'REGISTRY_EMPTY', 'Registrul concentratoarelor Kredsløb nu este încărcat sau nu are niciun concentrator activ. Fără el nu se poate decide care concentratoare sunt aprobate, deci măsurătoarea nu poate fi aprobată. Încarcă registrul (cod QR) pe ecranul de start.');
+      }
     }
     clearRegistry() { this.db.sites = {}; this.db.concentrators = {}; this.db.registrySource = null; this.save(); }
     /** Replace the whole registry (built-in file, app folder). Nothing changes unless both lists hold rows. */
@@ -383,6 +414,7 @@
       meterSerial = String(meterSerial || '').trim();
       technician = String(technician || '').trim() || 'necunoscut';
       if (!METER_RE.test(meterSerial)) throw new EngineError(422, 'BAD_METER_SERIAL', 'Seria contorului trebuie să aibă 4–20 litere sau cifre');
+      this._needRegistry(this.db.demo);
       const now = this.clock();
       let s = Object.values(this.db.sessions).find((x) => x.status === 'ACTIVE' && x.meterSerial === meterSerial && x.demo === this.db.demo);
       if (!s) {
@@ -479,14 +511,13 @@
       try { links = await this._snapshot(s); } catch (e) { return { fresh: [], count: 0, warning: 'UPSTREAM_ERROR: ' + e.message }; }
       const now = this.clock(), tol = this.cfg.tsSkewToleranceS * 1000;
       const seen = new Set(s.obs.map((o) => o.fp));
-      const registryEmpty = Object.keys(this.db.concentrators).length === 0;
       const sample = s.samples[s.samples.length - 1] || null;
       const fresh = [];
       for (const link of links) {
         if (seen.has(link.fingerprint)) continue;
         seen.add(link.fingerprint);
         const reg = this.db.concentrators[link.serial];
-        const owned = registryEmpty || !!reg;
+        const owned = this._owned(link.serial, s.demo);
         let kind, sampleId = null;
         if (asBaseline || !sample) kind = 'baseline';
         else if (link.observedMs === null) { kind = 'fresh'; sampleId = sample.id; }   // no source time: trust arrival order
@@ -571,6 +602,7 @@
     async check(meterSerial, gps = null, technician = '') {
       meterSerial = String(meterSerial || '').trim();
       if (!METER_RE.test(meterSerial)) throw new EngineError(422, 'BAD_METER_SERIAL', 'Seria contorului trebuie să aibă 4–20 litere sau cifre');
+      this._needRegistry(this.db.demo);
       const now = this.clock(), key = (this.db.demo ? 'sim:' : '') + 'check:' + meterSerial;
       let hit = this.cache[key];
       if (!hit || now - hit.atMs >= this.cfg.pollMinIntervalS * 1000) {
@@ -582,13 +614,13 @@
         hit = this.cache[key] = { payload, atMs: now };
       }
       const payload = hit.payload || {}, links = normalise(payload, this.cfg.serialFields);
-      const registryEmpty = Object.keys(this.db.concentrators).length === 0;
+      const demo = this.db.demo, registryEmpty = !Object.keys(this.db.concentrators).length;
       const g = this._position(meterSerial, gps);
       // Kamstrup can list the same receiver several times (older link records stay in the
       // snapshot). One row per receiver: its most recent reading; a tie goes to the stronger one.
       const latest = {};
       for (const l of links) {
-        if (!registryEmpty && !this.db.concentrators[l.serial]) continue;
+        if (!this._owned(l.serial, demo)) continue;   // not in the approved list, or inactive: never in the verdict
         const had = latest[l.serial], t = l.observedMs === null ? -Infinity : l.observedMs;
         const ht = had ? (had.observedMs === null ? -Infinity : had.observedMs) : null;
         if (!had || t > ht || (t === ht && l.rssi > had.rssi)) latest[l.serial] = l;
@@ -627,7 +659,7 @@
         currentMaxMin: this.cfg.contactCurrentMaxMin, historyMaxH: this.cfg.contactHistoryMaxH };
       const lastSeenMs = parseTs(payload.LastSeenTimestampUtc);
       const warnings = [];
-      if (registryEmpty) warnings.push('REGISTRY_EMPTY');
+      if (registryEmpty) warnings.push('REGISTRY_EMPTY');   // only possible in the demo
       if (g.lat === null) warnings.push('NO_GPS');
       if (rows.length && !p1) warnings.push('NO_RECENT_CONTACT');
       return {
