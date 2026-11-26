@@ -69,7 +69,9 @@ In the card *Data on this device*:
 
 - **Load sites / concentrators (CSV)**: the registry stays on the phone only. The columns
   `Breddegrad` / `Længdegrad`, decimal commas and files saved from Excel are accepted. Without a
-  registry, every receiver that hears the meter is treated as our own.
+  registry no measurement can be made (demo mode only): LinkIQ cannot know which concentrators
+  belong to Kredsløb. When the concentrator list has an `Ownership` / `Ejer` column, only rows saying
+  Kredsløb count; rows with `active` = 0 never count.
 - **Export measurements (CSV)**: all sessions on the device, for analysis.
 - **Demo mode**: simulator, for training without a meter.
 
@@ -261,7 +263,7 @@ agreement, even if the repository is private.
 
 1. **The real registry**: export the two lists as CSV and import them. `Breddegrad` /
    `Længdegrad` and decimal commas are recognised; concentrators without a certain site become
-   `REVIEW` / `MISSING_LOCATION`. While the registry is empty, every receiver is treated as our own.
+   `REVIEW` / `MISSING_LOCATION`. Without a registry no measurement can be made (fail closed); see [docs/en/SECURITY.md](docs/en/SECURITY.md).
    The real CSV files are kept out of git by `.gitignore`.
 2. **HTTPS** on the final address.
 3. **Thresholds**: the values in `.env.example` (−80 / −95 / −110 dBm, 6 dB) are provisional.
@@ -276,11 +278,11 @@ frontend/i18n.js          the Danish texts (source strings are Romanian)
 frontend/vvs.js           the li bookmark for VVS-dialog (built from tools/vvs/)
 frontend/lcd.js           reads the meter's 7-segment display with the camera
 frontend/                 PWA (HTML + CSS + plain JavaScript, no build step)
-tests-js/                 21 tests for engine.js, 17 for lcd.js (display pictures)
+tests-js/                 28 tests for engine.js, 17 for lcd.js (display pictures)
 backend/app/              optional central server: the same rules in Python
 backend/scripts/          registry import, pairing codes, Kamstrup check
-backend/tests/            18 tests
-docs/en/                  guide, architecture and Android notes in English
-docs/ro/                  the original Romanian documents
+backend/tests/            19 tests
+docs/en/                  guide, architecture, Android, security review and ideas in English
+docs/ro/                  the same documents in Romanian
 azure-pipelines.yml       tests, copy to Azure Repos and publishing to Azure
 ```

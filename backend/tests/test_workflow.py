@@ -247,3 +247,15 @@ def test_four_quadrants(svc, clock):
     assert svc.summary(sid)["coarseWinner"]["step"] == 3   # 180 deg is nearest to the 200 deg peak
     with pytest.raises(LinkIQError):
         svc.position_marked(sid, "coarse", 5)
+
+
+def test_live_mode_without_registry_fails_closed(tmp_path, clock):
+    """No Kredsløb registry: no session at all, never 'every receiver is ours'."""
+    from conftest import Settings, Database, SimulatedKamstrup, KamstrupGateway, Service
+    cfg = Settings(db_path=str(tmp_path / "live.sqlite3"), kamstrup_mode="live", auth_mode="none")
+    db = Database(cfg.db_path)
+    sim = SimulatedKamstrup(clock=clock, speed=1, seed=7)
+    live = Service(cfg, db, KamstrupGateway(sim, cfg.poll_min_interval_s, clock), clock)
+    with pytest.raises(LinkIQError) as e:
+        live.create_session("12345678", "Ana")
+    assert e.value.code == "REGISTRY_EMPTY"

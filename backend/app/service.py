@@ -85,8 +85,9 @@ class Service:
 
     # ------------------------------------------------------------------ registry
     def registry_empty(self) -> bool:
+        """True when no active concentrator is registered (inactive ones never count)."""
         with self.db.tx() as c:
-            return c.execute("SELECT COUNT(*) FROM concentrators").fetchone()[0] == 0
+            return c.execute("SELECT COUNT(*) FROM concentrators WHERE active=1").fetchone()[0] == 0
 
     def sites(self, lat: float | None = None, lon: float | None = None) -> list[dict[str, Any]]:
         with self.db.tx() as c:
@@ -141,6 +142,9 @@ class Service:
         technician = (technician or "").strip() or "necunoscut"
         if not _METER_RE.match(meter_serial):
             raise LinkIQError(422, "BAD_METER_SERIAL", "Meter serial must be 4-20 letters/digits")
+        # Fail closed: without the Kredsløb registry no receiver can be called ours.
+        if self.cfg.kamstrup_mode != "sim" and self.registry_empty():
+            raise LinkIQError(409, "REGISTRY_EMPTY", "Registrul concentratoarelor Kredsløb nu este încărcat sau nu are niciun concentrator activ al Kredsløb. Fără el nu se poate decide care concentratoare sunt ale noastre, deci măsurătoarea nu poate fi aprobată. Încarcă registrul (cod QR) pe ecranul de start.")
         now = self.clock()
         with self.db.tx() as c:
             c.execute("BEGIN IMMEDIATE")
@@ -258,8 +262,9 @@ class Service:
         with self.db.tx() as c:
             c.execute("BEGIN IMMEDIATE")
             seen = {r[0] for r in c.execute("SELECT fingerprint FROM observations WHERE session_id=?", (sid,))}
-            owned_map = {r["serial"]: r["site_code"] for r in c.execute("SELECT serial, site_code FROM concentrators")}
-            registry_empty = not owned_map
+            owned_map = {r["serial"]: r["site_code"] for r in c.execute("SELECT serial, site_code FROM concentrators WHERE active=1")}
+            # only the simulator may run without a registry; then its receivers are all "ours"
+            registry_empty = not owned_map and self.cfg.kamstrup_mode == "sim"
             samples = c.execute("SELECT * FROM samples WHERE session_id=? ORDER BY id", (sid,)).fetchall()
             sample = samples[-1] if samples else None
             tol = timedelta(seconds=self.cfg.ts_skew_tolerance_s)
@@ -562,7 +567,7 @@ class Service:
 
         warnings = []
         if not reg:
-            warnings.append("REGISTRY_EMPTY")  # every receiver is treated as owned
+            warnings.append("REGISTRY_EMPTY")  # simulator only: its receivers are treated as owned
         if missing_ts:
             warnings.append("MISSING_SOURCE_TIMESTAMP")
         if s["gps_lat"] is None:

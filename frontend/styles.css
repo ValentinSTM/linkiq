@@ -187,7 +187,7 @@ ul.rows li.legend { display: block; font-size: 13px; color: var(--gray); border-
 #readings-card { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--light); padding-top: 10px; }
 #readings-card h3 { margin: 0; }
 #readings-card .sub { font-weight: 500; color: var(--gray); font-size: 15px; }
-#readings-card.flash, #iphoto-card.flash { animation: flash 1.2s ease-out 2; }
+#readings-card.flash, #iphoto-card.flash, #data-card.flash { animation: flash 1.2s ease-out 2; }
 @keyframes flash { 0% { background: #fff6d6; } 100% { background: transparent; } }
 ul.readings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 ul.readings li { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; align-items: center; border: 2px solid var(--light); border-radius: 12px; padding: 8px; }

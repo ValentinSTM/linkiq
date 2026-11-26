@@ -2,6 +2,7 @@
 <html lang="da">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org; connect-src 'self' https://check.kamstrup.com https://nominatim.openstreetmap.org; media-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b2a3c">
 <title>LinkIQ Field Assistant</title>
@@ -20,7 +21,7 @@
 </header>
 
 <main>
-  <!-- Cuplare -->
+  <!-- Pairing -->
   <section id="view-pair" class="view" hidden>
     <div class="card">
       <h2>Aplicația nu este cuplată</h2>
@@ -106,7 +107,7 @@
     </div>
   </section>
 
-  <!-- Aliniere -->
+  <!-- Alignment -->
   <section id="view-align" class="view" hidden>
     <div id="instruction" class="instruction blue">
       <strong id="ins-title"></strong>
@@ -207,6 +208,7 @@
       <p class="hint gal">Lumină slabă? Fă poza cu aplicația Cameră a telefonului (blitz sau mod noapte), apoi alege-o din galerie:
         <button type="button" class="link" data-gallery="iphoto-mount">la montaj</button> ·
         <button type="button" class="link" data-gallery="iphoto-start">la punerea în funcțiune</button></p>
+      <p class="hint">Doar echipamentul și instalația: fără persoane, acte sau lucruri personale ale clientului.</p>
       <ul id="iphoto-list" class="iphotos"></ul>
       <p id="iphoto-msg" class="hint" hidden></p>
     </div>
@@ -219,7 +221,7 @@
     <p class="hint center"><button type="button" id="fb-open2" class="link">Trimite feedback</button></p>
   </section>
 
-  <!-- Receptoare -->
+  <!-- Receivers -->
   <section id="view-recv" class="view" hidden>
     <div class="card">
       <h2>Receptoare proprii văzute</h2>
@@ -233,7 +235,7 @@
     </div>
   </section>
 
-  <!-- Hartă -->
+  <!-- Map -->
   <section id="view-sync" class="view" hidden>
     <div class="card">
       <h2>Sincronizare cu VVS-dialog</h2>

@@ -115,3 +115,7 @@ Câștigătorul se calculează la fiecare răspuns, iar reglajul fin începe cu 
 | Pierderea datelor | observațiile se scriu imediat; SQLite în mod WAL | backup programat al fișierului |
 | Endpoint Kamstrup neautentificat, fără acord de producție | sursa este izolată într-un adaptor înlocuibil | acordul Kamstrup |
 | Trafic necriptat | – | HTTPS obligatoriu la instalare |
+| Un concentrator al altei firme face o instalare proastă să pară bună | contează doar concentratoarele din registru, active și ale Kredsløb; fără registru nu se măsoară (fail closed) | coloana de proprietar în exportul registrului |
+| Cod plantat în VVS-dialog prin li | li primește lucru doar de la adrese LinkIQ și trimite rezultatele doar acolo | cod li semnat (bookmark nou) |
+
+Analiza completă și starea: [SECURITATE.md](SECURITATE.md).

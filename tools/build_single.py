@@ -42,6 +42,9 @@ def main() -> None:
     html = (FRONT / "index.html").read_text(encoding="utf-8")
     css = (FRONT / "vendor/leaflet.css").read_text(encoding="utf-8") + "\n" + (FRONT / "styles.css").read_text(encoding="utf-8")
     html = re.sub(r'<link rel="(manifest|icon|apple-touch-icon|stylesheet)"[^>]*>\n?', "", html)
+    # The hosted app has a Content-Security-Policy that allows only script files; the single file
+    # carries its scripts inline, so that policy is left out here (the file runs from the phone itself).
+    html = re.sub(r'<meta http-equiv="Content-Security-Policy"[^>]*>\n?', "", html)
     html = html.replace("</head>", "<style>\n" + css + "\n</style>\n</head>")
     registry = ""
     if args.sites:

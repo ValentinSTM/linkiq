@@ -130,3 +130,7 @@ winner is computed on every response, and fine-tuning starts with `position-mark
 | Data loss | observations are written immediately; SQLite in WAL mode | scheduled backup of the file |
 | Kamstrup endpoint without authentication and without a production agreement | the source is isolated in a replaceable adapter | agreement with Kamstrup |
 | Unencrypted traffic | HTTPS on the hosting | – |
+| A third-party concentrator makes a bad installation look good | only concentrators in the registry, active and owned by Kredsløb count; no registry, no measurement (fail closed) | owner column in the registry export |
+| Code planted in VVS-dialog through li | li takes work only from LinkIQ addresses and sends results only there | signed li code (new bookmark) |
+
+The full review and status: [SECURITY.md](SECURITY.md).

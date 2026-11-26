@@ -839,9 +839,9 @@ ul.rows li.child { padding-left: 14px; border-top: 1px dashed var(--line); }
 button.link.armed { color: var(--red); font-weight: 800; }
 button.link[hidden] { display: none; }
 
-#feedback, #vvs-setup, #regqr-sheet, #readings-ask { position: fixed; inset: 0; background: rgba(11, 31, 42, .6); z-index: 900; display: flex; align-items: flex-end; justify-content: center; }
-#feedback[hidden], #vvs-setup[hidden], #regqr-sheet[hidden], #readings-ask[hidden] { display: none; }
-#feedback .sheet, #vvs-setup .sheet, #regqr-sheet .sheet, #readings-ask .sheet { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+#feedback, #vvs-setup, #regqr-sheet, #readings-ask, #iphoto-ask, #import-sheet { position: fixed; inset: 0; background: rgba(11, 31, 42, .6); z-index: 900; display: flex; align-items: flex-end; justify-content: center; }
+#feedback[hidden], #vvs-setup[hidden], #regqr-sheet[hidden], #readings-ask[hidden], #iphoto-ask[hidden], #import-sheet[hidden] { display: none; }
+#feedback .sheet, #vvs-setup .sheet, #regqr-sheet .sheet, #readings-ask .sheet, #iphoto-ask .sheet, #import-sheet .sheet { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
 #fb-card { display: flex; flex-direction: column; gap: 8px; }
 .hint.center { text-align: center; }
 ol.steps { margin: 0; padding-left: 22px; }
@@ -857,7 +857,7 @@ ul.rows li.legend { display: block; font-size: 13px; color: var(--gray); border-
 #readings-card { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--light); padding-top: 10px; }
 #readings-card h3 { margin: 0; }
 #readings-card .sub { font-weight: 500; color: var(--gray); font-size: 15px; }
-#readings-card.flash { animation: flash 1.2s ease-out 2; }
+#readings-card.flash, #iphoto-card.flash, #data-card.flash { animation: flash 1.2s ease-out 2; }
 @keyframes flash { 0% { background: #fff6d6; } 100% { background: transparent; } }
 ul.readings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 ul.readings li { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; align-items: center; border: 2px solid var(--light); border-radius: 12px; padding: 8px; }
@@ -884,6 +884,10 @@ ul.readings .rs.edited { color: #b26a00; font-weight: 700; }
 .lcd-row { display: flex; gap: 8px; }
 .lcd-row button { flex: 1; }
 .lcd-row button[hidden] { display: none; }
+.hint.gal .link, .lcd-gal { display: inline; width: auto; min-height: 0; padding: 0; }
+.hint.gal[hidden] { display: none; }
+#lcd-reader .lcd-gal { color: #fff; margin-top: 6px; background: none; border: 0; text-decoration: underline; }
+#lcd-light:not(:has(button:not([hidden]))) { display: none; }
 #lcd-use { min-height: 56px; }
 #readings-more summary { font-weight: 700; min-height: 44px; display: flex; align-items: center; cursor: pointer; }
 .checks { display: grid; grid-template-columns: 1fr; gap: 2px; }
@@ -923,6 +927,30 @@ ul.vvsq .st.err { color: var(--red); }
 .sync-item .acts { display: flex; gap: 8px; margin-top: 8px; }
 .sync-item .acts button { flex: 1; min-height: 44px; }
 
+/* address search on the map */
+.search-row { display: flex; gap: 8px; }
+.search-row input { flex: 1; min-width: 0; }
+.search-row button { width: auto; flex: none; }
+#pick-results[hidden] { display: none; }
+#pick-results button { width: 100%; text-align: left; font-weight: 500; }
+
+/* installation photos */
+#iphoto-card h3 { margin: 0 0 4px; }
+.iphotos { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.iphotos li { position: relative; }
+.iphotos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; display: block; }
+.iphotos small { display: block; font-size: 12px; color: var(--gray, #5a6b75); margin-top: 2px; }
+.iphotos button { position: absolute; top: 4px; right: 4px; width: 32px; min-height: 32px; height: 32px; padding: 0; border-radius: 16px; background: rgba(0,0,0,.6); color: #fff; border: 0; font-size: 18px; }
+#iphoto-card.need { border: 3px solid #ffd23f; }
+#import-list label small { display: block; color: #5a6b75; font-size: 13px; }
+#import-list label.known { opacity: .65; }
+.sync-item .mini { margin-top: 6px; }
+.sync-item .mini .chips button { min-height: 38px; padding: 4px 10px; font-size: 15px; }
+.sync-item .mini input { width: 100%; }
+.file-btn.disabled { opacity: .45; pointer-events: none; }
+#iphoto-card.inside { margin: 10px 0; padding: 10px 0 0; border: 0; box-shadow: none; border-top: 1px solid #dde5ea; border-radius: 0; }
+#iphoto-card.inside.need { border: 3px solid #ffd23f; border-radius: 12px; padding: 10px; }
+
 </style>
 </head>
 <body>
@@ -934,7 +962,7 @@ ul.vvsq .st.err { color: var(--red); }
 </header>
 
 <main>
-  <!-- Cuplare -->
+  <!-- Pairing -->
   <section id="view-pair" class="view" hidden>
     <div class="card">
       <h2>Aplicația nu este cuplată</h2>
@@ -1020,7 +1048,7 @@ ul.vvsq .st.err { color: var(--red); }
     </div>
   </section>
 
-  <!-- Aliniere -->
+  <!-- Alignment -->
   <section id="view-align" class="view" hidden>
     <div id="instruction" class="instruction blue">
       <strong id="ins-title"></strong>
@@ -1059,6 +1087,7 @@ ul.vvsq .st.err { color: var(--red); }
       <h2>Raport</h2>
       <p class="hint" id="photo-hint">Fotografiază întâi antena, apoi descarcă raportul: PDF-ul include și fotografia.</p>
       <label class="file-btn" id="photo-label"><span id="photo-txt">Fotografiază antena</span><input type="file" id="photo-file" accept="image/*" capture="environment" hidden></label>
+      <p class="hint gal" id="photo-gal"><button type="button" class="link" data-gallery="photo-file">sau alege o poză din galerie</button></p>
       <div id="readings-card">
         <h3>Citirile contorului <span class="sub">(opțional)</span></h3>
         <p class="hint">Apasă camera de lângă registru și ține afișajul în chenar. Verifică cifrele: le poți corecta.</p>
@@ -1110,6 +1139,20 @@ ul.vvsq .st.err { color: var(--red); }
         <div class="chips sub" id="ch-place-n" hidden></div>
       </div>
     </div>
+    <div id="iphoto-card" class="card" hidden>
+      <h3>Poze cu instalația <span id="iphoto-n" class="sub"></span></h3>
+      <p class="hint" id="iphoto-hint">Fotografiază toată instalația la montaj și la punerea în funcțiune: contorul, țevile, antena și ce e în jur. Pozele intră în raportul PDF, ca istoric și dovadă a montajului corect.</p>
+      <div class="two">
+        <label class="file-btn"><span>La montaj</span><input type="file" id="iphoto-mount" accept="image/*" capture="environment" hidden></label>
+        <label class="file-btn"><span>La punerea în funcțiune</span><input type="file" id="iphoto-start" accept="image/*" capture="environment" hidden></label>
+      </div>
+      <p class="hint gal">Lumină slabă? Fă poza cu aplicația Cameră a telefonului (blitz sau mod noapte), apoi alege-o din galerie:
+        <button type="button" class="link" data-gallery="iphoto-mount">la montaj</button> ·
+        <button type="button" class="link" data-gallery="iphoto-start">la punerea în funcțiune</button></p>
+      <p class="hint">Doar echipamentul și instalația: fără persoane, acte sau lucruri personale ale clientului.</p>
+      <ul id="iphoto-list" class="iphotos"></ul>
+      <p id="iphoto-msg" class="hint" hidden></p>
+    </div>
     <p id="align-error" class="error" hidden></p>
     <div id="pos-card" class="card" hidden>
       <p id="pos-text" class="hint"></p>
@@ -1119,7 +1162,7 @@ ul.vvsq .st.err { color: var(--red); }
     <p class="hint center"><button type="button" id="fb-open2" class="link">Trimite feedback</button></p>
   </section>
 
-  <!-- Receptoare -->
+  <!-- Receivers -->
   <section id="view-recv" class="view" hidden>
     <div class="card">
       <h2>Receptoare proprii văzute</h2>
@@ -1133,12 +1176,16 @@ ul.vvsq .st.err { color: var(--red); }
     </div>
   </section>
 
-  <!-- Hartă -->
+  <!-- Map -->
   <section id="view-sync" class="view" hidden>
     <div class="card">
       <h2>Sincronizare cu VVS-dialog</h2>
       <p class="hint">Fiecare raport salvat așteaptă aici până când li îl pune pe caz: fișierele, textul din Ny aktivitet și statusul. Un singur li le trimite pe toate cele care așteaptă.</p>
       <p id="sync-sum" class="sync-sum"></p>
+      <button type="button" id="sync-import" class="secondary">Adaugă rapoarte din fișiere</button>
+      <button type="button" id="sync-import2" class="link" hidden>sau alege fișierele</button>
+      <input type="file" id="sync-files" accept=".pdf,.png,application/pdf,image/png" multiple hidden>
+      <p id="sync-import-msg" class="hint" hidden></p>
       <button type="button" id="vvsq-send" class="primary" hidden>Trimite cele care așteaptă</button>
       <button type="button" id="sync-clean" class="secondary" hidden>Șterge fișierele care sunt deja pe caz</button>
       <p id="sync-clean-msg" class="hint" hidden></p>
@@ -1149,7 +1196,11 @@ ul.vvsq .st.err { color: var(--red); }
   <section id="view-map" class="view" hidden>
     <div id="pick-bar" class="card" hidden>
       <h2>Atinge harta în dreptul contorului</h2>
-      <input id="pick-coords" inputmode="text" autocomplete="off" placeholder="sau lipește coordonate: 56.1234, 10.1234">
+      <form id="pick-form" class="search-row">
+        <input id="pick-coords" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" placeholder="Adresă sau coordonate">
+        <button type="submit" id="pick-search" class="secondary">Caută</button>
+      </form>
+      <ul id="pick-results" class="rows" hidden></ul>
       <p id="pick-info" class="hint">Nicio poziție aleasă.</p>
       <div class="two">
         <button type="button" id="pick-cancel" class="secondary">Înapoi</button>
@@ -1179,11 +1230,16 @@ ul.vvsq .st.err { color: var(--red); }
   <div class="scan-bottom">
     <div id="lcd-live" class="lcd-live">…</div>
     <button type="button" id="lcd-use" class="primary">Păstrează poza, scriu eu valoarea</button>
-    <div class="lcd-row">
+    <div class="lcd-row" id="lcd-light">
+      <button type="button" id="lcd-dark" class="secondary" hidden aria-label="Mai întunecat">☀ −</button>
+      <button type="button" id="lcd-bright" class="secondary" hidden aria-label="Mai luminos">☀ +</button>
       <button type="button" id="lcd-torch" class="secondary" hidden>Lanternă</button>
+    </div>
+    <div class="lcd-row">
       <button type="button" id="lcd-photo-btn" class="secondary">Fotografiază</button>
       <button type="button" id="lcd-close" class="secondary">Închide</button>
     </div>
+    <button type="button" class="link lcd-gal" data-gallery="lcd-photo">Alege o poză din galerie</button>
     <input type="file" id="lcd-photo" accept="image/*" capture="environment" hidden>
   </div>
 </div>
@@ -1223,6 +1279,25 @@ ul.vvsq .st.err { color: var(--red); }
     </ol>
     <button type="button" id="regqr-save" class="primary">Salvează imaginea</button>
     <button type="button" id="regqr-close" class="secondary">Închide</button>
+  </div>
+</div>
+
+<div id="iphoto-ask" hidden>
+  <div class="card sheet">
+    <h2>Nu ai nicio poză cu instalația</h2>
+    <p class="hint">Pozele de la montaj și de la punerea în funcțiune arată cum a fost lăsată instalația. Fă cel puțin una înainte de raport.</p>
+    <button type="button" id="iask-yes" class="primary">Fac poze acum</button>
+    <button type="button" id="iask-no" class="secondary">Salvează raportul fără poze</button>
+  </div>
+</div>
+
+<div id="import-sheet" hidden>
+  <div class="card sheet">
+    <h2>Rapoarte găsite</h2>
+    <p class="hint" id="import-hint">Bifează rapoartele care trebuie să ajungă pe caz. Cele bifate intră în listă și le trimite li.</p>
+    <div id="import-list" class="checks"></div>
+    <button type="button" id="import-ok" class="primary">Adaugă în listă</button>
+    <button type="button" id="import-cancel" class="secondary">Renunță</button>
   </div>
 </div>
 
@@ -1374,7 +1449,6 @@ window.LINKIQ_DA = {
  "Renunță și ia-o de la capăt": "Afbryd og start forfra",
  "Registru: {0} site-uri, {1} concentratoare": "Register: {0} sites, {1} koncentratorer",
  ", {0} fără site sigur.": ", {0} uden sikkert site.",
- "Registrul nu este încărcat: toate receptoarele auzite sunt tratate ca proprii, iar harta nu are site-uri.": "Registret er ikke indlæst: alle hørte modtagere behandles som vores egne, og kortet viser ingen sites.",
  "{0} {1} pe acest dispozitiv. Datele nu pleacă nicăieri până nu le exporți.": "{0} {1} på denne enhed. Data forlader ikke enheden, før du eksporterer dem.",
  "sesiune salvată": "gemt session",
  "sesiuni salvate": "gemte sessioner",
@@ -1795,14 +1869,66 @@ window.LINKIQ_DA = {
  "Bookmark-ul e scurt și ia codul întreg din LinkIQ. Prima dată, dacă VVS-dialog nu e deschis din LinkIQ: apasă butonul de mai jos, apoi li în VVS-dialog.": "Bogmærket er kort og henter hele koden fra LinkIQ. Første gang, hvis VVS-dialog ikke er åbnet fra LinkIQ: tryk på knappen herunder og derefter på li i VVS-dialog.",
  "Copiază codul complet pentru VVS-dialog (o dată)": "Kopiér hele koden til VVS-dialog (én gang)",
  "Codul complet e copiat. Deschide VVS-dialog în Chrome și apasă li: îl ia din clipboard și îl ține minte.": "Hele koden er kopieret. Åbn VVS-dialog i Chrome, og tryk på li: den hentes fra udklipsholderen og huskes.",
- "Nu am putut copia.": "Kunne ikke kopiere."
+ "Nu am putut copia.": "Kunne ikke kopiere.",
+ "Fotografiază antena cu datele măsurătorii; pozele cu instalația se fac mai jos. PDF-ul le include pe toate.": "Fotografér antennen med målingens data; billederne af installationen tages nedenfor. PDF'en indeholder dem alle.",
+ "Poze cu instalația": "Billeder af installationen",
+ "{0} poze în paginile următoare: montaj și punere în funcțiune": "{0} billeder på de følgende sider: montage og idriftsættelse",
+ "Șterge poza": "Slet billedet",
+ "Ștergi poza?": "Slette billedet?",
+ "({0} la montaj, {1} la punerea în funcțiune)": "({0} ved montage, {1} ved idriftsættelse)",
+ "Sunt deja {0} poze. Șterge una ca să adaugi alta.": "Der er allerede {0} billeder. Slet ét for at tilføje et nyt.",
+ "Poza e salvată în dosarul „{0}” ca {1}.": "Billedet er gemt i mappen „{0}“ som {1}.",
+ "Poza intră în raportul PDF.": "Billedet kommer med i PDF-rapporten.",
+ "Fără rezultat ales: li pune doar fișierul pe caz.": "Intet resultat valgt: li lægger kun filen på sagen.",
+ "Nu am găsit rapoarte. Numele fișierului trebuie să înceapă cu seria contorului.": "Ingen rapporter fundet. Filnavnet skal begynde med målerens serienummer.",
+ "deja în listă sau pe caz": "allerede på listen eller på sagen",
+ "Adaugă în listă ({0})": "Tilføj til listen ({0})",
+ "{0} rapoarte adăugate. Alege rezultatul pe fiecare, apoi trimite.": "{0} rapporter tilføjet. Vælg resultatet på hver, og send dem derefter.",
+ "Nimic nou de adăugat.": "Intet nyt at tilføje.",
+ "Caută rapoarte în dosarul „{0}”": "Søg efter rapporter i mappen „{0}“",
+ "Adaugă rapoarte din fișiere": "Tilføj rapporter fra filer",
+ "La montaj": "Ved montage",
+ "La punerea în funcțiune": "Ved idriftsættelse",
+ "Fotografiază toată instalația la montaj și la punerea în funcțiune: contorul, țevile, antena și ce e în jur. Pozele intră în raportul PDF, ca istoric și dovadă a montajului corect.": "Fotografér hele installationen ved montage og ved idriftsættelse: måleren, rørene, antennen og omgivelserne. Billederne kommer med i PDF-rapporten som historik og dokumentation for korrekt montage.",
+ "sau alege fișierele": "eller vælg filerne",
+ "Nu ai nicio poză cu instalația": "Du har ingen billeder af installationen",
+ "Pozele de la montaj și de la punerea în funcțiune arată cum a fost lăsată instalația. Fă cel puțin una înainte de raport.": "Billederne fra montage og idriftsættelse viser, hvordan installationen blev efterladt. Tag mindst ét før rapporten.",
+ "Fac poze acum": "Tag billeder nu",
+ "Salvează raportul fără poze": "Gem rapporten uden billeder",
+ "Rapoarte găsite": "Fundne rapporter",
+ "Bifează rapoartele care trebuie să ajungă pe caz. Cele bifate intră în listă și le trimite li.": "Markér de rapporter, der skal på sagen. De markerede kommer på listen, og li sender dem.",
+ "Adaugă în listă": "Tilføj til listen",
+ "Renunță": "Annullér",
+ "din dosar": "fra mappen",
+ "Raportul PDF, cu pozele instalației, a fost salvat ca {0}.": "PDF-rapporten med billederne af installationen er gemt som {0}.",
+ "Caut adresa…": "Søger efter adressen…",
+ "Căutarea adresei nu merge acum ({0}). Atinge harta sau folosește GPS.": "Adressesøgningen virker ikke lige nu ({0}). Tryk på kortet, eller brug GPS.",
+ "Nu am găsit adresa. Scrie strada, numărul și orașul, de ex. Søndergade 1, 8000 Aarhus C.": "Adressen blev ikke fundet. Skriv vej, nummer og by, fx Søndergade 1, 8000 Aarhus C.",
+ "verifică pe hartă și mută punctul dacă e nevoie.": "kontrollér på kortet, og flyt punktet om nødvendigt.",
+ "Alege adresa potrivită.": "Vælg den rigtige adresse.",
+ "Scrie adresa întreagă sau coordonatele.": "Skriv hele adressen eller koordinaterne.",
+ "Caută": "Søg",
+ "Adresă sau coordonate": "Adresse eller koordinater",
+ "sau alege o poză din galerie": "eller vælg et billede fra galleriet",
+ "Lumină slabă? Fă poza cu aplicația Cameră a telefonului (blitz sau mod noapte), apoi alege-o din galerie:": "Dårligt lys? Tag billedet med telefonens Kamera-app (blitz eller nattilstand), og vælg det derefter fra galleriet:",
+ "la montaj": "ved montage",
+ "la punerea în funcțiune": "ved idriftsættelse",
+ "Alege o poză din galerie": "Vælg et billede fra galleriet",
+ "Mai întunecat": "Mørkere",
+ "Mai luminos": "Lysere",
+ "Doar echipamentul și instalația: fără persoane, acte sau lucruri personale ale clientului.": "Kun udstyret og installationen: ingen personer, papirer eller kundens personlige ting.",
+ "{0} au alt proprietar decât Kredsløb și nu contează în rezultat.": "{0} har en anden ejer end Kredsløb og tæller ikke med i resultatet.",
+ "{0} sunt marcate inactive și nu contează în rezultat.": "{0} er markeret som inaktive og tæller ikke med i resultatet.",
+ "Registrul nu are coloana de proprietar (Ownership / Ejer): toate concentratoarele din el sunt socotite ale Kredsløb.": "Registret har ingen ejerkolonne (Ownership / Ejer): alle koncentratorer i det regnes som Kredsløbs.",
+ "Registrul nu este încărcat. Fără el nu se poate face nicio măsurătoare: LinkIQ nu poate ști care concentratoare sunt ale Kredsløb. Doar modul demonstrativ merge fără registru.": "Registret er ikke indlæst. Uden det kan der ikke måles: LinkIQ kan ikke vide, hvilke koncentratorer der tilhører Kredsløb. Kun demotilstanden virker uden register.",
+ "Registrul concentratoarelor Kredsløb nu este încărcat sau nu are niciun concentrator activ al Kredsløb. Fără el nu se poate decide care concentratoare sunt ale noastre, deci măsurătoarea nu poate fi aprobată. Încarcă registrul (cod QR) pe ecranul de start.": "Kredsløbs koncentratorregister er ikke indlæst eller har ingen aktive Kredsløb-koncentratorer. Uden det kan LinkIQ ikke afgøre, hvilke koncentratorer der tilhører Kredsløb, så målingen kan ikke godkendes. Indlæs registret (QR-kode) på startskærmen.",
 };
 
 </script>
 <script>
 /* Generated by tools/build_vvs.py from tools/vvs/bookmark.src.js and loader.src.js. Do not edit. */
-window.LINKIQ_VVS_BOOKMARK = "javascript:!async%20function()%7Bvar%20e=%5B%22afsluttet%22,%22lukket%22%5D,t=%22ctl00$DefaultContent$CaseNewLogUC$%22;if(%22vvsdialog.kmd.dk%22===location.hostname)%7Bvar%20n=document.getElementById(%22linkiq-box%22);n&&n.remove();var%20r=document.createElement(%22div%22);r.id=%22linkiq-box%22,r.style.cssText=%22position:fixed;left:0;right:0;top:0;z-index:99999;background:%231f5e4f;color:%23fff;font:17px/1.4%20Arial,sans-serif;padding:14px;max-height:100%25;overflow:auto;box-shadow:0%202px%2010px%20rgba(0,0,0,.5)%22,document.body.appendChild(r);var%20a=new%20DOMParser,i=function(e)%7Breturn%20new%20Promise(function(t)%7BsetTimeout(t,e)%7D)%7D,o=null,c=%5B%5D,l=null;try%7BO(%22LinkIQ:%20henter%20opgaver%20%E2%80%A6%22);var%20u=await%20async%20function()%7Breturn%20window.opener?new%20Promise(function(e)%7Bvar%20t=!1;window.addEventListener(%22message%22,function%20n(r)%7Br.source===window.opener&&r.data&&%22items%22===r.data.liq&&(t=!0,window.removeEventListener(%22message%22,n),e(r.data.items%7C%7C%5B%5D))%7D);try%7Bwindow.opener.postMessage(%7Bliq:%22hello%22,v:2%7D,%22*%22)%7Dcatch(t)%7Breturn%20void%20e(null)%7DsetTimeout(function()%7Bt%7C%7Ce(null)%7D,2500)%7D):null%7D(),s=!!u;u&&u.length%7C%7C(u=H(),s=!1);var%20f=%22%22;if(!u)%7Btry%7Bnavigator.clipboard&&navigator.clipboard.readText&&(f=await%20Promise.race(%5Bnavigator.clipboard.readText(),i(4e3).then(function()%7Breturn%22%22%7D)%5D))%7Dcatch(e)%7Bf=%22%22%7Du=H(f=String(f%7C%7C%22%22).trim())%7Dif(!u)%7Bvar%20d=(prompt(%22LinkIQ:%20M%C3%A5lernummer?%22,/%5E%5Cd%7B6,12%7D$/.test(f)?f:%22%22)%7C%7C%22%22).replace(/%5CD/g,%22%22);if(!d)return%20void%20r.remove();u=%5B%7Bmeter:d,files:%5B%5D%7D%5D%7Dvar%20p=u.filter(function(e)%7Breturn!(s%7C%7Cvoid%200===e.text%7C%7Ce.files&&e.files.length)%7D);if(p.length%3E1&&!window.showDirectoryPicker)%7Bvar%20m=await%20G(p.map(function(e)%7Breturn%20e.meter%7D).join(%22,%20%22),p.map(function(e)%7Breturn%20String(e.meter)%7D));p.forEach(function(e)%7Bvar%20t=%7B%7D;m.filter(function(t)%7Breturn%20t.name.indexOf(String(e.meter))%3E=0%7D).forEach(function(e)%7Bvar%20n=/%5C.pdf$/i.test(e.name)?%22pdf%22:%22img%22;(!t%5Bn%5D%7C%7C(e.blob.lastModified%7C%7C0)%3E(t%5Bn%5D.blob.lastModified%7C%7C0))&&(t%5Bn%5D=e)%7D),e.files=%5B%22pdf%22,%22img%22%5D.filter(function(e)%7Breturn%20t%5Be%5D%7D).map(function(e)%7Breturn%20t%5Be%5D%7D),e.picked=!0%7D)%7Dfor(var%20g=%5B%5D,h=null,v=0;v%3Cu.length;v++)%7Bvar%20w=u%5Bv%5D,y=u.length%3E1?%22(%22+(v+1)+%22/%22+u.length+%22)%20%22:%22%22;try%7BO(%22LinkIQ:%20%22+y+%22s%C3%B8ger%20m%C3%A5ler%20%22+w.meter+%22%20%E2%80%A6%22);var%20b=await%20R(String(w.meter));if(!b)%7Bg.push(w.meter+%22:%20sprunget%20over%22);continue%7Dvar%20x=w.files%7C%7C%5B%5D;s%7C%7Cx.length%7C%7Cvoid%200===w.text%7C%7Cw.picked%7C%7C(x=await%20F(String(w.meter))%7C%7Cawait%20G(w.meter)),O(%22LinkIQ:%20%22+y+%22sag%20%22+b+%22%20%E2%80%93%20uploader%20%E2%80%A6%22);var%20k=await%20U(b,x),S=null;w.text&&(O(%22LinkIQ:%20%22+y+%22sag%20%22+b+%22%20%E2%80%93%20skriver%20Ny%20aktivitet%20og%20status%20%E2%80%A6%22),S=await%20V(b,w.text,w.status)),h=b;var%20C=(k.length?k.length+%22%20fil(er)%22:%22ingen%20nye%20filer%22)+(w.text?%22exists%22===S?%22,%20aktiviteten%20fandtes%20allerede%22:%22,%20aktivitet%22+(w.status?%22%20+%20%22+w.status:%22%22):%22%22);if(g.push(%22%E2%9C%93%20%22+w.meter+%22%20%E2%86%92%20sag%20%22+b+%22:%20%22+C),j(%7Bliq:%22result%22,id:w.id,ok:!0,cc:b,msg:C%7D),!w.text&&!x.length&&1===u.length)return%20void(location.href=%22/Cases/ShowCase.aspx?cc=%22+b)%7Dcatch(e)%7Bvar%20L=e&&%22LOGIN%22===e.message?%22Log%20ind%20i%20VVS-dialog%20(Chrome%20udfylder%20selv),%20og%20tryk%20p%C3%A5%20li%20igen.%22:e&&e.message?e.message:String(e);if(g.push(%22%E2%9C%97%20%22+w.meter+%22:%20%22+L),j(%7Bliq:%22result%22,id:w.id,ok:!1,msg:L%7D),e&&%22LOGIN%22===e.message)break%7D%7D/%5Elinkiq_j/.test(String(window.name%7C%7C%22%22))&&(window.name=%22%22),O(%22LinkIQ:%20f%C3%A6rdig%22),g.forEach(function(e)%7BE(e)%7D);var%20A=o&&c.length&&!window.opener;if(A)%7Bvar%20q=btoa(unescape(encodeURIComponent(JSON.stringify(c)))).replace(/%5C+/g,%22-%22).replace(/%5C//g,%22_%22).replace(/=+$/,%22%22);I(%22Tilbage%20til%20LinkIQ%22,function()%7Blocation.href=o+%22%23liqdone=%22+q%7D,!0)%7Delse%201===u.length&&h&&%22%E2%9C%93%22===g%5B0%5D.charAt(0)&&setTimeout(function()%7Blocation.href=%22/Cases/ShowCase.aspx?cc=%22+h%7D,2500);h&&I(%22Vis%20sagen%22,function()%7Blocation.href=%22/Cases/ShowCase.aspx?cc=%22+h%7D,!A),P()%7Dcatch(e)%7BO(%22LinkIQ:%20Fejl%20%E2%80%93%20%22+(e&&e.message?e.message:e)),P()%7D%7Delse%20alert(%22LinkIQ:%20%C3%85bn%20VVS-dialog%20og%20log%20ind%20f%C3%B8rst.%22);function%20E(e,t)%7Bvar%20n=document.createElement(%22div%22);return%20n.textContent=e,n.style.margin=%220%200%208px%22,n.style.whiteSpace=%22pre-wrap%22,t&&(n.style.fontWeight=%22bold%22),r.appendChild(n),n%7Dfunction%20I(e,t,n)%7Bvar%20a=document.createElement(%22button%22);return%20a.type=%22button%22,a.textContent=e,a.style.cssText=%22display:block;width:100%25;margin:0%200%208px;padding:12px;font:16px%20Arial,sans-serif;text-align:left;border:0;border-radius:6px;%22+(n?%22background:%23ffd23f;color:%23111;font-weight:bold%22:%22background:%23fff;color:%23111%22),a.onclick=t,r.appendChild(a),a%7Dfunction%20O(e)%7Br.textContent=%22%22,E(e,!0)%7Dfunction%20P()%7BI(%22Luk%22,function()%7Br.remove()%7D)%7Dasync%20function%20T(e)%7Bfor(var%20t,n=0;n%3C3;n++)try%7Breturn%20await%20e()%7Dcatch(e)%7Bt=e,await%20i(1500*(n+1))%7Dthrow%20t%7Dasync%20function%20N(e,t)%7Bvar%20n=await%20T(function()%7Breturn%20fetch(e,Object.assign(%7Bcredentials:%22same-origin%22%7D,t%7C%7C%7B%7D))%7D),r=await%20n.text();return%7Bres:n,url:n.url,html:r,doc:a.parseFromString(r,%22text/html%22)%7D%7Dfunction%20Q(e,t)%7Bvar%20n=new%20URLSearchParams;return%20Array.prototype.forEach.call(e.querySelectorAll(%22input,select,textarea%22),function(e)%7Bif(e.name&&!e.disabled)%7Bvar%20r=(e.type%7C%7C%22%22).toLowerCase();if(%22submit%22!==r&&%22button%22!==r&&%22image%22!==r&&%22file%22!==r&&%22reset%22!==r&&(!t%7C%7C!Object.prototype.hasOwnProperty.call(t,e.name))&&(%22checkbox%22!==r&&%22radio%22!==r%7C%7Ce.hasAttribute(%22checked%22)))if(%22SELECT%22!==e.tagName)n.append(e.name,%22TEXTAREA%22===e.tagName?e.textContent:e.getAttribute(%22value%22)%7C%7C%22%22);else%7Bvar%20a=e.querySelector(%22option%5Bselected%5D%22)%7C%7Ce.querySelector(%22option%22);a&&n.append(e.name,null!==a.getAttribute(%22value%22)?a.getAttribute(%22value%22):a.textContent)%7D%7D%7D),Object.keys(t%7C%7C%7B%7D).forEach(function(e)%7Bnull!==t%5Be%5D&&n.append(e,t%5Be%5D)%7D),n%7Dfunction%20j(e)%7Be.id&&c.push(%7Bid:e.id,ok:e.ok,cc:e.cc,msg:e.msg%7D);try%7Bwindow.opener&&window.opener.postMessage(e,%22*%22)%7Dcatch(e)%7B%7D%7Dfunction%20D(e)%7Breturn%20atob(e.replace(/-/g,%22+%22).replace(/_/g,%22/%22))%7Dfunction%20H(e)%7Bvar%20t=String(window.name%7C%7C%22%22).split(%22%7CLIQCODE:%22)%5B0%5D,n=t.split(%22%7CLIQBACK:%22);n%5B1%5D&&(o=decodeURIComponent(n%5B1%5D),t=n%5B0%5D);var%20r=t.split(%22%7CLIQFILES:%22),a=%7B%7D;if(r%5B1%5D)try%7Ba=JSON.parse(decodeURIComponent(escape(D(r%5B1%5D))))%7Dcatch(e)%7Ba=%7B%7D%7Dvar%20i=r%5B0%5D.match(/%5Elinkiq_j(%5B%5Cw-%5D+)$/)%7C%7Clocation.search.match(/%5B?&%5Dliq=(%5B%5Cw-%5D+)/)%7C%7Cnull%7C%7CString(e%7C%7C%22%22).trim().match(/%5ELIQ1:(%5B%5Cw-%5D+)$/)%7C%7Cnull;if(i)try%7Bvar%20c=JSON.parse(decodeURIComponent(escape(D(i%5B1%5D))));return(Array.isArray(c)?c:%5Bc%5D).map(function(e)%7Bvar%20t=(a%5Be.id%5D%7C%7C%5B%5D).map(function(e)%7Bfor(var%20t=atob(e.d),n=new%20Uint8Array(t.length),r=0;r%3Ct.length;r++)n%5Br%5D=t.charCodeAt(r);return%7Bname:e.n,blob:new%20Blob(%5Bn%5D,%7Btype:e.t%7C%7C%22application/octet-stream%22%7D)%7D%7D);return%7Bid:e.id,meter:e.m,status:e.s,text:e.t,files:t%7D%7D)%7Dcatch(e)%7B%7Dvar%20l=(location.hash.match(/linkiq=(%5Cd+)/)%7C%7C%5B%5D)%5B1%5D%7C%7C(r%5B0%5D.match(/%5Elinkiq_(%5Cd+)$/)%7C%7C%5B%5D)%5B1%5D;return%20l?%5B%7Bmeter:l,files:%5B%5D%7D%5D:null%7Dasync%20function%20R(t)%7Bvar%20n=location.pathname.match(/ShowCase%5C.aspx/i)&&new%20URLSearchParams(location.search).get(%22cc%22);if(n&&document.body.innerText.indexOf(t)%3E=0)return%20n;var%20r=(await%20N(%22/Home.aspx%22)).doc.querySelector(%22form%22),a=r?Array.prototype.slice.call(r.querySelectorAll(%22input%22)):%5B%5D,i=a.find(function(e)%7Breturn/meternumber/i.test(e.name%7C%7C%22%22)%7D),o=a.find(function(e)%7Breturn%22submit%22===(e.type%7C%7C%22%22).toLowerCase()&&%22S%C3%B8g%22===(e.value%7C%7C%22%22).trim()%7D);if(!i%7C%7C!o)throw%20new%20Error(%22LOGIN%22);var%20c=%7B%7D;c%5Bi.name%5D=t,c%5Bo.name%5D=o.value;var%20l=new%20URL(r.getAttribute(%22action%22)%7C%7C%22Home.aspx%22,location.origin+%22/Home.aspx%22),u=await%20N(l.href,%7Bmethod:%22POST%22,headers:%7B%22Content-Type%22:%22application/x-www-form-urlencoded%22%7D,body:Q(r,c).toString()%7D);if(!/ShowCustomer%5C.aspx/i.test(u.url))throw%20new%20Error(%22M%C3%A5ler%20%22+t+%22%20blev%20ikke%20fundet%20entydigt.%22);var%20s,f,d=%7B%7D,p=%5B%5D;if(Array.prototype.forEach.call(u.doc.querySelectorAll('%5Bonclick*=%22ShowCase.aspx%22%5D'),function(n)%7Bvar%20r=((n.getAttribute(%22onclick%22)%7C%7C%22%22).match(/cc=(%5Cd+)/)%7C%7C%5B%5D)%5B1%5D;if(r&&!d%5Br%5D)%7Bd%5Br%5D=1;var%20a=i(%22.ucCHCol2%22);e.indexOf(a.toLowerCase())%3E=0%7C%7Cp.push(%7Bcc:r,date:i(%22.ucCHCol1%22),status:a,type:i(%22.ucCHCol3%22),own:n.textContent.indexOf(t)%3E=0%7D)%7Dfunction%20i(e)%7Bvar%20t=n.querySelector(e);return%20t?t.textContent.trim():%22%22%7D%7D),1===p.length)return%20p%5B0%5D.cc;if(!p.length)throw%20new%20Error(%22Ingen%20%C3%A5ben%20sag%20for%20m%C3%A5ler%20%22+t+%22.%22);return%20s=%22LinkIQ:%20%22+p.length+%22%20%C3%A5bne%20sager%20for%20m%C3%A5ler%20%22+t+%22.%20V%C3%A6lg%20sag:%22,f=p.map(function(e)%7Breturn%7Blabel:e.date+%22%20%C2%B7%20%22+e.status+%22%20%C2%B7%20%22+e.type+(e.own?%22%20%C2%B7%20m%C3%A5ler%20n%C3%A6vnt%22:%22%22),value:e.cc%7D%7D).concat(%5B%7Blabel:%22Spring%20over%22,value:null%7D%5D),new%20Promise(function(e)%7BO(s),f.forEach(function(t)%7BI(t.label,function()%7Be(t.value)%7D,t.main)%7D)%7D)%7Dasync%20function%20U(e,t)%7Bif(!t.length)return%5B%5D;var%20n=%7B%7D;try%7Bvar%20r=await%20T(function()%7Breturn%20fetch(%22/Handlers/GetFiles.ashx?caseId=%22+e,%7Bcredentials:%22same-origin%22%7D)%7D);(await%20r.json()).files.forEach(function(e)%7Bn%5Be.name%5D=1%7D)%7Dcatch(e)%7B%7Dvar%20a=t.filter(function(e)%7Breturn!n%5Be.name%5D%7D);if(!a.length)return%5B%5D;var%20i=new%20FormData;a.forEach(function(e)%7Bi.append(%22files%22,e.blob,e.name)%7D),i.append(%22caseId%22,e);var%20o=await%20T(function()%7Breturn%20fetch(%22/Handlers/FileHandler.ashx%22,%7Bmethod:%22POST%22,body:i,credentials:%22same-origin%22,headers:%7B%22X-Requested-With%22:%22XMLHttpRequest%22%7D%7D)%7D),c=o.ok?await%20o.json().catch(function()%7Breturn%20null%7D):null;if(!c%7C%7C!c.files)throw%20new%20Error(%22Upload%20fejlede%20(HTTP%20%22+o.status+%22)%22);return%20c.files.map(function(e)%7Breturn%20e.name%7D)%7Dasync%20function%20V(e,n,r)%7Bn=String(n%7C%7C%22%22).replace(/%5B%5Cu2013%5Cu2014%5D/g,%22-%22);var%20a=%22/Cases/ShowCase.aspx?cc=%22+e,i=await%20N(a);if(function(e)%7Breturn!e.doc.querySelector(%22form%22)%7C%7C/login%7Clogon%7Csignin/i.test(e.url)%7D(i))throw%20new%20Error(%22LOGIN%22);var%20o=i.doc.querySelector(%22form%22),c=i.doc.querySelector('textarea%5Bname=%22'+t+'LogTextTextArea%22%5D'),l=i.doc.querySelector('input%5Bname=%22'+t+'SaveLogButton%22%5D');if(!o%7C%7C!c%7C%7C!l)throw%20new%20Error(%22Fandt%20ikke%20feltet%20Ny%20aktivitet%22);for(var%20u=function(e)%7Breturn%20String(e%7C%7C%22%22).toLowerCase().replace(/%5B%5E0-9a-z%C3%A6%C3%B8%C3%A5%C3%A4%C3%B6%C3%BC()%5D+/g,%22%22)%7D,s=u(i.doc.body.textContent),f=u(n),d=s.indexOf(f);d%3E=0;)%7Bif(%22(slettet)%22!==s.substr(d+f.length,9))return%22exists%22;d=s.indexOf(f,d+1)%7Dvar%20p=%7B%7D;if(p%5Bc.name%5D=n,p%5Bl.name%5D=l.getAttribute(%22value%22)%7C%7C%22Gem%22,r)%7Bvar%20m=function(e,t)%7Bvar%20n=String(t%7C%7C%22%22).trim().toLowerCase(),r=null;return%20Array.prototype.forEach.call(e.querySelectorAll(%22input%5Btype=radio%5D%22),function(t)%7Bvar%20a=t.id?e.querySelector('label%5Bfor=%22'+t.id+'%22%5D'):null,i=a?a.textContent:t.nextSibling?t.nextSibling.textContent:t.parentNode?t.parentNode.textContent:%22%22;r%7C%7CString(i%7C%7C%22%22).trim().toLowerCase()!==n%7C%7C(r=t)%7D),r%7D(i.doc,r);if(!m)throw%20new%20Error(%22Status%20%E2%80%9E%22+r+%22%E2%80%9C%20findes%20ikke%20i%20VVS-dialog%22);Array.prototype.forEach.call(i.doc.querySelectorAll('input%5Btype=radio%5D%5Bname=%22'+m.name+'%22%5D'),function(e)%7Be.removeAttribute(%22checked%22)%7D),p%5Bm.name%5D=m.getAttribute(%22value%22);var%20g=i.doc.querySelector('select%5Bname$=%22NewStatusDropDownList%22%5D');g&&g.querySelector('option%5Bvalue=%22'+m.getAttribute(%22value%22)+'%22%5D')&&(p%5Bg.name%5D=m.getAttribute(%22value%22))%7Dvar%20h=new%20URL(o.getAttribute(%22action%22)%7C%7Ca,location.origin+a),v=await%20N(h.href,%7Bmethod:%22POST%22,headers:%7B%22Content-Type%22:%22application/x-www-form-urlencoded%22%7D,body:Q(o,p).toString()%7D),w=u(v.doc.body?v.doc.body.textContent:%22%22),y=u(n);if(y&&w.indexOf(y)%3C0)throw%20new%20Error(%22Aktiviteten%20blev%20ikke%20fundet%20efter%20Gem%20%E2%80%93%20se%20sagen%22)%7Dfunction%20$()%7Breturn%20new%20Promise(function(e,t)%7Bvar%20n=indexedDB.open(%22linkiq-li%22,1);n.onupgradeneeded=function()%7Bn.result.createObjectStore(%22kv%22)%7D,n.onsuccess=function()%7Be(n.result)%7D,n.onerror=function()%7Bt(n.error)%7D%7D)%7Dasync%20function%20M(e,t)%7Bvar%20n=%7B%7D;for%20await(var%20r%20of%20e.values())if(!(%22file%22!==r.kind%7C%7Cr.name.indexOf(t)%3C0))%7Bvar%20a=(r.name.match(/%5C.(pdf%7Cpng%7Cjpe?g)$/i)%7C%7C%5B%5D)%5B1%5D;if(a)%7Ba=%22pdf%22===a.toLowerCase()?%22pdf%22:%22img%22;var%20i=await%20r.getFile();(!n%5Ba%5D%7C%7Ci.lastModified%3En%5Ba%5D.lastModified)&&(n%5Ba%5D=i)%7D%7Dreturn%5B%22pdf%22,%22img%22%5D.filter(function(e)%7Breturn%20n%5Be%5D%7D).map(function(e)%7Breturn%7Bname:n%5Be%5D.name,blob:n%5Be%5D%7D%7D)%7Dasync%20function%20F(e)%7Bif(!window.showDirectoryPicker)return%20null;if(l)try%7Bvar%20t=await%20M(l,e);if(t.length)return%20t%7Dcatch(e)%7B%7Dvar%20n=null;try%7Bn=await%20async%20function(e)%7Bvar%20t=await%20$();return%20new%20Promise(function(n)%7Bvar%20r=t.transaction(%22kv%22).objectStore(%22kv%22).get(e);r.onsuccess=function()%7Bn(r.result)%7D,r.onerror=function()%7Bn(null)%7D%7D)%7D(%22dir%22)%7Dcatch(e)%7Bn=null%7Dreturn%20new%20Promise(function(t)%7Basync%20function%20r(n)%7Btry%7Bif(%22granted%22!==await%20n.queryPermission(%7Bmode:%22read%22%7D)&&%22granted%22!==await%20n.requestPermission(%7Bmode:%22read%22%7D))return%20void%20t(null);await%20async%20function(e,t)%7Btry%7Bvar%20n=await%20$()%7Dcatch(e)%7Breturn%7Dreturn%20new%20Promise(function(r)%7Btry%7Bvar%20a=n.transaction(%22kv%22,%22readwrite%22);a.objectStore(%22kv%22).put(t,e),a.oncomplete=r,a.onerror=r%7Dcatch(e)%7Br()%7D%7D)%7D(%22dir%22,n),l=n;var%20r=await%20M(n,e);if(!r.length)return%20O(%22LinkIQ:%20ingen%20rapport%20med%20%22+e+%22%20i%20mappen%20%E2%80%9E%22+n.name+%22%E2%80%9C.%22),await%20i(2e3),void%20t(null);t(r)%7Dcatch(e)%7Bt(null)%7D%7DO(%22LinkIQ:%20m%C3%A5ler%20%22+e+%22%20%E2%80%93%20rapporten%20hentes%20fra%20mappen%22),n&&I(%22Brug%20mappen%20%E2%80%9E%22+n.name+%22%E2%80%9C%22,function()%7Br(n)%7D,!0),I(n?%22V%C3%A6lg%20en%20anden%20mappe%22:%22V%C3%A6lg%20rapportmappen%20(%C3%A9n%20gang)%22,async%20function()%7Btry%7Br(await%20window.showDirectoryPicker(%7Bid:%22linkiq-rapporter%22,mode:%22read%22%7D))%7Dcatch(e)%7Bt(null)%7D%7D,!n),I(%22V%C3%A6lg%20filerne%20selv%22,function()%7Bt(null)%7D)%7D)%7Dfunction%20G(e,t)%7Bt=t%7C%7C%5BString(e)%5D;var%20n=function(e)%7Breturn%20t.some(function(t)%7Breturn%20e.indexOf(t)%3E=0%7D)%7D;return%20new%20Promise(function(t)%7BO(%22LinkIQ:%20m%C3%A5ler%20%22+e+%22%20%E2%80%93%20v%C3%A6lg%20rapporten%20(PDF/PNG)%20fra%20mappen%22);var%20a=document.createElement(%22input%22);a.type=%22file%22,a.multiple=!0,a.accept=%22.pdf,.png,.jpg,application/pdf,image/*%22,a.style.cssText=%22display:block;margin:0%200%2010px;color:%23fff%22,r.appendChild(a);var%20i=E(%22%22),o=I(%22Send%20til%20sagen%22,function()%7Bvar%20e=Array.prototype.slice.call(a.files%7C%7C%5B%5D).filter(function(e,t)%7Breturn%20r.querySelector('%5Bdata-i=%22'+t+'%22%5D').checked%7D);t(e.map(function(e)%7Breturn%7Bname:e.name,blob:e%7D%7D))%7D,!0);o.disabled=!0,I(%22Send%20uden%20filer%22,function()%7Bt(%5B%5D)%7D),a.onchange=function()%7Bi.textContent=%22%22,Array.prototype.forEach.call(a.files,function(e,t)%7Bvar%20r=document.createElement(%22label%22),a=document.createElement(%22input%22);a.type=%22checkbox%22,a.dataset.i=t,a.checked=n(e.name),r.style.display=%22block%22,r.appendChild(a),r.appendChild(document.createTextNode(%22%20%22+e.name+(n(e.name)?%22%22:%22%20%20(ikke%20denne%20m%C3%A5ler!)%22))),i.appendChild(r)%7D),o.disabled=!1%7D%7D)%7D%7D();";
-window.LINKIQ_VVS_CODE = "!async function(){var e=[\"afsluttet\",\"lukket\"],t=\"ctl00$DefaultContent$CaseNewLogUC$\";if(\"vvsdialog.kmd.dk\"===location.hostname){var n=document.getElementById(\"linkiq-box\");n&&n.remove();var r=document.createElement(\"div\");r.id=\"linkiq-box\",r.style.cssText=\"position:fixed;left:0;right:0;top:0;z-index:99999;background:#1f5e4f;color:#fff;font:17px/1.4 Arial,sans-serif;padding:14px;max-height:100%;overflow:auto;box-shadow:0 2px 10px rgba(0,0,0,.5)\",document.body.appendChild(r);var a=new DOMParser,i=function(e){return new Promise(function(t){setTimeout(t,e)})},o=null,c=[],l=null;try{O(\"LinkIQ: henter opgaver \u2026\");var u=await async function(){return window.opener?new Promise(function(e){var t=!1;window.addEventListener(\"message\",function n(r){r.source===window.opener&&r.data&&\"items\"===r.data.liq&&(t=!0,window.removeEventListener(\"message\",n),e(r.data.items||[]))});try{window.opener.postMessage({liq:\"hello\",v:2},\"*\")}catch(t){return void e(null)}setTimeout(function(){t||e(null)},2500)}):null}(),s=!!u;u&&u.length||(u=H(),s=!1);var f=\"\";if(!u){try{navigator.clipboard&&navigator.clipboard.readText&&(f=await Promise.race([navigator.clipboard.readText(),i(4e3).then(function(){return\"\"})]))}catch(e){f=\"\"}u=H(f=String(f||\"\").trim())}if(!u){var d=(prompt(\"LinkIQ: M\u00e5lernummer?\",/^\\d{6,12}$/.test(f)?f:\"\")||\"\").replace(/\\D/g,\"\");if(!d)return void r.remove();u=[{meter:d,files:[]}]}var p=u.filter(function(e){return!(s||void 0===e.text||e.files&&e.files.length)});if(p.length>1&&!window.showDirectoryPicker){var m=await G(p.map(function(e){return e.meter}).join(\", \"),p.map(function(e){return String(e.meter)}));p.forEach(function(e){var t={};m.filter(function(t){return t.name.indexOf(String(e.meter))>=0}).forEach(function(e){var n=/\\.pdf$/i.test(e.name)?\"pdf\":\"img\";(!t[n]||(e.blob.lastModified||0)>(t[n].blob.lastModified||0))&&(t[n]=e)}),e.files=[\"pdf\",\"img\"].filter(function(e){return t[e]}).map(function(e){return t[e]}),e.picked=!0})}for(var g=[],h=null,v=0;v<u.length;v++){var w=u[v],y=u.length>1?\"(\"+(v+1)+\"/\"+u.length+\") \":\"\";try{O(\"LinkIQ: \"+y+\"s\u00f8ger m\u00e5ler \"+w.meter+\" \u2026\");var b=await R(String(w.meter));if(!b){g.push(w.meter+\": sprunget over\");continue}var x=w.files||[];s||x.length||void 0===w.text||w.picked||(x=await F(String(w.meter))||await G(w.meter)),O(\"LinkIQ: \"+y+\"sag \"+b+\" \u2013 uploader \u2026\");var k=await U(b,x),S=null;w.text&&(O(\"LinkIQ: \"+y+\"sag \"+b+\" \u2013 skriver Ny aktivitet og status \u2026\"),S=await V(b,w.text,w.status)),h=b;var C=(k.length?k.length+\" fil(er)\":\"ingen nye filer\")+(w.text?\"exists\"===S?\", aktiviteten fandtes allerede\":\", aktivitet\"+(w.status?\" + \"+w.status:\"\"):\"\");if(g.push(\"\u2713 \"+w.meter+\" \u2192 sag \"+b+\": \"+C),j({liq:\"result\",id:w.id,ok:!0,cc:b,msg:C}),!w.text&&!x.length&&1===u.length)return void(location.href=\"/Cases/ShowCase.aspx?cc=\"+b)}catch(e){var L=e&&\"LOGIN\"===e.message?\"Log ind i VVS-dialog (Chrome udfylder selv), og tryk p\u00e5 li igen.\":e&&e.message?e.message:String(e);if(g.push(\"\u2717 \"+w.meter+\": \"+L),j({liq:\"result\",id:w.id,ok:!1,msg:L}),e&&\"LOGIN\"===e.message)break}}/^linkiq_j/.test(String(window.name||\"\"))&&(window.name=\"\"),O(\"LinkIQ: f\u00e6rdig\"),g.forEach(function(e){E(e)});var A=o&&c.length&&!window.opener;if(A){var q=btoa(unescape(encodeURIComponent(JSON.stringify(c)))).replace(/\\+/g,\"-\").replace(/\\//g,\"_\").replace(/=+$/,\"\");I(\"Tilbage til LinkIQ\",function(){location.href=o+\"#liqdone=\"+q},!0)}else 1===u.length&&h&&\"\u2713\"===g[0].charAt(0)&&setTimeout(function(){location.href=\"/Cases/ShowCase.aspx?cc=\"+h},2500);h&&I(\"Vis sagen\",function(){location.href=\"/Cases/ShowCase.aspx?cc=\"+h},!A),P()}catch(e){O(\"LinkIQ: Fejl \u2013 \"+(e&&e.message?e.message:e)),P()}}else alert(\"LinkIQ: \u00c5bn VVS-dialog og log ind f\u00f8rst.\");function E(e,t){var n=document.createElement(\"div\");return n.textContent=e,n.style.margin=\"0 0 8px\",n.style.whiteSpace=\"pre-wrap\",t&&(n.style.fontWeight=\"bold\"),r.appendChild(n),n}function I(e,t,n){var a=document.createElement(\"button\");return a.type=\"button\",a.textContent=e,a.style.cssText=\"display:block;width:100%;margin:0 0 8px;padding:12px;font:16px Arial,sans-serif;text-align:left;border:0;border-radius:6px;\"+(n?\"background:#ffd23f;color:#111;font-weight:bold\":\"background:#fff;color:#111\"),a.onclick=t,r.appendChild(a),a}function O(e){r.textContent=\"\",E(e,!0)}function P(){I(\"Luk\",function(){r.remove()})}async function T(e){for(var t,n=0;n<3;n++)try{return await e()}catch(e){t=e,await i(1500*(n+1))}throw t}async function N(e,t){var n=await T(function(){return fetch(e,Object.assign({credentials:\"same-origin\"},t||{}))}),r=await n.text();return{res:n,url:n.url,html:r,doc:a.parseFromString(r,\"text/html\")}}function Q(e,t){var n=new URLSearchParams;return Array.prototype.forEach.call(e.querySelectorAll(\"input,select,textarea\"),function(e){if(e.name&&!e.disabled){var r=(e.type||\"\").toLowerCase();if(\"submit\"!==r&&\"button\"!==r&&\"image\"!==r&&\"file\"!==r&&\"reset\"!==r&&(!t||!Object.prototype.hasOwnProperty.call(t,e.name))&&(\"checkbox\"!==r&&\"radio\"!==r||e.hasAttribute(\"checked\")))if(\"SELECT\"!==e.tagName)n.append(e.name,\"TEXTAREA\"===e.tagName?e.textContent:e.getAttribute(\"value\")||\"\");else{var a=e.querySelector(\"option[selected]\")||e.querySelector(\"option\");a&&n.append(e.name,null!==a.getAttribute(\"value\")?a.getAttribute(\"value\"):a.textContent)}}}),Object.keys(t||{}).forEach(function(e){null!==t[e]&&n.append(e,t[e])}),n}function j(e){e.id&&c.push({id:e.id,ok:e.ok,cc:e.cc,msg:e.msg});try{window.opener&&window.opener.postMessage(e,\"*\")}catch(e){}}function D(e){return atob(e.replace(/-/g,\"+\").replace(/_/g,\"/\"))}function H(e){var t=String(window.name||\"\").split(\"|LIQCODE:\")[0],n=t.split(\"|LIQBACK:\");n[1]&&(o=decodeURIComponent(n[1]),t=n[0]);var r=t.split(\"|LIQFILES:\"),a={};if(r[1])try{a=JSON.parse(decodeURIComponent(escape(D(r[1]))))}catch(e){a={}}var i=r[0].match(/^linkiq_j([\\w-]+)$/)||location.search.match(/[?&]liq=([\\w-]+)/)||null||String(e||\"\").trim().match(/^LIQ1:([\\w-]+)$/)||null;if(i)try{var c=JSON.parse(decodeURIComponent(escape(D(i[1]))));return(Array.isArray(c)?c:[c]).map(function(e){var t=(a[e.id]||[]).map(function(e){for(var t=atob(e.d),n=new Uint8Array(t.length),r=0;r<t.length;r++)n[r]=t.charCodeAt(r);return{name:e.n,blob:new Blob([n],{type:e.t||\"application/octet-stream\"})}});return{id:e.id,meter:e.m,status:e.s,text:e.t,files:t}})}catch(e){}var l=(location.hash.match(/linkiq=(\\d+)/)||[])[1]||(r[0].match(/^linkiq_(\\d+)$/)||[])[1];return l?[{meter:l,files:[]}]:null}async function R(t){var n=location.pathname.match(/ShowCase\\.aspx/i)&&new URLSearchParams(location.search).get(\"cc\");if(n&&document.body.innerText.indexOf(t)>=0)return n;var r=(await N(\"/Home.aspx\")).doc.querySelector(\"form\"),a=r?Array.prototype.slice.call(r.querySelectorAll(\"input\")):[],i=a.find(function(e){return/meternumber/i.test(e.name||\"\")}),o=a.find(function(e){return\"submit\"===(e.type||\"\").toLowerCase()&&\"S\u00f8g\"===(e.value||\"\").trim()});if(!i||!o)throw new Error(\"LOGIN\");var c={};c[i.name]=t,c[o.name]=o.value;var l=new URL(r.getAttribute(\"action\")||\"Home.aspx\",location.origin+\"/Home.aspx\"),u=await N(l.href,{method:\"POST\",headers:{\"Content-Type\":\"application/x-www-form-urlencoded\"},body:Q(r,c).toString()});if(!/ShowCustomer\\.aspx/i.test(u.url))throw new Error(\"M\u00e5ler \"+t+\" blev ikke fundet entydigt.\");var s,f,d={},p=[];if(Array.prototype.forEach.call(u.doc.querySelectorAll('[onclick*=\"ShowCase.aspx\"]'),function(n){var r=((n.getAttribute(\"onclick\")||\"\").match(/cc=(\\d+)/)||[])[1];if(r&&!d[r]){d[r]=1;var a=i(\".ucCHCol2\");e.indexOf(a.toLowerCase())>=0||p.push({cc:r,date:i(\".ucCHCol1\"),status:a,type:i(\".ucCHCol3\"),own:n.textContent.indexOf(t)>=0})}function i(e){var t=n.querySelector(e);return t?t.textContent.trim():\"\"}}),1===p.length)return p[0].cc;if(!p.length)throw new Error(\"Ingen \u00e5ben sag for m\u00e5ler \"+t+\".\");return s=\"LinkIQ: \"+p.length+\" \u00e5bne sager for m\u00e5ler \"+t+\". V\u00e6lg sag:\",f=p.map(function(e){return{label:e.date+\" \u00b7 \"+e.status+\" \u00b7 \"+e.type+(e.own?\" \u00b7 m\u00e5ler n\u00e6vnt\":\"\"),value:e.cc}}).concat([{label:\"Spring over\",value:null}]),new Promise(function(e){O(s),f.forEach(function(t){I(t.label,function(){e(t.value)},t.main)})})}async function U(e,t){if(!t.length)return[];var n={};try{var r=await T(function(){return fetch(\"/Handlers/GetFiles.ashx?caseId=\"+e,{credentials:\"same-origin\"})});(await r.json()).files.forEach(function(e){n[e.name]=1})}catch(e){}var a=t.filter(function(e){return!n[e.name]});if(!a.length)return[];var i=new FormData;a.forEach(function(e){i.append(\"files\",e.blob,e.name)}),i.append(\"caseId\",e);var o=await T(function(){return fetch(\"/Handlers/FileHandler.ashx\",{method:\"POST\",body:i,credentials:\"same-origin\",headers:{\"X-Requested-With\":\"XMLHttpRequest\"}})}),c=o.ok?await o.json().catch(function(){return null}):null;if(!c||!c.files)throw new Error(\"Upload fejlede (HTTP \"+o.status+\")\");return c.files.map(function(e){return e.name})}async function V(e,n,r){n=String(n||\"\").replace(/[\\u2013\\u2014]/g,\"-\");var a=\"/Cases/ShowCase.aspx?cc=\"+e,i=await N(a);if(function(e){return!e.doc.querySelector(\"form\")||/login|logon|signin/i.test(e.url)}(i))throw new Error(\"LOGIN\");var o=i.doc.querySelector(\"form\"),c=i.doc.querySelector('textarea[name=\"'+t+'LogTextTextArea\"]'),l=i.doc.querySelector('input[name=\"'+t+'SaveLogButton\"]');if(!o||!c||!l)throw new Error(\"Fandt ikke feltet Ny aktivitet\");for(var u=function(e){return String(e||\"\").toLowerCase().replace(/[^0-9a-z\u00e6\u00f8\u00e5\u00e4\u00f6\u00fc()]+/g,\"\")},s=u(i.doc.body.textContent),f=u(n),d=s.indexOf(f);d>=0;){if(\"(slettet)\"!==s.substr(d+f.length,9))return\"exists\";d=s.indexOf(f,d+1)}var p={};if(p[c.name]=n,p[l.name]=l.getAttribute(\"value\")||\"Gem\",r){var m=function(e,t){var n=String(t||\"\").trim().toLowerCase(),r=null;return Array.prototype.forEach.call(e.querySelectorAll(\"input[type=radio]\"),function(t){var a=t.id?e.querySelector('label[for=\"'+t.id+'\"]'):null,i=a?a.textContent:t.nextSibling?t.nextSibling.textContent:t.parentNode?t.parentNode.textContent:\"\";r||String(i||\"\").trim().toLowerCase()!==n||(r=t)}),r}(i.doc,r);if(!m)throw new Error(\"Status \u201e\"+r+\"\u201c findes ikke i VVS-dialog\");Array.prototype.forEach.call(i.doc.querySelectorAll('input[type=radio][name=\"'+m.name+'\"]'),function(e){e.removeAttribute(\"checked\")}),p[m.name]=m.getAttribute(\"value\");var g=i.doc.querySelector('select[name$=\"NewStatusDropDownList\"]');g&&g.querySelector('option[value=\"'+m.getAttribute(\"value\")+'\"]')&&(p[g.name]=m.getAttribute(\"value\"))}var h=new URL(o.getAttribute(\"action\")||a,location.origin+a),v=await N(h.href,{method:\"POST\",headers:{\"Content-Type\":\"application/x-www-form-urlencoded\"},body:Q(o,p).toString()}),w=u(v.doc.body?v.doc.body.textContent:\"\"),y=u(n);if(y&&w.indexOf(y)<0)throw new Error(\"Aktiviteten blev ikke fundet efter Gem \u2013 se sagen\")}function $(){return new Promise(function(e,t){var n=indexedDB.open(\"linkiq-li\",1);n.onupgradeneeded=function(){n.result.createObjectStore(\"kv\")},n.onsuccess=function(){e(n.result)},n.onerror=function(){t(n.error)}})}async function M(e,t){var n={};for await(var r of e.values())if(!(\"file\"!==r.kind||r.name.indexOf(t)<0)){var a=(r.name.match(/\\.(pdf|png|jpe?g)$/i)||[])[1];if(a){a=\"pdf\"===a.toLowerCase()?\"pdf\":\"img\";var i=await r.getFile();(!n[a]||i.lastModified>n[a].lastModified)&&(n[a]=i)}}return[\"pdf\",\"img\"].filter(function(e){return n[e]}).map(function(e){return{name:n[e].name,blob:n[e]}})}async function F(e){if(!window.showDirectoryPicker)return null;if(l)try{var t=await M(l,e);if(t.length)return t}catch(e){}var n=null;try{n=await async function(e){var t=await $();return new Promise(function(n){var r=t.transaction(\"kv\").objectStore(\"kv\").get(e);r.onsuccess=function(){n(r.result)},r.onerror=function(){n(null)}})}(\"dir\")}catch(e){n=null}return new Promise(function(t){async function r(n){try{if(\"granted\"!==await n.queryPermission({mode:\"read\"})&&\"granted\"!==await n.requestPermission({mode:\"read\"}))return void t(null);await async function(e,t){try{var n=await $()}catch(e){return}return new Promise(function(r){try{var a=n.transaction(\"kv\",\"readwrite\");a.objectStore(\"kv\").put(t,e),a.oncomplete=r,a.onerror=r}catch(e){r()}})}(\"dir\",n),l=n;var r=await M(n,e);if(!r.length)return O(\"LinkIQ: ingen rapport med \"+e+\" i mappen \u201e\"+n.name+\"\u201c.\"),await i(2e3),void t(null);t(r)}catch(e){t(null)}}O(\"LinkIQ: m\u00e5ler \"+e+\" \u2013 rapporten hentes fra mappen\"),n&&I(\"Brug mappen \u201e\"+n.name+\"\u201c\",function(){r(n)},!0),I(n?\"V\u00e6lg en anden mappe\":\"V\u00e6lg rapportmappen (\u00e9n gang)\",async function(){try{r(await window.showDirectoryPicker({id:\"linkiq-rapporter\",mode:\"read\"}))}catch(e){t(null)}},!n),I(\"V\u00e6lg filerne selv\",function(){t(null)})})}function G(e,t){t=t||[String(e)];var n=function(e){return t.some(function(t){return e.indexOf(t)>=0})};return new Promise(function(t){O(\"LinkIQ: m\u00e5ler \"+e+\" \u2013 v\u00e6lg rapporten (PDF/PNG) fra mappen\");var a=document.createElement(\"input\");a.type=\"file\",a.multiple=!0,a.accept=\".pdf,.png,.jpg,application/pdf,image/*\",a.style.cssText=\"display:block;margin:0 0 10px;color:#fff\",r.appendChild(a);var i=E(\"\"),o=I(\"Send til sagen\",function(){var e=Array.prototype.slice.call(a.files||[]).filter(function(e,t){return r.querySelector('[data-i=\"'+t+'\"]').checked});t(e.map(function(e){return{name:e.name,blob:e}}))},!0);o.disabled=!0,I(\"Send uden filer\",function(){t([])}),a.onchange=function(){i.textContent=\"\",Array.prototype.forEach.call(a.files,function(e,t){var r=document.createElement(\"label\"),a=document.createElement(\"input\");a.type=\"checkbox\",a.dataset.i=t,a.checked=n(e.name),r.style.display=\"block\",r.appendChild(a),r.appendChild(document.createTextNode(\" \"+e.name+(n(e.name)?\"\":\"  (ikke denne m\u00e5ler!)\"))),i.appendChild(r)}),o.disabled=!1}})}}();";
+window.LINKIQ_VVS_BOOKMARK = "javascript:!async%20function()%7Bvar%20e=%5B%22afsluttet%22,%22lukket%22%5D,t=%22ctl00$DefaultContent$CaseNewLogUC$%22;if(%22vvsdialog.kmd.dk%22===location.hostname)%7Bvar%20n=document.getElementById(%22linkiq-box%22);n&&n.remove();var%20r=document.createElement(%22div%22);r.id=%22linkiq-box%22,r.style.cssText=%22position:fixed;left:0;right:0;top:0;z-index:99999;background:%231f5e4f;color:%23fff;font:17px/1.4%20Arial,sans-serif;padding:14px;max-height:100%25;overflow:auto;box-shadow:0%202px%2010px%20rgba(0,0,0,.5)%22,document.body.appendChild(r);var%20a=new%20DOMParser,i=function(e)%7Breturn%20new%20Promise(function(t)%7BsetTimeout(t,e)%7D)%7D,o=/%5Ehttps:%5C/%5C/(valentinstm%5C.github%5C.io%7C%5Ba-z0-9-%5D+%5C.kredslob%5C.dk)$%7C%5Ehttps?:%5C/%5C/(localhost%7C127%5C.0%5C.0%5C.1)(:%5Cd+)?$/,l=null,c=null,u=%5B%5D,s=null;try%7BT(%22LinkIQ:%20henter%20opgaver%20%E2%80%A6%22);var%20f=await%20async%20function()%7Breturn%20window.opener?new%20Promise(function(e)%7Bvar%20t=!1;window.addEventListener(%22message%22,function%20n(r)%7Br.source===window.opener&&o.test(r.origin)&&r.data&&%22items%22===r.data.liq&&(l=r.origin,t=!0,window.removeEventListener(%22message%22,n),e(r.data.items%7C%7C%5B%5D))%7D);try%7Bwindow.opener.postMessage(%7Bliq:%22hello%22,v:2%7D,%22*%22)%7Dcatch(t)%7Breturn%20void%20e(null)%7DsetTimeout(function()%7Bt%7C%7Ce(null)%7D,2500)%7D):null%7D(),d=!!f;f&&f.length%7C%7C(f=U(),d=!1);var%20p=%22%22;if(!f)%7Btry%7Bnavigator.clipboard&&navigator.clipboard.readText&&(p=await%20Promise.race(%5Bnavigator.clipboard.readText(),i(4e3).then(function()%7Breturn%22%22%7D)%5D))%7Dcatch(e)%7Bp=%22%22%7Df=U(p=String(p%7C%7C%22%22).trim())%7Dif(!f)%7Bvar%20m=(prompt(%22LinkIQ:%20M%C3%A5lernummer?%22,/%5E%5Cd%7B6,12%7D$/.test(p)?p:%22%22)%7C%7C%22%22).replace(/%5CD/g,%22%22);if(!m)return%20void%20r.remove();f=%5B%7Bmeter:m,files:%5B%5D%7D%5D%7Dvar%20g=f.filter(function(e)%7Breturn!(d%7C%7Cvoid%200===e.text%7C%7Ce.files&&e.files.length)%7D);if(g.length%3E1&&!window.showDirectoryPicker)%7Bvar%20h=await%20_(g.map(function(e)%7Breturn%20e.meter%7D).join(%22,%20%22),g.map(function(e)%7Breturn%20String(e.meter)%7D));g.forEach(function(e)%7Bvar%20t=%7B%7D;h.filter(function(t)%7Breturn%20t.name.indexOf(String(e.meter))%3E=0%7D).forEach(function(e)%7Bvar%20n=/%5C.pdf$/i.test(e.name)?%22pdf%22:%22img%22;(!t%5Bn%5D%7C%7C(e.blob.lastModified%7C%7C0)%3E(t%5Bn%5D.blob.lastModified%7C%7C0))&&(t%5Bn%5D=e)%7D),e.files=%5B%22pdf%22,%22img%22%5D.filter(function(e)%7Breturn%20t%5Be%5D%7D).map(function(e)%7Breturn%20t%5Be%5D%7D),e.picked=!0%7D)%7Dfor(var%20v=%5B%5D,w=null,y=0;y%3Cf.length;y++)%7Bvar%20b=f%5By%5D,x=f.length%3E1?%22(%22+(y+1)+%22/%22+f.length+%22)%20%22:%22%22;try%7BT(%22LinkIQ:%20%22+x+%22s%C3%B8ger%20m%C3%A5ler%20%22+b.meter+%22%20%E2%80%A6%22);var%20k=await%20H(String(b.meter));if(!k)%7Bv.push(b.meter+%22:%20sprunget%20over%22);continue%7Dvar%20S=b.files%7C%7C%5B%5D;d%7C%7CS.length%7C%7Cvoid%200===b.text%7C%7Cb.picked%7C%7C(S=await%20B(String(b.meter))%7C%7Cawait%20_(b.meter)),T(%22LinkIQ:%20%22+x+%22sag%20%22+k+%22%20%E2%80%93%20uploader%20%E2%80%A6%22);var%20C=await%20V(k,S),L=null;b.text&&(T(%22LinkIQ:%20%22+x+%22sag%20%22+k+%22%20%E2%80%93%20skriver%20Ny%20aktivitet%20og%20status%20%E2%80%A6%22),L=await%20M(k,b.text,b.status)),w=k;var%20A=(C.length?C.length+%22%20fil(er)%22:%22ingen%20nye%20filer%22)+(b.text?%22exists%22===L?%22,%20aktiviteten%20fandtes%20allerede%22:%22,%20aktivitet%22+(b.status?%22%20+%20%22+b.status:%22%22):%22%22);if(v.push(%22%E2%9C%93%20%22+b.meter+%22%20%E2%86%92%20sag%20%22+k+%22:%20%22+A),D(%7Bliq:%22result%22,id:b.id,ok:!0,cc:k,msg:A%7D),!b.text&&!S.length&&1===f.length)return%20void(location.href=%22/Cases/ShowCase.aspx?cc=%22+k)%7Dcatch(e)%7Bvar%20q=e&&%22LOGIN%22===e.message?%22Log%20ind%20i%20VVS-dialog%20(Chrome%20udfylder%20selv),%20og%20tryk%20p%C3%A5%20li%20igen.%22:e&&e.message?e.message:String(e);if(v.push(%22%E2%9C%97%20%22+b.meter+%22:%20%22+q),D(%7Bliq:%22result%22,id:b.id,ok:!1,msg:q%7D),e&&%22LOGIN%22===e.message)break%7D%7D/%5Elinkiq_j/.test(String(window.name%7C%7C%22%22))&&(window.name=%22%22),T(%22LinkIQ:%20f%C3%A6rdig%22),v.forEach(function(e)%7BO(e)%7D);var%20E=c&&u.length&&!window.opener;if(E)%7Bvar%20I=btoa(unescape(encodeURIComponent(JSON.stringify(u)))).replace(/%5C+/g,%22-%22).replace(/%5C//g,%22_%22).replace(/=+$/,%22%22);P(%22Tilbage%20til%20LinkIQ%22,function()%7Blocation.href=c+%22%23liqdone=%22+I%7D,!0)%7Delse%201===f.length&&w&&%22%E2%9C%93%22===v%5B0%5D.charAt(0)&&setTimeout(function()%7Blocation.href=%22/Cases/ShowCase.aspx?cc=%22+w%7D,2500);w&&P(%22Vis%20sagen%22,function()%7Blocation.href=%22/Cases/ShowCase.aspx?cc=%22+w%7D,!E),N()%7Dcatch(e)%7BT(%22LinkIQ:%20Fejl%20%E2%80%93%20%22+(e&&e.message?e.message:e)),N()%7D%7Delse%20alert(%22LinkIQ:%20%C3%85bn%20VVS-dialog%20og%20log%20ind%20f%C3%B8rst.%22);function%20O(e,t)%7Bvar%20n=document.createElement(%22div%22);return%20n.textContent=e,n.style.margin=%220%200%208px%22,n.style.whiteSpace=%22pre-wrap%22,t&&(n.style.fontWeight=%22bold%22),r.appendChild(n),n%7Dfunction%20P(e,t,n)%7Bvar%20a=document.createElement(%22button%22);return%20a.type=%22button%22,a.textContent=e,a.style.cssText=%22display:block;width:100%25;margin:0%200%208px;padding:12px;font:16px%20Arial,sans-serif;text-align:left;border:0;border-radius:6px;%22+(n?%22background:%23ffd23f;color:%23111;font-weight:bold%22:%22background:%23fff;color:%23111%22),a.onclick=t,r.appendChild(a),a%7Dfunction%20T(e)%7Br.textContent=%22%22,O(e,!0)%7Dfunction%20N()%7BP(%22Luk%22,function()%7Br.remove()%7D)%7Dasync%20function%20Q(e)%7Bfor(var%20t,n=0;n%3C3;n++)try%7Breturn%20await%20e()%7Dcatch(e)%7Bt=e,await%20i(1500*(n+1))%7Dthrow%20t%7Dasync%20function%20j(e,t)%7Bvar%20n=await%20Q(function()%7Breturn%20fetch(e,Object.assign(%7Bcredentials:%22same-origin%22%7D,t%7C%7C%7B%7D))%7D),r=await%20n.text();return%7Bres:n,url:n.url,html:r,doc:a.parseFromString(r,%22text/html%22)%7D%7Dfunction%20$(e,t)%7Bvar%20n=new%20URLSearchParams;return%20Array.prototype.forEach.call(e.querySelectorAll(%22input,select,textarea%22),function(e)%7Bif(e.name&&!e.disabled)%7Bvar%20r=(e.type%7C%7C%22%22).toLowerCase();if(%22submit%22!==r&&%22button%22!==r&&%22image%22!==r&&%22file%22!==r&&%22reset%22!==r&&(!t%7C%7C!Object.prototype.hasOwnProperty.call(t,e.name))&&(%22checkbox%22!==r&&%22radio%22!==r%7C%7Ce.hasAttribute(%22checked%22)))if(%22SELECT%22!==e.tagName)n.append(e.name,%22TEXTAREA%22===e.tagName?e.textContent:e.getAttribute(%22value%22)%7C%7C%22%22);else%7Bvar%20a=e.querySelector(%22option%5Bselected%5D%22)%7C%7Ce.querySelector(%22option%22);a&&n.append(e.name,null!==a.getAttribute(%22value%22)?a.getAttribute(%22value%22):a.textContent)%7D%7D%7D),Object.keys(t%7C%7C%7B%7D).forEach(function(e)%7Bnull!==t%5Be%5D&&n.append(e,t%5Be%5D)%7D),n%7Dfunction%20D(e)%7Be.id&&u.push(%7Bid:e.id,ok:e.ok,cc:e.cc,msg:e.msg%7D);try%7Bwindow.opener&&l&&window.opener.postMessage(e,l)%7Dcatch(e)%7B%7D%7Dfunction%20R(e)%7Breturn%20atob(e.replace(/-/g,%22+%22).replace(/_/g,%22/%22))%7Dfunction%20U(e)%7Bvar%20t=String(window.name%7C%7C%22%22).split(%22%7CLIQCODE:%22)%5B0%5D,n=t.split(%22%7CLIQBACK:%22);if(n%5B1%5D)%7Bvar%20r=null;try%7Br=new%20URL(decodeURIComponent(n%5B1%5D))%7Dcatch(e)%7Br=null%7Dr&&o.test(r.origin)&&(c=r.origin+r.pathname+r.search),t=n%5B0%5D%7Dvar%20a=t.split(%22%7CLIQFILES:%22),i=%7B%7D;if(a%5B1%5D)try%7Bi=JSON.parse(decodeURIComponent(escape(R(a%5B1%5D))))%7Dcatch(e)%7Bi=%7B%7D%7Dvar%20l=a%5B0%5D.match(/%5Elinkiq_j(%5B%5Cw-%5D+)$/)%7C%7Clocation.search.match(/%5B?&%5Dliq=(%5B%5Cw-%5D+)/)%7C%7Cnull%7C%7CString(e%7C%7C%22%22).trim().match(/%5ELIQ1:(%5B%5Cw-%5D+)$/)%7C%7Cnull;if(l)try%7Bvar%20u=JSON.parse(decodeURIComponent(escape(R(l%5B1%5D))));return(Array.isArray(u)?u:%5Bu%5D).map(function(e)%7Bvar%20t=(i%5Be.id%5D%7C%7C%5B%5D).map(function(e)%7Bfor(var%20t=atob(e.d),n=new%20Uint8Array(t.length),r=0;r%3Ct.length;r++)n%5Br%5D=t.charCodeAt(r);return%7Bname:e.n,blob:new%20Blob(%5Bn%5D,%7Btype:e.t%7C%7C%22application/octet-stream%22%7D)%7D%7D);return%7Bid:e.id,meter:e.m,status:e.s,text:e.t,files:t%7D%7D)%7Dcatch(e)%7B%7Dvar%20s=(location.hash.match(/linkiq=(%5Cd+)/)%7C%7C%5B%5D)%5B1%5D%7C%7C(a%5B0%5D.match(/%5Elinkiq_(%5Cd+)$/)%7C%7C%5B%5D)%5B1%5D;return%20s?%5B%7Bmeter:s,files:%5B%5D%7D%5D:null%7Dasync%20function%20H(t)%7Bvar%20n=location.pathname.match(/ShowCase%5C.aspx/i)&&new%20URLSearchParams(location.search).get(%22cc%22);if(n&&document.body.innerText.indexOf(t)%3E=0)return%20n;var%20r=(await%20j(%22/Home.aspx%22)).doc.querySelector(%22form%22),a=r?Array.prototype.slice.call(r.querySelectorAll(%22input%22)):%5B%5D,i=a.find(function(e)%7Breturn/meternumber/i.test(e.name%7C%7C%22%22)%7D),o=a.find(function(e)%7Breturn%22submit%22===(e.type%7C%7C%22%22).toLowerCase()&&%22S%C3%B8g%22===(e.value%7C%7C%22%22).trim()%7D);if(!i%7C%7C!o)throw%20new%20Error(%22LOGIN%22);var%20l=%7B%7D;l%5Bi.name%5D=t,l%5Bo.name%5D=o.value;var%20c=new%20URL(r.getAttribute(%22action%22)%7C%7C%22Home.aspx%22,location.origin+%22/Home.aspx%22),u=await%20j(c.href,%7Bmethod:%22POST%22,headers:%7B%22Content-Type%22:%22application/x-www-form-urlencoded%22%7D,body:$(r,l).toString()%7D);if(!/ShowCustomer%5C.aspx/i.test(u.url))throw%20new%20Error(%22M%C3%A5ler%20%22+t+%22%20blev%20ikke%20fundet%20entydigt.%22);var%20s,f,d=%7B%7D,p=%5B%5D;if(Array.prototype.forEach.call(u.doc.querySelectorAll('%5Bonclick*=%22ShowCase.aspx%22%5D'),function(n)%7Bvar%20r=((n.getAttribute(%22onclick%22)%7C%7C%22%22).match(/cc=(%5Cd+)/)%7C%7C%5B%5D)%5B1%5D;if(r&&!d%5Br%5D)%7Bd%5Br%5D=1;var%20a=i(%22.ucCHCol2%22);e.indexOf(a.toLowerCase())%3E=0%7C%7Cp.push(%7Bcc:r,date:i(%22.ucCHCol1%22),status:a,type:i(%22.ucCHCol3%22),own:n.textContent.indexOf(t)%3E=0%7D)%7Dfunction%20i(e)%7Bvar%20t=n.querySelector(e);return%20t?t.textContent.trim():%22%22%7D%7D),1===p.length)return%20p%5B0%5D.cc;if(!p.length)throw%20new%20Error(%22Ingen%20%C3%A5ben%20sag%20for%20m%C3%A5ler%20%22+t+%22.%22);return%20s=%22LinkIQ:%20%22+p.length+%22%20%C3%A5bne%20sager%20for%20m%C3%A5ler%20%22+t+%22.%20V%C3%A6lg%20sag:%22,f=p.map(function(e)%7Breturn%7Blabel:e.date+%22%20%C2%B7%20%22+e.status+%22%20%C2%B7%20%22+e.type+(e.own?%22%20%C2%B7%20m%C3%A5ler%20n%C3%A6vnt%22:%22%22),value:e.cc%7D%7D).concat(%5B%7Blabel:%22Spring%20over%22,value:null%7D%5D),new%20Promise(function(e)%7BT(s),f.forEach(function(t)%7BP(t.label,function()%7Be(t.value)%7D,t.main)%7D)%7D)%7Dasync%20function%20V(e,t)%7Bif(!t.length)return%5B%5D;var%20n=%7B%7D;try%7Bvar%20r=await%20Q(function()%7Breturn%20fetch(%22/Handlers/GetFiles.ashx?caseId=%22+e,%7Bcredentials:%22same-origin%22%7D)%7D);(await%20r.json()).files.forEach(function(e)%7Bn%5Be.name%5D=1%7D)%7Dcatch(e)%7B%7Dvar%20a=t.filter(function(e)%7Breturn!n%5Be.name%5D%7D);if(!a.length)return%5B%5D;var%20i=new%20FormData;a.forEach(function(e)%7Bi.append(%22files%22,e.blob,e.name)%7D),i.append(%22caseId%22,e);var%20o=await%20Q(function()%7Breturn%20fetch(%22/Handlers/FileHandler.ashx%22,%7Bmethod:%22POST%22,body:i,credentials:%22same-origin%22,headers:%7B%22X-Requested-With%22:%22XMLHttpRequest%22%7D%7D)%7D),l=o.ok?await%20o.json().catch(function()%7Breturn%20null%7D):null;if(!l%7C%7C!l.files)throw%20new%20Error(%22Upload%20fejlede%20(HTTP%20%22+o.status+%22)%22);return%20l.files.map(function(e)%7Breturn%20e.name%7D)%7Dasync%20function%20M(e,n,r)%7Bn=String(n%7C%7C%22%22).replace(/%5B%5Cu2013%5Cu2014%5D/g,%22-%22);var%20a=%22/Cases/ShowCase.aspx?cc=%22+e,i=await%20j(a);if(function(e)%7Breturn!e.doc.querySelector(%22form%22)%7C%7C/login%7Clogon%7Csignin/i.test(e.url)%7D(i))throw%20new%20Error(%22LOGIN%22);var%20o=i.doc.querySelector(%22form%22),l=i.doc.querySelector('textarea%5Bname=%22'+t+'LogTextTextArea%22%5D'),c=i.doc.querySelector('input%5Bname=%22'+t+'SaveLogButton%22%5D');if(!o%7C%7C!l%7C%7C!c)throw%20new%20Error(%22Fandt%20ikke%20feltet%20Ny%20aktivitet%22);for(var%20u=function(e)%7Breturn%20String(e%7C%7C%22%22).toLowerCase().replace(/%5B%5E0-9a-z%C3%A6%C3%B8%C3%A5%C3%A4%C3%B6%C3%BC()%5D+/g,%22%22)%7D,s=u(i.doc.body.textContent),f=u(n),d=s.indexOf(f);d%3E=0;)%7Bif(%22(slettet)%22!==s.substr(d+f.length,9))return%22exists%22;d=s.indexOf(f,d+1)%7Dvar%20p=%7B%7D;if(p%5Bl.name%5D=n,p%5Bc.name%5D=c.getAttribute(%22value%22)%7C%7C%22Gem%22,r)%7Bvar%20m=function(e,t)%7Bvar%20n=String(t%7C%7C%22%22).trim().toLowerCase(),r=null;return%20Array.prototype.forEach.call(e.querySelectorAll(%22input%5Btype=radio%5D%22),function(t)%7Bvar%20a=t.id?e.querySelector('label%5Bfor=%22'+t.id+'%22%5D'):null,i=a?a.textContent:t.nextSibling?t.nextSibling.textContent:t.parentNode?t.parentNode.textContent:%22%22;r%7C%7CString(i%7C%7C%22%22).trim().toLowerCase()!==n%7C%7C(r=t)%7D),r%7D(i.doc,r);if(!m)throw%20new%20Error(%22Status%20%E2%80%9E%22+r+%22%E2%80%9C%20findes%20ikke%20i%20VVS-dialog%22);Array.prototype.forEach.call(i.doc.querySelectorAll('input%5Btype=radio%5D%5Bname=%22'+m.name+'%22%5D'),function(e)%7Be.removeAttribute(%22checked%22)%7D),p%5Bm.name%5D=m.getAttribute(%22value%22);var%20g=i.doc.querySelector('select%5Bname$=%22NewStatusDropDownList%22%5D');g&&g.querySelector('option%5Bvalue=%22'+m.getAttribute(%22value%22)+'%22%5D')&&(p%5Bg.name%5D=m.getAttribute(%22value%22))%7Dvar%20h=new%20URL(o.getAttribute(%22action%22)%7C%7Ca,location.origin+a),v=await%20j(h.href,%7Bmethod:%22POST%22,headers:%7B%22Content-Type%22:%22application/x-www-form-urlencoded%22%7D,body:$(o,p).toString()%7D),w=u(v.doc.body?v.doc.body.textContent:%22%22),y=u(n);if(y&&w.indexOf(y)%3C0)throw%20new%20Error(%22Aktiviteten%20blev%20ikke%20fundet%20efter%20Gem%20%E2%80%93%20se%20sagen%22)%7Dfunction%20F()%7Breturn%20new%20Promise(function(e,t)%7Bvar%20n=indexedDB.open(%22linkiq-li%22,1);n.onupgradeneeded=function()%7Bn.result.createObjectStore(%22kv%22)%7D,n.onsuccess=function()%7Be(n.result)%7D,n.onerror=function()%7Bt(n.error)%7D%7D)%7Dasync%20function%20G(e,t)%7Bvar%20n=%7B%7D;for%20await(var%20r%20of%20e.values())if(!(%22file%22!==r.kind%7C%7Cr.name.indexOf(t)%3C0))%7Bvar%20a=(r.name.match(/%5C.(pdf%7Cpng%7Cjpe?g)$/i)%7C%7C%5B%5D)%5B1%5D;if(a)%7Ba=%22pdf%22===a.toLowerCase()?%22pdf%22:%22img%22;var%20i=await%20r.getFile();(!n%5Ba%5D%7C%7Ci.lastModified%3En%5Ba%5D.lastModified)&&(n%5Ba%5D=i)%7D%7Dreturn%5B%22pdf%22,%22img%22%5D.filter(function(e)%7Breturn%20n%5Be%5D%7D).map(function(e)%7Breturn%7Bname:n%5Be%5D.name,blob:n%5Be%5D%7D%7D)%7Dasync%20function%20B(e)%7Bif(!window.showDirectoryPicker)return%20null;if(s)try%7Bvar%20t=await%20G(s,e);if(t.length)return%20t%7Dcatch(e)%7B%7Dvar%20n=null;try%7Bn=await%20async%20function(e)%7Bvar%20t=await%20F();return%20new%20Promise(function(n)%7Bvar%20r=t.transaction(%22kv%22).objectStore(%22kv%22).get(e);r.onsuccess=function()%7Bn(r.result)%7D,r.onerror=function()%7Bn(null)%7D%7D)%7D(%22dir%22)%7Dcatch(e)%7Bn=null%7Dreturn%20new%20Promise(function(t)%7Basync%20function%20r(n)%7Btry%7Bif(%22granted%22!==await%20n.queryPermission(%7Bmode:%22read%22%7D)&&%22granted%22!==await%20n.requestPermission(%7Bmode:%22read%22%7D))return%20void%20t(null);await%20async%20function(e,t)%7Btry%7Bvar%20n=await%20F()%7Dcatch(e)%7Breturn%7Dreturn%20new%20Promise(function(r)%7Btry%7Bvar%20a=n.transaction(%22kv%22,%22readwrite%22);a.objectStore(%22kv%22).put(t,e),a.oncomplete=r,a.onerror=r%7Dcatch(e)%7Br()%7D%7D)%7D(%22dir%22,n),s=n;var%20r=await%20G(n,e);if(!r.length)return%20T(%22LinkIQ:%20ingen%20rapport%20med%20%22+e+%22%20i%20mappen%20%E2%80%9E%22+n.name+%22%E2%80%9C.%22),await%20i(2e3),void%20t(null);t(r)%7Dcatch(e)%7Bt(null)%7D%7DT(%22LinkIQ:%20m%C3%A5ler%20%22+e+%22%20%E2%80%93%20rapporten%20hentes%20fra%20mappen%22),n&&P(%22Brug%20mappen%20%E2%80%9E%22+n.name+%22%E2%80%9C%22,function()%7Br(n)%7D,!0),P(n?%22V%C3%A6lg%20en%20anden%20mappe%22:%22V%C3%A6lg%20rapportmappen%20(%C3%A9n%20gang)%22,async%20function()%7Btry%7Br(await%20window.showDirectoryPicker(%7Bid:%22linkiq-rapporter%22,mode:%22read%22%7D))%7Dcatch(e)%7Bt(null)%7D%7D,!n),P(%22V%C3%A6lg%20filerne%20selv%22,function()%7Bt(null)%7D)%7D)%7Dfunction%20_(e,t)%7Bt=t%7C%7C%5BString(e)%5D;var%20n=function(e)%7Breturn%20t.some(function(t)%7Breturn%20e.indexOf(t)%3E=0%7D)%7D;return%20new%20Promise(function(t)%7BT(%22LinkIQ:%20m%C3%A5ler%20%22+e+%22%20%E2%80%93%20v%C3%A6lg%20rapporten%20(PDF/PNG)%20fra%20mappen%22);var%20a=document.createElement(%22input%22);a.type=%22file%22,a.multiple=!0,a.accept=%22.pdf,.png,.jpg,application/pdf,image/*%22,a.style.cssText=%22display:block;margin:0%200%2010px;color:%23fff%22,r.appendChild(a);var%20i=O(%22%22),o=P(%22Send%20til%20sagen%22,function()%7Bvar%20e=Array.prototype.slice.call(a.files%7C%7C%5B%5D).filter(function(e,t)%7Breturn%20r.querySelector('%5Bdata-i=%22'+t+'%22%5D').checked%7D);t(e.map(function(e)%7Breturn%7Bname:e.name,blob:e%7D%7D))%7D,!0);o.disabled=!0,P(%22Send%20uden%20filer%22,function()%7Bt(%5B%5D)%7D),a.onchange=function()%7Bi.textContent=%22%22,Array.prototype.forEach.call(a.files,function(e,t)%7Bvar%20r=document.createElement(%22label%22),a=document.createElement(%22input%22);a.type=%22checkbox%22,a.dataset.i=t,a.checked=n(e.name),r.style.display=%22block%22,r.appendChild(a),r.appendChild(document.createTextNode(%22%20%22+e.name+(n(e.name)?%22%22:%22%20%20(ikke%20denne%20m%C3%A5ler!)%22))),i.appendChild(r)%7D),o.disabled=!1%7D%7D)%7D%7D();";
+window.LINKIQ_VVS_CODE = "!async function(){var e=[\"afsluttet\",\"lukket\"],t=\"ctl00$DefaultContent$CaseNewLogUC$\";if(\"vvsdialog.kmd.dk\"===location.hostname){var n=document.getElementById(\"linkiq-box\");n&&n.remove();var r=document.createElement(\"div\");r.id=\"linkiq-box\",r.style.cssText=\"position:fixed;left:0;right:0;top:0;z-index:99999;background:#1f5e4f;color:#fff;font:17px/1.4 Arial,sans-serif;padding:14px;max-height:100%;overflow:auto;box-shadow:0 2px 10px rgba(0,0,0,.5)\",document.body.appendChild(r);var a=new DOMParser,i=function(e){return new Promise(function(t){setTimeout(t,e)})},o=/^https:\\/\\/(valentinstm\\.github\\.io|[a-z0-9-]+\\.kredslob\\.dk)$|^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$/,l=null,c=null,u=[],s=null;try{T(\"LinkIQ: henter opgaver \u2026\");var f=await async function(){return window.opener?new Promise(function(e){var t=!1;window.addEventListener(\"message\",function n(r){r.source===window.opener&&o.test(r.origin)&&r.data&&\"items\"===r.data.liq&&(l=r.origin,t=!0,window.removeEventListener(\"message\",n),e(r.data.items||[]))});try{window.opener.postMessage({liq:\"hello\",v:2},\"*\")}catch(t){return void e(null)}setTimeout(function(){t||e(null)},2500)}):null}(),d=!!f;f&&f.length||(f=U(),d=!1);var p=\"\";if(!f){try{navigator.clipboard&&navigator.clipboard.readText&&(p=await Promise.race([navigator.clipboard.readText(),i(4e3).then(function(){return\"\"})]))}catch(e){p=\"\"}f=U(p=String(p||\"\").trim())}if(!f){var m=(prompt(\"LinkIQ: M\u00e5lernummer?\",/^\\d{6,12}$/.test(p)?p:\"\")||\"\").replace(/\\D/g,\"\");if(!m)return void r.remove();f=[{meter:m,files:[]}]}var g=f.filter(function(e){return!(d||void 0===e.text||e.files&&e.files.length)});if(g.length>1&&!window.showDirectoryPicker){var h=await _(g.map(function(e){return e.meter}).join(\", \"),g.map(function(e){return String(e.meter)}));g.forEach(function(e){var t={};h.filter(function(t){return t.name.indexOf(String(e.meter))>=0}).forEach(function(e){var n=/\\.pdf$/i.test(e.name)?\"pdf\":\"img\";(!t[n]||(e.blob.lastModified||0)>(t[n].blob.lastModified||0))&&(t[n]=e)}),e.files=[\"pdf\",\"img\"].filter(function(e){return t[e]}).map(function(e){return t[e]}),e.picked=!0})}for(var v=[],w=null,y=0;y<f.length;y++){var b=f[y],x=f.length>1?\"(\"+(y+1)+\"/\"+f.length+\") \":\"\";try{T(\"LinkIQ: \"+x+\"s\u00f8ger m\u00e5ler \"+b.meter+\" \u2026\");var k=await H(String(b.meter));if(!k){v.push(b.meter+\": sprunget over\");continue}var S=b.files||[];d||S.length||void 0===b.text||b.picked||(S=await B(String(b.meter))||await _(b.meter)),T(\"LinkIQ: \"+x+\"sag \"+k+\" \u2013 uploader \u2026\");var C=await V(k,S),L=null;b.text&&(T(\"LinkIQ: \"+x+\"sag \"+k+\" \u2013 skriver Ny aktivitet og status \u2026\"),L=await M(k,b.text,b.status)),w=k;var A=(C.length?C.length+\" fil(er)\":\"ingen nye filer\")+(b.text?\"exists\"===L?\", aktiviteten fandtes allerede\":\", aktivitet\"+(b.status?\" + \"+b.status:\"\"):\"\");if(v.push(\"\u2713 \"+b.meter+\" \u2192 sag \"+k+\": \"+A),D({liq:\"result\",id:b.id,ok:!0,cc:k,msg:A}),!b.text&&!S.length&&1===f.length)return void(location.href=\"/Cases/ShowCase.aspx?cc=\"+k)}catch(e){var q=e&&\"LOGIN\"===e.message?\"Log ind i VVS-dialog (Chrome udfylder selv), og tryk p\u00e5 li igen.\":e&&e.message?e.message:String(e);if(v.push(\"\u2717 \"+b.meter+\": \"+q),D({liq:\"result\",id:b.id,ok:!1,msg:q}),e&&\"LOGIN\"===e.message)break}}/^linkiq_j/.test(String(window.name||\"\"))&&(window.name=\"\"),T(\"LinkIQ: f\u00e6rdig\"),v.forEach(function(e){O(e)});var E=c&&u.length&&!window.opener;if(E){var I=btoa(unescape(encodeURIComponent(JSON.stringify(u)))).replace(/\\+/g,\"-\").replace(/\\//g,\"_\").replace(/=+$/,\"\");P(\"Tilbage til LinkIQ\",function(){location.href=c+\"#liqdone=\"+I},!0)}else 1===f.length&&w&&\"\u2713\"===v[0].charAt(0)&&setTimeout(function(){location.href=\"/Cases/ShowCase.aspx?cc=\"+w},2500);w&&P(\"Vis sagen\",function(){location.href=\"/Cases/ShowCase.aspx?cc=\"+w},!E),N()}catch(e){T(\"LinkIQ: Fejl \u2013 \"+(e&&e.message?e.message:e)),N()}}else alert(\"LinkIQ: \u00c5bn VVS-dialog og log ind f\u00f8rst.\");function O(e,t){var n=document.createElement(\"div\");return n.textContent=e,n.style.margin=\"0 0 8px\",n.style.whiteSpace=\"pre-wrap\",t&&(n.style.fontWeight=\"bold\"),r.appendChild(n),n}function P(e,t,n){var a=document.createElement(\"button\");return a.type=\"button\",a.textContent=e,a.style.cssText=\"display:block;width:100%;margin:0 0 8px;padding:12px;font:16px Arial,sans-serif;text-align:left;border:0;border-radius:6px;\"+(n?\"background:#ffd23f;color:#111;font-weight:bold\":\"background:#fff;color:#111\"),a.onclick=t,r.appendChild(a),a}function T(e){r.textContent=\"\",O(e,!0)}function N(){P(\"Luk\",function(){r.remove()})}async function Q(e){for(var t,n=0;n<3;n++)try{return await e()}catch(e){t=e,await i(1500*(n+1))}throw t}async function j(e,t){var n=await Q(function(){return fetch(e,Object.assign({credentials:\"same-origin\"},t||{}))}),r=await n.text();return{res:n,url:n.url,html:r,doc:a.parseFromString(r,\"text/html\")}}function $(e,t){var n=new URLSearchParams;return Array.prototype.forEach.call(e.querySelectorAll(\"input,select,textarea\"),function(e){if(e.name&&!e.disabled){var r=(e.type||\"\").toLowerCase();if(\"submit\"!==r&&\"button\"!==r&&\"image\"!==r&&\"file\"!==r&&\"reset\"!==r&&(!t||!Object.prototype.hasOwnProperty.call(t,e.name))&&(\"checkbox\"!==r&&\"radio\"!==r||e.hasAttribute(\"checked\")))if(\"SELECT\"!==e.tagName)n.append(e.name,\"TEXTAREA\"===e.tagName?e.textContent:e.getAttribute(\"value\")||\"\");else{var a=e.querySelector(\"option[selected]\")||e.querySelector(\"option\");a&&n.append(e.name,null!==a.getAttribute(\"value\")?a.getAttribute(\"value\"):a.textContent)}}}),Object.keys(t||{}).forEach(function(e){null!==t[e]&&n.append(e,t[e])}),n}function D(e){e.id&&u.push({id:e.id,ok:e.ok,cc:e.cc,msg:e.msg});try{window.opener&&l&&window.opener.postMessage(e,l)}catch(e){}}function R(e){return atob(e.replace(/-/g,\"+\").replace(/_/g,\"/\"))}function U(e){var t=String(window.name||\"\").split(\"|LIQCODE:\")[0],n=t.split(\"|LIQBACK:\");if(n[1]){var r=null;try{r=new URL(decodeURIComponent(n[1]))}catch(e){r=null}r&&o.test(r.origin)&&(c=r.origin+r.pathname+r.search),t=n[0]}var a=t.split(\"|LIQFILES:\"),i={};if(a[1])try{i=JSON.parse(decodeURIComponent(escape(R(a[1]))))}catch(e){i={}}var l=a[0].match(/^linkiq_j([\\w-]+)$/)||location.search.match(/[?&]liq=([\\w-]+)/)||null||String(e||\"\").trim().match(/^LIQ1:([\\w-]+)$/)||null;if(l)try{var u=JSON.parse(decodeURIComponent(escape(R(l[1]))));return(Array.isArray(u)?u:[u]).map(function(e){var t=(i[e.id]||[]).map(function(e){for(var t=atob(e.d),n=new Uint8Array(t.length),r=0;r<t.length;r++)n[r]=t.charCodeAt(r);return{name:e.n,blob:new Blob([n],{type:e.t||\"application/octet-stream\"})}});return{id:e.id,meter:e.m,status:e.s,text:e.t,files:t}})}catch(e){}var s=(location.hash.match(/linkiq=(\\d+)/)||[])[1]||(a[0].match(/^linkiq_(\\d+)$/)||[])[1];return s?[{meter:s,files:[]}]:null}async function H(t){var n=location.pathname.match(/ShowCase\\.aspx/i)&&new URLSearchParams(location.search).get(\"cc\");if(n&&document.body.innerText.indexOf(t)>=0)return n;var r=(await j(\"/Home.aspx\")).doc.querySelector(\"form\"),a=r?Array.prototype.slice.call(r.querySelectorAll(\"input\")):[],i=a.find(function(e){return/meternumber/i.test(e.name||\"\")}),o=a.find(function(e){return\"submit\"===(e.type||\"\").toLowerCase()&&\"S\u00f8g\"===(e.value||\"\").trim()});if(!i||!o)throw new Error(\"LOGIN\");var l={};l[i.name]=t,l[o.name]=o.value;var c=new URL(r.getAttribute(\"action\")||\"Home.aspx\",location.origin+\"/Home.aspx\"),u=await j(c.href,{method:\"POST\",headers:{\"Content-Type\":\"application/x-www-form-urlencoded\"},body:$(r,l).toString()});if(!/ShowCustomer\\.aspx/i.test(u.url))throw new Error(\"M\u00e5ler \"+t+\" blev ikke fundet entydigt.\");var s,f,d={},p=[];if(Array.prototype.forEach.call(u.doc.querySelectorAll('[onclick*=\"ShowCase.aspx\"]'),function(n){var r=((n.getAttribute(\"onclick\")||\"\").match(/cc=(\\d+)/)||[])[1];if(r&&!d[r]){d[r]=1;var a=i(\".ucCHCol2\");e.indexOf(a.toLowerCase())>=0||p.push({cc:r,date:i(\".ucCHCol1\"),status:a,type:i(\".ucCHCol3\"),own:n.textContent.indexOf(t)>=0})}function i(e){var t=n.querySelector(e);return t?t.textContent.trim():\"\"}}),1===p.length)return p[0].cc;if(!p.length)throw new Error(\"Ingen \u00e5ben sag for m\u00e5ler \"+t+\".\");return s=\"LinkIQ: \"+p.length+\" \u00e5bne sager for m\u00e5ler \"+t+\". V\u00e6lg sag:\",f=p.map(function(e){return{label:e.date+\" \u00b7 \"+e.status+\" \u00b7 \"+e.type+(e.own?\" \u00b7 m\u00e5ler n\u00e6vnt\":\"\"),value:e.cc}}).concat([{label:\"Spring over\",value:null}]),new Promise(function(e){T(s),f.forEach(function(t){P(t.label,function(){e(t.value)},t.main)})})}async function V(e,t){if(!t.length)return[];var n={};try{var r=await Q(function(){return fetch(\"/Handlers/GetFiles.ashx?caseId=\"+e,{credentials:\"same-origin\"})});(await r.json()).files.forEach(function(e){n[e.name]=1})}catch(e){}var a=t.filter(function(e){return!n[e.name]});if(!a.length)return[];var i=new FormData;a.forEach(function(e){i.append(\"files\",e.blob,e.name)}),i.append(\"caseId\",e);var o=await Q(function(){return fetch(\"/Handlers/FileHandler.ashx\",{method:\"POST\",body:i,credentials:\"same-origin\",headers:{\"X-Requested-With\":\"XMLHttpRequest\"}})}),l=o.ok?await o.json().catch(function(){return null}):null;if(!l||!l.files)throw new Error(\"Upload fejlede (HTTP \"+o.status+\")\");return l.files.map(function(e){return e.name})}async function M(e,n,r){n=String(n||\"\").replace(/[\\u2013\\u2014]/g,\"-\");var a=\"/Cases/ShowCase.aspx?cc=\"+e,i=await j(a);if(function(e){return!e.doc.querySelector(\"form\")||/login|logon|signin/i.test(e.url)}(i))throw new Error(\"LOGIN\");var o=i.doc.querySelector(\"form\"),l=i.doc.querySelector('textarea[name=\"'+t+'LogTextTextArea\"]'),c=i.doc.querySelector('input[name=\"'+t+'SaveLogButton\"]');if(!o||!l||!c)throw new Error(\"Fandt ikke feltet Ny aktivitet\");for(var u=function(e){return String(e||\"\").toLowerCase().replace(/[^0-9a-z\u00e6\u00f8\u00e5\u00e4\u00f6\u00fc()]+/g,\"\")},s=u(i.doc.body.textContent),f=u(n),d=s.indexOf(f);d>=0;){if(\"(slettet)\"!==s.substr(d+f.length,9))return\"exists\";d=s.indexOf(f,d+1)}var p={};if(p[l.name]=n,p[c.name]=c.getAttribute(\"value\")||\"Gem\",r){var m=function(e,t){var n=String(t||\"\").trim().toLowerCase(),r=null;return Array.prototype.forEach.call(e.querySelectorAll(\"input[type=radio]\"),function(t){var a=t.id?e.querySelector('label[for=\"'+t.id+'\"]'):null,i=a?a.textContent:t.nextSibling?t.nextSibling.textContent:t.parentNode?t.parentNode.textContent:\"\";r||String(i||\"\").trim().toLowerCase()!==n||(r=t)}),r}(i.doc,r);if(!m)throw new Error(\"Status \u201e\"+r+\"\u201c findes ikke i VVS-dialog\");Array.prototype.forEach.call(i.doc.querySelectorAll('input[type=radio][name=\"'+m.name+'\"]'),function(e){e.removeAttribute(\"checked\")}),p[m.name]=m.getAttribute(\"value\");var g=i.doc.querySelector('select[name$=\"NewStatusDropDownList\"]');g&&g.querySelector('option[value=\"'+m.getAttribute(\"value\")+'\"]')&&(p[g.name]=m.getAttribute(\"value\"))}var h=new URL(o.getAttribute(\"action\")||a,location.origin+a),v=await j(h.href,{method:\"POST\",headers:{\"Content-Type\":\"application/x-www-form-urlencoded\"},body:$(o,p).toString()}),w=u(v.doc.body?v.doc.body.textContent:\"\"),y=u(n);if(y&&w.indexOf(y)<0)throw new Error(\"Aktiviteten blev ikke fundet efter Gem \u2013 se sagen\")}function F(){return new Promise(function(e,t){var n=indexedDB.open(\"linkiq-li\",1);n.onupgradeneeded=function(){n.result.createObjectStore(\"kv\")},n.onsuccess=function(){e(n.result)},n.onerror=function(){t(n.error)}})}async function G(e,t){var n={};for await(var r of e.values())if(!(\"file\"!==r.kind||r.name.indexOf(t)<0)){var a=(r.name.match(/\\.(pdf|png|jpe?g)$/i)||[])[1];if(a){a=\"pdf\"===a.toLowerCase()?\"pdf\":\"img\";var i=await r.getFile();(!n[a]||i.lastModified>n[a].lastModified)&&(n[a]=i)}}return[\"pdf\",\"img\"].filter(function(e){return n[e]}).map(function(e){return{name:n[e].name,blob:n[e]}})}async function B(e){if(!window.showDirectoryPicker)return null;if(s)try{var t=await G(s,e);if(t.length)return t}catch(e){}var n=null;try{n=await async function(e){var t=await F();return new Promise(function(n){var r=t.transaction(\"kv\").objectStore(\"kv\").get(e);r.onsuccess=function(){n(r.result)},r.onerror=function(){n(null)}})}(\"dir\")}catch(e){n=null}return new Promise(function(t){async function r(n){try{if(\"granted\"!==await n.queryPermission({mode:\"read\"})&&\"granted\"!==await n.requestPermission({mode:\"read\"}))return void t(null);await async function(e,t){try{var n=await F()}catch(e){return}return new Promise(function(r){try{var a=n.transaction(\"kv\",\"readwrite\");a.objectStore(\"kv\").put(t,e),a.oncomplete=r,a.onerror=r}catch(e){r()}})}(\"dir\",n),s=n;var r=await G(n,e);if(!r.length)return T(\"LinkIQ: ingen rapport med \"+e+\" i mappen \u201e\"+n.name+\"\u201c.\"),await i(2e3),void t(null);t(r)}catch(e){t(null)}}T(\"LinkIQ: m\u00e5ler \"+e+\" \u2013 rapporten hentes fra mappen\"),n&&P(\"Brug mappen \u201e\"+n.name+\"\u201c\",function(){r(n)},!0),P(n?\"V\u00e6lg en anden mappe\":\"V\u00e6lg rapportmappen (\u00e9n gang)\",async function(){try{r(await window.showDirectoryPicker({id:\"linkiq-rapporter\",mode:\"read\"}))}catch(e){t(null)}},!n),P(\"V\u00e6lg filerne selv\",function(){t(null)})})}function _(e,t){t=t||[String(e)];var n=function(e){return t.some(function(t){return e.indexOf(t)>=0})};return new Promise(function(t){T(\"LinkIQ: m\u00e5ler \"+e+\" \u2013 v\u00e6lg rapporten (PDF/PNG) fra mappen\");var a=document.createElement(\"input\");a.type=\"file\",a.multiple=!0,a.accept=\".pdf,.png,.jpg,application/pdf,image/*\",a.style.cssText=\"display:block;margin:0 0 10px;color:#fff\",r.appendChild(a);var i=O(\"\"),o=P(\"Send til sagen\",function(){var e=Array.prototype.slice.call(a.files||[]).filter(function(e,t){return r.querySelector('[data-i=\"'+t+'\"]').checked});t(e.map(function(e){return{name:e.name,blob:e}}))},!0);o.disabled=!0,P(\"Send uden filer\",function(){t([])}),a.onchange=function(){i.textContent=\"\",Array.prototype.forEach.call(a.files,function(e,t){var r=document.createElement(\"label\"),a=document.createElement(\"input\");a.type=\"checkbox\",a.dataset.i=t,a.checked=n(e.name),r.style.display=\"block\",r.appendChild(a),r.appendChild(document.createTextNode(\" \"+e.name+(n(e.name)?\"\":\"  (ikke denne m\u00e5ler!)\"))),i.appendChild(r)}),o.disabled=!1}})}}();";
 window.LINKIQ_VVS_LOADER = "javascript:!function()%7Bvar%20e=%22linkiq-li-code%22,t=window.opener,i=0,a=%22LinkIQ:%20%C3%85bn%20VVS-dialog%20med%20%E2%80%9ESend%20til%20VVS-dialog%E2%80%9C%20i%20LinkIQ,%20og%20tryk%20p%C3%A5%20li%20der.%20(Eller:%20LinkIQ%20%E2%80%BA%20Opret%20bogm%C3%A6rket%20li%20%E2%80%BA%20%E2%80%9EKopi%C3%A9r%20hele%20koden%20til%20VVS-dialog%E2%80%9C,%20og%20tryk%20s%C3%A5%20p%C3%A5%20li%20igen.)%22;function%20n(t)%7Bi=1;try%7BlocalStorage.setItem(e,t)%7Dcatch(e)%7B%7Dtry%7B(0,eval)(t)%7Dcatch(e)%7Balert(%22LinkIQ:%20%22+e.message)%7D%7Dfunction%20o()%7Bif(!i)%7Bvar%20t=null;try%7Bt=localStorage.getItem(e)%7Dcatch(e)%7B%7Dt?n(t):navigator.clipboard&&navigator.clipboard.readText&&navigator.clipboard.readText().then(function(e)%7B0===(e=String(e%7C%7C%22%22)).indexOf(%22LIQCODE:%22)?n(e.slice(8)):alert(a)%7D,function()%7Balert(a)%7D)%7D%7Dvar%20r=String(window.name%7C%7C%22%22),l=r.indexOf(%22%7CLIQCODE:%22);if(l%3E0)%7Bvar%20d=decodeURIComponent(r.slice(l+9));return%20window.name=r.slice(0,l),void%20n(d)%7Dif(t)%7BaddEventListener(%22message%22,function%20e(a)%7Ba.source===t&&a.data&&%22code%22===a.data.liq&&a.data.code&&(removeEventListener(%22message%22,e),i%7C%7Cn(a.data.code))%7D);try%7Bt.postMessage(%7Bliq:%22code%22%7D,%22*%22)%7Dcatch(e)%7B%7DsetTimeout(o,1500)%7Delse%20o()%7D();";
 
 </script>
@@ -14634,6 +14760,10 @@ var qrcode = function() {
     contactHistoryMaxH: 8,
     simSpeed: 4,
     keepSessions: 200,
+    // Retention on the phone (Kredsløb decides the numbers): older sessions and saved meter
+    // positions are deleted when the app saves.
+    keepSessionsDays: 365,
+    keepPositionsDays: 365,
   };
   const OUTCOMES = ['OPTIMAL_CONFIRMED', 'GOOD_WITH_SITE_REDUNDANCY', 'GOOD_WITH_EQUIPMENT_REDUNDANCY',
     'GOOD_PRIMARY_ONLY', 'MARGINAL', 'NO_RELIABLE_LINK', 'INCONCLUSIVE', 'ABORTED'];
@@ -14728,7 +14858,9 @@ var qrcode = function() {
     deviceType: ['devicetype', 'type'],
     firmware: ['firmware', 'fw'],
     active: ['active', 'aktiv'],
+    owner: ['owner', 'ownership', 'ejer', 'ejerskab'],
   };
+  const OWN = /kredsl(ø|o|oe)b/i;   // the owner name that makes a concentrator ours
 
   function parseCsv(text) {
     text = String(text).replace(/^﻿/, '');
@@ -14837,6 +14969,11 @@ var qrcode = function() {
     }
 
     save() {
+      const now = this.clock(), day = 864e5;
+      for (const [id, x] of Object.entries(this.db.sessions)) {
+        if (x.status !== 'ACTIVE' && now - x.startedMs > this.cfg.keepSessionsDays * day) delete this.db.sessions[id];
+      }
+      for (const [m, p] of Object.entries(this.db.positions)) if (!p.atMs || now - p.atMs > this.cfg.keepPositionsDays * day) delete this.db.positions[m];
       const ids = Object.keys(this.db.sessions).sort((a, b) => this.db.sessions[a].startedMs - this.db.sessions[b].startedMs);
       while (ids.length > this.cfg.keepSessions) delete this.db.sessions[ids.shift()];
       this.storage.set('db', this.db);
@@ -14849,7 +14986,30 @@ var qrcode = function() {
     registryInfo() {
       const conc = Object.values(this.db.concentrators);
       return { sites: Object.keys(this.db.sites).length, concentrators: conc.length,
-        review: conc.filter((c) => c.status === 'REVIEW' || c.status === 'MISSING_LOCATION').length };
+        review: conc.filter((c) => c.status === 'REVIEW' || c.status === 'MISSING_LOCATION').length,
+        eligible: conc.filter((c) => this._eligible(c)).length,
+        foreign: conc.filter((c) => c.owner && !OWN.test(c.owner)).length,
+        inactive: conc.filter((c) => c.active === false).length,
+        ownerColumn: conc.some((c) => c.owner !== null && c.owner !== undefined) };
+    }
+    /**
+     * May this concentrator count in a verdict? Only when it is in the registry, active, and
+     * Kredsløb's (an owner column, when the registry has one, must say Kredsløb). Never guessed.
+     */
+    _eligible(c) {
+      return !!c && c.active !== false && (c.owner === null || c.owner === undefined || OWN.test(c.owner));
+    }
+    _owned(serial, demo) {
+      // the demo without a registry: the simulator's receivers are all "ours"; with one, the same rules
+      if (demo && !Object.keys(this.db.concentrators).length) return true;
+      return this._eligible(this.db.concentrators[serial]);
+    }
+    /** Fail closed: without a usable Kredsløb registry no measurement can be judged. */
+    _needRegistry(demo) {
+      if (demo) return;
+      if (!Object.values(this.db.concentrators).some((c) => this._eligible(c))) {
+        throw new EngineError(409, 'REGISTRY_EMPTY', 'Registrul concentratoarelor Kredsløb nu este încărcat sau nu are niciun concentrator activ al Kredsløb. Fără el nu se poate decide care concentratoare sunt ale noastre, deci măsurătoarea nu poate fi aprobată. Încarcă registrul (cod QR) pe ecranul de start.');
+      }
     }
     clearRegistry() { this.db.sites = {}; this.db.concentrators = {}; this.db.registrySource = null; this.save(); }
     /** Replace the whole registry (built-in file, app folder). Nothing changes unless both lists hold rows. */
@@ -14875,8 +15035,9 @@ var qrcode = function() {
       const cell = (v) => String(v === null || v === undefined ? '' : v).replace(/[;\r\n]/g, ' ');
       const sites = ['siteCode;name;address;latitude;longitude;status'].concat(Object.values(this.db.sites).map((s) =>
         [s.siteCode, s.name, s.address, s.latitude, s.longitude, s.status === 'MISSING_LOCATION' ? '' : s.status].map(cell).join(';')));
-      const conc = ['serialNumber;siteCode;status;active'].concat(Object.values(this.db.concentrators).map((c) =>
-        [c.serial, c.declaredSite, c.declaredStatus, c.active ? 1 : 0].map(cell).join(';')));
+      const own = Object.values(this.db.concentrators).some((c) => c.owner !== null && c.owner !== undefined);
+      const conc = ['serialNumber;siteCode;status;active' + (own ? ';owner' : '')].concat(Object.values(this.db.concentrators).map((c) =>
+        [c.serial, c.declaredSite, c.declaredStatus, c.active ? 1 : 0].concat(own ? [c.owner || ''] : []).map(cell).join(';')));
       return { sites: sites.join('\n') + '\n', concentrators: conc.join('\n') + '\n' };
     }
 
@@ -14906,7 +15067,9 @@ var qrcode = function() {
         this.db.concentrators[serial] = { serial, siteCode: pick(row, 'siteCode') || null,
           declaredSite: pick(row, 'siteCode') || null, deviceType: pick(row, 'deviceType'),
           firmware: pick(row, 'firmware'), declaredStatus: pick(row, 'status') || 'ACTIVE',
-          active: !['0', 'false', 'nej', 'no'].includes(pick(row, 'active').toLowerCase()) };
+          active: !['0', 'false', 'nej', 'no'].includes(pick(row, 'active').toLowerCase()),
+          // owner: null when the file has no owner column (the whole file is then Kredsløb's list)
+          owner: Object.keys(row).some((k) => ALIASES.owner.includes(k)) ? pick(row, 'owner') : null };
         n++;
       }
       const review = this._remapConcentrators();
@@ -14979,6 +15142,7 @@ var qrcode = function() {
       meterSerial = String(meterSerial || '').trim();
       technician = String(technician || '').trim() || 'necunoscut';
       if (!METER_RE.test(meterSerial)) throw new EngineError(422, 'BAD_METER_SERIAL', 'Seria contorului trebuie să aibă 4–20 litere sau cifre');
+      this._needRegistry(this.db.demo);
       const now = this.clock();
       let s = Object.values(this.db.sessions).find((x) => x.status === 'ACTIVE' && x.meterSerial === meterSerial && x.demo === this.db.demo);
       if (!s) {
@@ -15075,14 +15239,13 @@ var qrcode = function() {
       try { links = await this._snapshot(s); } catch (e) { return { fresh: [], count: 0, warning: 'UPSTREAM_ERROR: ' + e.message }; }
       const now = this.clock(), tol = this.cfg.tsSkewToleranceS * 1000;
       const seen = new Set(s.obs.map((o) => o.fp));
-      const registryEmpty = Object.keys(this.db.concentrators).length === 0;
       const sample = s.samples[s.samples.length - 1] || null;
       const fresh = [];
       for (const link of links) {
         if (seen.has(link.fingerprint)) continue;
         seen.add(link.fingerprint);
         const reg = this.db.concentrators[link.serial];
-        const owned = registryEmpty || !!reg;
+        const owned = this._owned(link.serial, s.demo);
         let kind, sampleId = null;
         if (asBaseline || !sample) kind = 'baseline';
         else if (link.observedMs === null) { kind = 'fresh'; sampleId = sample.id; }   // no source time: trust arrival order
@@ -15167,6 +15330,7 @@ var qrcode = function() {
     async check(meterSerial, gps = null, technician = '') {
       meterSerial = String(meterSerial || '').trim();
       if (!METER_RE.test(meterSerial)) throw new EngineError(422, 'BAD_METER_SERIAL', 'Seria contorului trebuie să aibă 4–20 litere sau cifre');
+      this._needRegistry(this.db.demo);
       const now = this.clock(), key = (this.db.demo ? 'sim:' : '') + 'check:' + meterSerial;
       let hit = this.cache[key];
       if (!hit || now - hit.atMs >= this.cfg.pollMinIntervalS * 1000) {
@@ -15178,13 +15342,13 @@ var qrcode = function() {
         hit = this.cache[key] = { payload, atMs: now };
       }
       const payload = hit.payload || {}, links = normalise(payload, this.cfg.serialFields);
-      const registryEmpty = Object.keys(this.db.concentrators).length === 0;
+      const demo = this.db.demo, registryEmpty = !Object.keys(this.db.concentrators).length;
       const g = this._position(meterSerial, gps);
       // Kamstrup can list the same receiver several times (older link records stay in the
       // snapshot). One row per receiver: its most recent reading; a tie goes to the stronger one.
       const latest = {};
       for (const l of links) {
-        if (!registryEmpty && !this.db.concentrators[l.serial]) continue;
+        if (!this._owned(l.serial, demo)) continue;   // other owners and inactive ones: never in the verdict
         const had = latest[l.serial], t = l.observedMs === null ? -Infinity : l.observedMs;
         const ht = had ? (had.observedMs === null ? -Infinity : had.observedMs) : null;
         if (!had || t > ht || (t === ht && l.rssi > had.rssi)) latest[l.serial] = l;
@@ -15223,7 +15387,7 @@ var qrcode = function() {
         currentMaxMin: this.cfg.contactCurrentMaxMin, historyMaxH: this.cfg.contactHistoryMaxH };
       const lastSeenMs = parseTs(payload.LastSeenTimestampUtc);
       const warnings = [];
-      if (registryEmpty) warnings.push('REGISTRY_EMPTY');
+      if (registryEmpty) warnings.push('REGISTRY_EMPTY');   // only possible in the demo
       if (g.lat === null) warnings.push('NO_GPS');
       if (rows.length && !p1) warnings.push('NO_RECENT_CONTACT');
       return {
@@ -15449,7 +15613,7 @@ var qrcode = function() {
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.22';
+  const VERSION = '0.25';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -15736,12 +15900,14 @@ var qrcode = function() {
     const choose = (patch) => async () => { ui = { ...ui, ...patch }; store.set('ui', ui); };
     $('finish-box').hidden = true;
     $('report-box').hidden = a.kind !== 'done' && a.kind !== 'check';
-    $('photo-label').hidden = a.kind === 'check';
-    // an internal antenna sits in the meter: the picture is of the meter
+    // an internal antenna sits in the meter: the installation photos show it, no separate antenna photo
     const inMeter = !!(ui.install && ui.install.antennaType === 'internal');
-    $('photo-txt').textContent = T(inMeter ? 'Fotografiază contorul și instalația' : 'Fotografiază antena');
-    $('photo-hint').textContent = T(inMeter ? 'Fotografiază contorul cu tot ce e în jurul lui (camera tehnică, țevi, dulapuri, metal), ca să se vadă ce poate slăbi semnalul. Apoi descarcă raportul: PDF-ul include și fotografia.'
-      : 'Fotografiază întâi antena, apoi descarcă raportul: PDF-ul include și fotografia.');
+    $('photo-label').hidden = a.kind === 'check' || inMeter;
+    $('photo-hint').hidden = a.kind === 'check' || inMeter;
+    $('photo-gal').hidden = a.kind === 'check' || inMeter;
+    $('photo-txt').textContent = T('Fotografiază antena');
+    $('photo-hint').textContent = T('Fotografiază antena cu datele măsurătorii; pozele cu instalația se fac mai jos. PDF-ul le include pe toate.');
+    instPhotos.place(s, a.kind);
     // installation card: under the buttons while measuring, above "save" at the end
     const card = $('install-card'), active = s.session.status === 'ACTIVE';
     card.hidden = !active;
@@ -16133,6 +16299,7 @@ var qrcode = function() {
     return rssi >= th.goodDbm ? '#1b8a3a' : rssi >= th.marginalDbm ? '#b26a00' : '#c62828';
   };
   const meters = (m) => Math.round(m).toLocaleString(lang === 'da' ? 'da-DK' : 'ro-RO') + ' m';
+  const tipNode = (t) => { const e = document.createElement('span'); e.textContent = t; return e; };   // never HTML
   const linkText = (l) => `${Math.round(l.best)} dBm` + (l.distanceM !== null ? ` · ${meters(l.distanceM)}` : '') + (l.age === 'OLD' ? ` · ${T('peste 8 ore')}` : '');
   let lastFit = '';
 
@@ -16147,14 +16314,14 @@ var qrcode = function() {
       if (g) {
         // meter -> site: signal and distance written on the line
         const line = L.polyline([[g.lat, g.lon], [l.lat, l.lon]], { color, weight: l.primary ? 6 : 3, dashArray: st.dashL, opacity: l.age === 'OLD' ? 0.7 : 0.9 }).addTo(mapLayer);
-        line.bindTooltip(linkText(l), { permanent: i < 6 || l.primary, direction: 'center', className: 'link-label' + (l.primary ? ' primary' : '') });
+        line.bindTooltip(tipNode(linkText(l)), { permanent: i < 6 || l.primary, direction: 'center', className: 'link-label' + (l.primary ? ' primary' : '') });
       }
       L.circleMarker([l.lat, l.lon], { radius: l.primary ? 10 : 7, color: '#fff', weight: 3, fillColor: color, fillOpacity: 1 })
-        .bindTooltip(`${[l.name, l.address].filter(Boolean).join(', ') || l.serial} · ${linkText(l)}`).addTo(mapLayer);
+        .bindTooltip(tipNode(`${[l.name, l.address].filter(Boolean).join(', ') || l.serial} · ${linkText(l)}`)).addTo(mapLayer);
       pts.push([l.lat, l.lon]);
     });
     if (g) {
-      L.circleMarker([g.lat, g.lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#1565c0', fillOpacity: 1 }).bindTooltip(T('Contor / telefon')).addTo(mapLayer);
+      L.circleMarker([g.lat, g.lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#1565c0', fillOpacity: 1 }).bindTooltip(tipNode(T('Contor / telefon'))).addTo(mapLayer);
       pts.push([g.lat, g.lon]);
     }
     let info = T('Harta explică doar geometria. Măsurătoarea radio rămâne decisivă.');
@@ -16240,7 +16407,7 @@ var qrcode = function() {
     if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
     $('meter').value = '';
     $('scan-info').hidden = true; $('scan-chips').hidden = true;
-    $('report-msg').hidden = true; $('report-preview').hidden = true; lastPhoto = null;
+    $('report-msg').hidden = true; $('report-preview').hidden = true; lastPhoto = null; instPhotos.forget();
     $('vvs-msg').textContent = T('Copiază seria contorului și deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță.');
     refreshData();
     showView('start');
@@ -16304,7 +16471,7 @@ var qrcode = function() {
     try { sites = (await api('/api/sites')).filter((x) => x.latitude !== null); } catch { /* map still usable */ }
     for (const x of sites) {
       L.circleMarker([x.latitude, x.longitude], { radius: 7, color: '#fff', weight: 3, fillColor: '#55626b', fillOpacity: 1 })
-        .bindTooltip(x.name || x.siteCode).addTo(mapLayer);
+        .bindTooltip(tipNode(x.name || x.siteCode)).addTo(mapLayer);
     }
     setTimeout(() => {
       map.invalidateSize();
@@ -16344,17 +16511,54 @@ var qrcode = function() {
     endPick();
     showCandidates();
   };
-  $('pick-coords').onchange = (ev) => {
-    // "56.1234, 10.1234", "56,1234 10,1234" or a pasted maps link containing lat,lon
-    const t = ev.target.value.trim();
+  // One field: coordinates ("56.1234, 10.1234", "56,1234 10,1234", a pasted maps link) or an
+  // address, looked up in OpenStreetMap (Nominatim) only when the installer asks for it.
+  function parseCoords(t) {
     let m = t.match(/(-?\d{1,2}\.\d{3,})[^\d-]+(-?\d{1,3}\.\d{3,})/);
     if (!m) {                                           // decimal commas
       const c = t.match(/(-?\d{1,2}),(\d{3,})[^\d-]+(-?\d{1,3}),(\d{3,})/);
       if (c) m = [t, `${c[1]}.${c[2]}`, `${c[3]}.${c[4]}`];
     }
-    if (!m || Math.abs(+m[1]) > 90 || Math.abs(+m[2]) > 180) { $('pick-info').textContent = T('Nu am recunoscut coordonatele. Exemplu: 56.1234, 10.1234'); return; }
-    if (ensureMap()) setPick(+m[1], +m[2], true);
+    return m && Math.abs(+m[1]) <= 90 && Math.abs(+m[2]) <= 180 ? [+m[1], +m[2]] : null;
+  }
+  let lastSearch = '';
+  async function searchAddress(t) {
+    const list = $('pick-results'), info = $('pick-info');
+    list.replaceChildren(); list.hidden = true;
+    info.textContent = T('Caut adresa…');
+    const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=0&limit=5&countrycodes=dk&accept-language=da'
+      + '&viewbox=9.4,56.5,10.9,55.8&q=' + encodeURIComponent(t);
+    let res;
+    try {
+      const r = await fetch(u, { referrerPolicy: 'strict-origin-when-cross-origin', headers: { Accept: 'application/json' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      res = await r.json();
+    } catch (e) { info.textContent = T('Căutarea adresei nu merge acum ({0}). Atinge harta sau folosește GPS.', e.message); return; }
+    if (!res.length) { info.textContent = T('Nu am găsit adresa. Scrie strada, numărul și orașul, de ex. Søndergade 1, 8000 Aarhus C.'); return; }
+    const pick = (x) => { list.hidden = true; if (ensureMap()) setPick(+x.lat, +x.lon, true); $('pick-info').textContent = x.display_name.split(', ').slice(0, 4).join(', ') + ' · ' + T('verifică pe hartă și mută punctul dacă e nevoie.'); };
+    if (res.length === 1) { pick(res[0]); return; }
+    for (const x of res) {
+      const li = document.createElement('li'), b = document.createElement('button');
+      b.type = 'button'; b.className = 'secondary'; b.textContent = x.display_name.split(', ').slice(0, 5).join(', ');
+      b.onclick = () => pick(x);
+      li.append(b); list.append(li);
+    }
+    list.hidden = false;
+    info.textContent = T('Alege adresa potrivită.');
+  }
+  $('pick-form').onsubmit = (ev) => {
+    ev.preventDefault();
+    const t = $('pick-coords').value.trim();
+    if (!t) return;
+    const c = parseCoords(t);
+    if (c) { $('pick-results').hidden = true; if (ensureMap()) setPick(c[0], c[1], true); return; }
+    if (t.length < 4) { $('pick-info').textContent = T('Scrie adresa întreagă sau coordonatele.'); return; }
+    if (t === lastSearch && !$('pick-results').hidden) return;
+    lastSearch = t;
+    $('pick-coords').blur();
+    searchAddress(t);
   };
+  $('pick-coords').onchange = () => { if (parseCoords($('pick-coords').value.trim())) $('pick-form').requestSubmit(); };
 
   $('start-form').onsubmit = async (ev) => {
     ev.preventDefault();
@@ -16362,7 +16566,7 @@ var qrcode = function() {
     store.set('tech', $('tech').value.trim());
     try {
       enterSession(await api('/api/sessions', 'POST', { meterSerial: $('meter').value.trim(), technician: $('tech').value.trim(), gps }));
-    } catch (e) { showError('start-error', e.message); }
+    } catch (e) { showError('start-error', e.message); needRegistry(e); }
   };
 
   $('meter').addEventListener('change', () => {
@@ -16375,8 +16579,14 @@ var qrcode = function() {
     const meter = $('meter').value.trim();
     if (!meter) { showError('start-error', 'Introdu sau scanează seria contorului.'); return; }
     try { enterSession(await api('/api/check', 'POST', { meterSerial: meter, technician: $('tech').value.trim(), gps })); }
-    catch (e) { showError('start-error', e.status === 404 ? 'Verificarea fără CALL există doar în varianta fără server.' : e.message); }
+    catch (e) { showError('start-error', e.status === 404 ? 'Verificarea fără CALL există doar în varianta fără server.' : e.message); needRegistry(e); }
   };
+  // no registry: point at the card where it is loaded
+  function needRegistry(e) {
+    if (e.code !== 'REGISTRY_EMPTY' || $('data-card').hidden) return;
+    const c = $('data-card');
+    c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
+  }
 
   // ---------------------------------------------------------------- camera scanning
   // Native BarcodeDetector where the browser has it (Chrome on Android); jsQR otherwise.
@@ -16756,10 +16966,13 @@ var qrcode = function() {
     const r = engine.registryInfo();
     $('reg-info').textContent = r.concentrators
       ? T('Registru: {0} site-uri, {1} concentratoare', r.sites, r.concentrators) + (r.review ? T(', {0} fără site sigur.', r.review) : '.')
+        + (r.foreign ? ' ' + T('{0} au alt proprietar decât Kredsløb și nu contează în rezultat.', r.foreign) : '')
+        + (r.inactive ? ' ' + T('{0} sunt marcate inactive și nu contează în rezultat.', r.inactive) : '')
+        + (r.ownerColumn ? '' : ' ' + T('Registrul nu are coloana de proprietar (Ownership / Ejer): toate concentratoarele din el sunt socotite ale Kredsløb.'))
         + ' ' + T({ embedded: 'Este inclus în aplicație; nu trebuie importat.', folder: 'Se încarcă singur din dosarul aplicației.',
           qr: 'Citit dintr-un cod QR; rămâne pe acest dispozitiv până imporți altul.' }[(engine.db.registrySource || {}).origin]
           || 'Importat manual; rămâne pe acest dispozitiv până imporți altul.')
-      : T('Registrul nu este încărcat: toate receptoarele auzite sunt tratate ca proprii, iar harta nu are site-uri.');
+      : T('Registrul nu este încărcat. Fără el nu se poate face nicio măsurătoare: LinkIQ nu poate ști care concentratoare sunt ale Kredsløb. Doar modul demonstrativ merge fără registru.');
     const embedded = (engine.db.registrySource || {}).origin === 'embedded';
     $('store-warn').hidden = storageWorks || embedded;
     const n = engine.sessionCount();
@@ -17111,6 +17324,10 @@ var qrcode = function() {
     }
     y += 18; font(500, 19);
     for (const l of wrap(limitsText(isCheck), W - 2 * P)) { y += 28; text(l, P, y, INK.gray); }
+    if (instPhotos.count()) {
+      section(T('Poze cu instalația'));
+      row('', T('{0} poze în paginile următoare: montaj și punere în funcțiune', instPhotos.count()));
+    }
     if (s.session.note) {
       section(T('Observații'));
       font(500, 26);
@@ -17171,8 +17388,21 @@ var qrcode = function() {
     return {
       get: async (k) => { const db = await open(); return new Promise((ok, fail) => { const r = db.transaction('kv').objectStore('kv').get(k); r.onsuccess = () => ok(r.result); r.onerror = () => fail(r.error); }); },
       set: async (k, v) => { const db = await open(); return new Promise((ok, fail) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = () => ok(); t.onerror = () => fail(t.error); }); },
+      del: async (k) => { const db = await open(); return new Promise((ok, fail) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').delete(k); t.oncomplete = () => ok(); t.onerror = () => fail(t.error); }); },
+      keys: async () => { const db = await open(); return new Promise((ok, fail) => { const r = db.transaction('kv').objectStore('kv').getAllKeys(); r.onsuccess = () => ok(r.result.map(String)); r.onerror = () => fail(r.error); }); },
     };
   })();
+  // Retention: installation photos of a session that was never finished go after 30 days.
+  const PHOTO_KEEP_DAYS = 30;
+  async function sweepPhotos() {
+    try {
+      for (const k of (await kv.keys()).filter((x) => x.startsWith('iph:'))) {
+        const v = await kv.get(k);
+        const newest = Array.isArray(v) && v.length ? Math.max(...v.map((p) => Date.parse(p.at) || 0)) : 0;
+        if (Date.now() - newest > PHOTO_KEEP_DAYS * 864e5) await kv.del(k);
+      }
+    } catch { /* storage not available: nothing kept either */ }
+  }
 
   /** True when the chosen folder may be written. `ask` may show the browser's permission prompt (needs a tap). */
   async function dirReady(ask) {
@@ -17362,19 +17592,22 @@ var qrcode = function() {
   }
   const reportName = (s) => safeName(s.session.meterSerial) + (s.session.status === 'CHECK' ? '_status' : '');
 
-  $('report-btn').onclick = () => S && askReadings(savePng);
+  $('report-btn').onclick = () => S && instPhotos.ask(() => askReadings(savePng));
   async function savePng() {
     if (!S) return;
     try { await saveBlob(await canvasBlob(await buildReport(S), 'image/png'), reportName(S) + '.png', 'Raportul a fost salvat ca {0}.'); }
     catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   }
-  $('report-pdf-btn').onclick = () => S && askReadings(savePdf);
+  $('report-pdf-btn').onclick = () => S && instPhotos.ask(() => askReadings(savePdf));
   async function savePdf() {
     if (!S) return;
     try {
       const pages = [await buildReport(S)];
-      if (lastPhoto && S.session.status !== 'CHECK') pages.push(lastPhoto);
-      await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', pages.length > 1 ? (ui.install && ui.install.antennaType === 'internal' ? 'Raportul PDF, cu fotografia instalației, a fost salvat ca {0}.' : 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.') : 'Raportul PDF a fost salvat ca {0}.', null);
+      const internal = ui.install && ui.install.antennaType === 'internal';
+      if (lastPhoto && S.session.status !== 'CHECK' && !internal) pages.push(lastPhoto);
+      const inst = await instPhotos.pages();
+      pages.push(...inst);
+      await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', inst.length ? 'Raportul PDF, cu pozele instalației, a fost salvat ca {0}.' : pages.length > 1 ? 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.' : 'Raportul PDF a fost salvat ca {0}.', null);
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   }
   $('photo-file').onchange = async (ev) => {
@@ -17383,9 +17616,146 @@ var qrcode = function() {
     if (!file || !S) return;
     try {
       lastPhoto = await stampPhoto(file, S);
-      await saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + (ui.install && ui.install.antennaType === 'internal' ? '_installation.jpg' : '_antenne.jpg'), 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
+      await saveBlob(await canvasBlob(lastPhoto, 'image/jpeg'), safeName(S.session.meterSerial) + '_antenne.jpg', 'Fotografia cu datele măsurătorii a fost salvată ca {0}.');
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   };
+
+  // Every photo button can also take a picture from the gallery: in poor light the phone's own
+  // camera app (flash, night mode) often does better, and the picture is then picked here.
+  document.querySelectorAll('[data-gallery]').forEach((b) => {
+    b.onclick = () => {
+      const target = $(b.dataset.gallery), inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'image/*';
+      inp.onchange = () => { if (inp.files[0] && target.onchange) target.onchange({ target: inp }); };
+      inp.click();
+    };
+  });
+
+  // ---------------------------------------------------------------- installation photos
+  // Every installation, whatever the antenna: photos taken at mounting and at commissioning,
+  // stamped with meter, moment, time and place, kept with the session (IndexedDB) until the
+  // report is made, and added to the PDF as history and proof of a correct installation.
+  const instPhotos = (() => {
+    const MAX = 6, STAGES = { mount: 'La montaj', start: 'La punerea în funcțiune' }, FILE = { mount: 'montage', start: 'idrift' };
+    let key = null, list = [], loading = null, asked = false;
+    const keyOf = (s) => 'iph:' + (s.session.id || s.session.meterSerial);
+    async function sync() {
+      if (!S) return;
+      const k = keyOf(S);
+      if (k === key) return loading;
+      key = k; list = []; asked = false;
+      loading = kv.get(k).then((v) => { if (key === k) { list = Array.isArray(v) ? v : []; draw(); } }).catch(() => {});
+      return loading;
+    }
+    const keep = () => kv.set(key, list.map((p) => ({ stage: p.stage, at: p.at, blob: p.blob }))).catch(() => {});
+    async function stamp(file, s, stage) {
+      const bmp = await createImageBitmap(file);
+      const k = Math.min(1, 1400 / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+      const x = c.getContext('2d'), W = c.width, H = c.height;
+      x.drawImage(bmp, 0, 0, W, H);
+      const u = Math.max(14, Math.round(W / 46)), bh = Math.round(u * 5.6);
+      const g = x.createLinearGradient(0, H - bh * 1.4, 0, H);
+      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.35, 'rgba(0,0,0,0.7)'); g.addColorStop(1, 'rgba(0,0,0,0.85)');
+      x.fillStyle = g; x.fillRect(0, H - bh * 1.4, W, bh * 1.4);
+      const gps = s.session.gps && s.session.gps.lat !== null ? `${s.session.gps.lat.toFixed(5)}, ${s.session.gps.lon.toFixed(5)}` : null;
+      const lines = [
+        [`700 ${Math.round(u * 1.45)}px ${SANS}`, `${s.session.meterSerial} · ${T(STAGES[stage])}`],
+        [`500 ${u}px ${SANS}`, [fmtTime(new Date(file.lastModified || Date.now()).toISOString()), s.session.technician].filter(Boolean).join(' · ')],
+        [`400 ${Math.round(u * 0.8)}px ${SANS}`, [s.session.install ? installShort(s.session.install) : null, gps, `LinkIQ v${VERSION}`].filter(Boolean).join(' · ')],
+      ];
+      x.textAlign = 'left'; x.textBaseline = 'alphabetic'; x.fillStyle = '#fff';
+      x.shadowColor = 'rgba(0,0,0,0.8)'; x.shadowBlur = u * 0.3;
+      let y = H - bh + u * 1.2;
+      for (const [f, t] of lines) { x.font = f; x.fillText(t, u, y, W - 2 * u); y += u * 1.75; }
+      return canvasBlob(c, 'image/jpeg');
+    }
+    function draw() {
+      const ul = $('iphoto-list');
+      if (!ul) return;
+      ul.replaceChildren();
+      list.forEach((p, i) => {
+        const li = document.createElement('li');
+        const img = document.createElement('img');
+        img.src = p.url || (p.url = URL.createObjectURL(p.blob)); img.alt = T(STAGES[p.stage]);
+        const cap = document.createElement('small'); cap.textContent = T(STAGES[p.stage]) + ' · ' + fmtTime(p.at).split(' ').pop();
+        const del = document.createElement('button'); del.type = 'button'; del.textContent = '×'; del.setAttribute('aria-label', T('Șterge poza'));
+        del.onclick = () => { if (!confirm(T('Ștergi poza?'))) return; URL.revokeObjectURL(p.url); list.splice(i, 1); keep(); draw(); };
+        li.append(img, cap, del); ul.append(li);
+      });
+      const nm = list.filter((p) => p.stage === 'mount').length, ns = list.length - nm;
+      $('iphoto-n').textContent = list.length ? T('({0} la montaj, {1} la punerea în funcțiune)', nm, ns) : '';
+      $('iphoto-card').classList.toggle('need', !list.length && !!S && S.session.status !== 'CHECK' && S.session.status !== 'ACTIVE');
+      for (const id of ['iphoto-mount', 'iphoto-start']) $(id).parentElement.classList.toggle('disabled', list.length >= MAX);
+    }
+    async function add(file, stage) {
+      if (!file || !S) return;
+      await sync();
+      const msg = $('iphoto-msg');
+      if (list.length >= MAX) { msg.textContent = T('Sunt deja {0} poze. Șterge una ca să adaugi alta.', MAX); msg.hidden = false; return; }
+      try {
+        const blob = await stamp(file, S, stage);
+        const n = list.filter((p) => p.stage === stage).length + 1;
+        list.push({ stage, at: new Date(file.lastModified || Date.now()).toISOString(), blob });
+        await keep(); draw();
+        let saved = null;                    // a copy in the report folder, when there is one; never a pile of downloads
+        if (await dirReady(false)) { try { saved = await writeToDir(blob, `${safeName(S.session.meterSerial)}_${FILE[stage]}_${n}.jpg`); refreshReportDir(); } catch { saved = null; } }
+        msg.textContent = (saved ? T('Poza e salvată în dosarul „{0}” ca {1}.', reportDir.name, saved) + ' ' : '') + T('Poza intră în raportul PDF.');
+        msg.hidden = false;
+      } catch (e) { msg.textContent = T('Nu am putut citi fotografia: {0}', e.message); msg.hidden = false; }
+    }
+    $('iphoto-mount').onchange = (ev) => { const f = ev.target.files[0]; ev.target.value = ''; add(f, 'mount'); };
+    $('iphoto-start').onchange = (ev) => { const f = ev.target.files[0]; ev.target.value = ''; add(f, 'start'); };
+    return {
+      // while measuring: under the installation card; at the end: in the report card, above "save"
+      place(s, kind) {
+        const card = $('iphoto-card');
+        card.hidden = !s;
+        if (!s) return;
+        sync();
+        const end = kind === 'done' || kind === 'check';
+        const ref = end ? $('readings-card') : $('align-error');
+        if (card.nextElementSibling !== ref) ref.parentNode.insertBefore(card, ref);
+        card.classList.toggle('inside', end);
+        draw();
+      },
+      count: () => list.length,
+      async pages() {
+        await sync();
+        const out = [];
+        for (const st of ['mount', 'start']) {
+          for (const p of list.filter((q) => q.stage === st)) {
+            try {
+              const bmp = await createImageBitmap(p.blob), c = document.createElement('canvas');
+              c.width = bmp.width; c.height = bmp.height; c.getContext('2d').drawImage(bmp, 0, 0);
+              out.push(c);
+            } catch { /* unreadable: left out */ }
+          }
+        }
+        return out;
+      },
+      // asked once per session before a report is saved without any installation photo
+      async ask(then) {
+        await sync();
+        if (asked || list.length || !S || S.session.status === 'CHECK') { then(); return; }
+        asked = true;
+        $('iphoto-ask').hidden = false;
+        $('iask-no').onclick = () => { $('iphoto-ask').hidden = true; then(); };
+        $('iask-yes').onclick = () => {
+          $('iphoto-ask').hidden = true;
+          const card = $('iphoto-card');
+          card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+        };
+      },
+      forget() {
+        if (key) kv.del(key).catch(() => {});
+        for (const p of list) if (p.url) URL.revokeObjectURL(p.url);
+        key = null; list = []; asked = false;
+      },
+    };
+  })();
 
   // ---------------------------------------------------------------- meter readings
   // Optional: the register values on the meter's own display, read with the camera
@@ -17563,7 +17933,7 @@ var qrcode = function() {
       $('lcd-tip').textContent = T('Arată {0} pe contor și ține tot afișajul în chenar.', r.k === '*' ? T('registrul') : r.k);
       $('lcd-live').textContent = '…';
       $('lcd-frame').className = 'lcd-frame';
-      $('lcd-error').hidden = true; $('lcd-torch').hidden = true;
+      $('lcd-error').hidden = true; $('lcd-torch').hidden = true; $('lcd-bright').hidden = true; $('lcd-dark').hidden = true;
       setUse();
       $('lcd-reader').hidden = false;
       startedAt = Date.now();
@@ -17575,6 +17945,11 @@ var qrcode = function() {
         await v.play();
         const track = stream.getVideoTracks()[0], caps = track.getCapabilities ? track.getCapabilities() : {};
         if (caps.torch) $('lcd-torch').hidden = false;
+        // brighter / darker picture where the camera allows it (dim cellars, or glare on the glass)
+        if (caps.exposureCompensation && caps.exposureCompensation.max > caps.exposureCompensation.min) {
+          $('lcd-bright').hidden = false; $('lcd-dark').hidden = false;
+          if (caps.exposureMode && caps.exposureMode.includes('continuous')) track.applyConstraints({ advanced: [{ exposureMode: 'continuous' }] }).catch(() => {});
+        }
         if (caps.focusMode && caps.focusMode.includes('continuous')) track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
         loop();
       } catch (e) {
@@ -17625,6 +18000,16 @@ var qrcode = function() {
       const v = $('lcd-video');
       finish(v.videoWidth ? { text: '', img: snapshot(v, frameRegion(v)) } : null, 'manual');
     };
+    async function exposure(dir) {
+      if (!stream) return;
+      const track = stream.getVideoTracks()[0], c = track.getCapabilities().exposureCompensation;
+      const now = track.getSettings().exposureCompensation || 0, step = Math.max(c.step || 0, (c.max - c.min) / 8);
+      const next = Math.min(c.max, Math.max(c.min, now + dir * step));
+      try { await track.applyConstraints({ advanced: [{ exposureCompensation: next }] }); } catch { /* not supported after all */ }
+      voter = new window.LinkIQLcd.Voter(3, 10); best = null; setUse();   // start counting again with the new picture
+    }
+    $('lcd-bright').onclick = () => exposure(1);
+    $('lcd-dark').onclick = () => exposure(-1);
     $('lcd-torch').onclick = async () => {
       if (!stream) return;
       const track = stream.getVideoTracks()[0], on = !track.getSettings().torch;
@@ -17867,6 +18252,7 @@ var qrcode = function() {
     const q = await vqLoad(), limit = Date.now() - VQ_KEEP_DAYS * 864e5, keep = [];
     for (const e of q) {
       if (e.state === 'sent' && Date.parse(e.updated || e.created) < limit) {
+        await rememberSent([e]);
         for (const f of e.files) { try { await kv.set('vvsf:' + e.id + ':' + f, null); } catch { /* */ } }
       } else keep.push(e);
     }
@@ -17879,6 +18265,7 @@ var qrcode = function() {
     const sum = T('Azi: {0} pe caz · {1} așteaptă', sentToday, waiting.length) + (errors ? ' · ' + T('{0} cu eroare', errors) : '');
     $('vvsq-sum').textContent = q.length ? sum : T('Niciun raport în listă.');
     $('sync-sum').textContent = sum;
+    syncImportLabels();
     $('vvsq-send').hidden = !waiting.length;
     $('vvsq-send').textContent = T('Trimite cele care așteaptă ({0})', waiting.length);
     const done = q.filter((e) => e.state === 'sent' && !e.cleaned && e.files.length);
@@ -17890,7 +18277,7 @@ var qrcode = function() {
     list.replaceChildren();
     let day = null;
     for (const e of q) {
-      const d = (e.updated || e.created).slice(0, 10);
+      const d = (e.imported && e.state !== 'sent' ? e.created : e.updated || e.created).slice(0, 10);
       if (d !== day) {
         day = d;
         const h = document.createElement('div'); h.className = 'sync-day';
@@ -17905,9 +18292,10 @@ var qrcode = function() {
       st.textContent = e.state === 'sent' ? T('✓ pe caz {0}', e.cc || '') : e.state === 'error' ? T('eroare') : T('așteaptă');
       top.append(a, st); card.append(top);
       const meta = document.createElement('div'); meta.className = 'meta';
-      meta.textContent = [fmtTime(e.updated || e.created), e.status || '', e.files.length ? e.files.join(', ') + (e.cleaned ? ' (' + T('șterse de pe telefon') + ')' : '') : T('fără fișiere')].filter(Boolean).join(' · ');
+      meta.textContent = [fmtTime(e.imported && e.state !== 'sent' ? e.created : e.updated || e.created), e.imported ? T('din dosar') : '', e.status || '', e.files.length ? e.files.join(', ') + (e.cleaned ? ' (' + T('șterse de pe telefon') + ')' : '') : T('fără fișiere')].filter(Boolean).join(' · ');
       card.append(meta);
-      if (e.text) { const pre = document.createElement('pre'); pre.textContent = e.text; card.append(pre); }
+      if (e.imported && e.state !== 'sent') card.append(importForm(e));
+      else if (e.text) { const pre = document.createElement('pre'); pre.textContent = e.text; card.append(pre); }
       if (e.state === 'error' && e.msg) { const m = document.createElement('div'); m.className = 'error'; m.textContent = e.msg; card.append(m); }
       if (e.state === 'sent' && e.msg) { const m = document.createElement('div'); m.className = 'meta'; m.textContent = e.msg; card.append(m); }
       const acts = document.createElement('div'); acts.className = 'acts';
@@ -17926,6 +18314,130 @@ var qrcode = function() {
       list.append(card);
     }
   }
+  // A report added from the folder has no session behind it: the installer picks the fixed words
+  // and the status here. Nothing chosen: li only puts the file on the case.
+  function importForm(e) {
+    const v = e.v || (e.v = { result: null, faults: [], status: VT.statuses[0] || null, comment: '' });
+    const box = document.createElement('div'); box.className = 'mini';
+    const save = async () => {
+      e.text = vvsText(v); e.status = v.status; e.updated = new Date().toISOString();
+      const q = await vqLoad(), x = q.find((y) => y.id === e.id);
+      if (x) { x.v = v; x.text = e.text; x.status = e.status; x.updated = e.updated; await vqSave(q); }
+    };
+    const q1 = document.createElement('p'); q1.className = 'q'; q1.textContent = T('Rezultat');
+    const res = document.createElement('div'); res.className = 'chips';
+    chipRow(res, VT.results.map((r) => [r, r]), v.result, (r) => { v.result = v.result === r ? null : r; if (v.result === VT.results[0]) v.faults = []; save(); });
+    box.append(q1, res);
+    if (v.result !== VT.results[0]) {
+      const q2 = document.createElement('p'); q2.className = 'q'; q2.textContent = T('Erori');
+      const fr = document.createElement('div'); fr.className = 'chips';
+      for (const f of VT.faults) {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = f;
+        const on = v.faults.includes(f); b.className = on ? 'on' : ''; b.setAttribute('aria-pressed', String(on));
+        b.onclick = () => { v.faults = on ? v.faults.filter((y) => y !== f) : [...v.faults, f]; if (v.faults.length && !v.result) v.result = 'Fejl'; save(); };
+        fr.append(b);
+      }
+      box.append(q2, fr);
+    }
+    const q3 = document.createElement('p'); q3.className = 'q'; q3.textContent = T('Statusul cazului');
+    const st = document.createElement('div'); st.className = 'chips';
+    chipRow(st, VT.statuses.map((x) => [x, x]), v.status, (x) => { v.status = x; save(); });
+    const cm = document.createElement('input'); cm.type = 'text'; cm.maxLength = 500; cm.value = v.comment || ''; cm.placeholder = T('Comentariu (opțional)');
+    cm.onchange = () => { v.comment = cm.value; save(); };
+    const pre = document.createElement('pre'); pre.textContent = e.text || T('Fără rezultat ales: li pune doar fișierul pe caz.');
+    box.append(q3, st, cm, pre);
+    return box;
+  }
+
+  // File names that VVS-dialog has confirmed, kept longer than the list itself, so a folder
+  // scan does not offer again what is already on a case.
+  async function rememberSent(entries) {
+    let names = [];
+    try { names = (await kv.get('vvssent')) || []; } catch { /* */ }
+    const set = new Set(names);
+    for (const e of entries) for (const f of e.files || []) set.add(f.toLowerCase());
+    try { await kv.set('vvssent', [...set].slice(-3000)); } catch { /* */ }
+  }
+
+  // Reports in the folder (or picked as files) can be added to the list, so a day that was
+  // never sent is not lost: one report per meter, the newest, PDF before image.
+  const REPORT_FILE = /^(\d{6,12})(_status)?[^.\/]*\.(pdf|png)$/i;
+  async function importCandidates(files) {
+    const q = await vqLoad();
+    let sent = [];
+    try { sent = (await kv.get('vvssent')) || []; } catch { /* */ }
+    const known = new Set([...sent, ...q.flatMap((e) => e.files.map((f) => f.toLowerCase()))]);
+    const best = new Map();
+    for (const f of files) {
+      const m = f.name.match(REPORT_FILE);
+      if (!m) continue;
+      const k = m[1] + (m[2] ? '_status' : ''), pdf = m[3].toLowerCase() === 'pdf', old = best.get(k);
+      const day = (t) => new Date(t).toDateString();
+      if (!old || (day(f.lastModified) === day(old.file.lastModified) ? pdf && !old.pdf : f.lastModified > old.file.lastModified)) best.set(k, { meter: m[1], file: f, pdf });
+    }
+    const limit = Date.now() - 30 * 864e5;
+    return [...best.values()].sort((a, b) => b.file.lastModified - a.file.lastModified)
+      .map((c) => ({ ...c, known: known.has(c.file.name.toLowerCase()), tick: !known.has(c.file.name.toLowerCase()) && c.file.lastModified > limit }));
+  }
+  function showImport(cands) {
+    const msg = $('sync-import-msg');
+    if (!cands.length) { msg.textContent = T('Nu am găsit rapoarte. Numele fișierului trebuie să înceapă cu seria contorului.'); msg.hidden = false; return; }
+    const list = $('import-list');
+    list.replaceChildren();
+    const boxes = cands.map((c) => {
+      const l = document.createElement('label'); if (c.known) l.className = 'known';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = c.tick;
+      const t = document.createElement('span');
+      t.textContent = c.meter;
+      const sm = document.createElement('small');
+      sm.textContent = [fmtTime(new Date(c.file.lastModified).toISOString()), c.file.name, c.known ? T('deja în listă sau pe caz') : null].filter(Boolean).join(' · ');
+      t.append(sm); l.append(cb, t); list.append(l);
+      return cb;
+    });
+    const count = () => { $('import-ok').textContent = T('Adaugă în listă ({0})', boxes.filter((b) => b.checked).length); };
+    boxes.forEach((b) => { b.onchange = count; }); count();
+    $('import-sheet').hidden = false;
+    $('import-cancel').onclick = () => { $('import-sheet').hidden = true; };
+    $('import-ok').onclick = async () => {
+      $('import-sheet').hidden = true;
+      const q = await vqLoad();
+      let n = 0;
+      for (let i = cands.length - 1; i >= 0; i--) {
+        if (!boxes[i].checked) continue;
+        const c = cands[i], id = 'imp-' + c.meter + '-' + c.file.lastModified;
+        if (q.some((e) => e.id === id)) continue;
+        try { await kv.set('vvsf:' + id + ':' + c.file.name, new Blob([await c.file.arrayBuffer()], { type: c.file.type || (c.pdf ? 'application/pdf' : 'image/png') })); }
+        catch { continue; }
+        q.unshift({ id, meter: c.meter, created: new Date(c.file.lastModified).toISOString(), updated: new Date().toISOString(),
+          files: [c.file.name], state: 'pending', imported: true, text: '', status: '' });
+        n++;
+      }
+      await vqSave(q);
+      msg.textContent = n ? T('{0} rapoarte adăugate. Alege rezultatul pe fiecare, apoi trimite.', n) : T('Nimic nou de adăugat.');
+      msg.hidden = false;
+    };
+  }
+  $('sync-import').onclick = async () => {
+    if (reportDir && canPickDir) {
+      if (!(await askDir())) { $('sync-files').click(); return; }
+      const files = [];
+      try { for await (const h of reportDir.values()) if (h.kind === 'file' && REPORT_FILE.test(h.name)) files.push(await h.getFile()); }
+      catch { /* folder gone */ }
+      showImport(await importCandidates(files));
+    } else $('sync-files').click();
+  };
+  $('sync-import2').onclick = () => $('sync-files').click();
+  $('sync-files').onchange = async (ev) => {
+    const files = [...ev.target.files];
+    ev.target.value = '';
+    if (files.length) showImport(await importCandidates(files));
+  };
+  function syncImportLabels() {
+    const dir = reportDir && canPickDir;
+    $('sync-import').textContent = dir ? T('Caută rapoarte în dosarul „{0}”', reportDir.name) : T('Adaugă rapoarte din fișiere');
+    $('sync-import2').hidden = !dir;
+  }
+
   // Files that VVS-dialog has confirmed: offered for deletion (folder and the app's own copy).
   $('sync-clean').onclick = async () => {
     const q = await vqLoad(), done = q.filter((e) => e.state === 'sent' && !e.cleaned && e.files.length);
@@ -17958,7 +18470,7 @@ var qrcode = function() {
   // The work for li travels three ways: window.opener (with the files), the tab name, and the
   // address (?liq=…). On Android the installed app would open VVS-dialog in a small in-app
   // browser without bookmarks; an intent: address opens it straight in Chrome instead.
-  const isAndroidApp = () => /Android/i.test(navigator.userAgent) && window.matchMedia('(display-mode: standalone)').matches;
+  const isAndroidApp = () => /Android/i.test(navigator.userAgent) && !/EdgA\//.test(navigator.userAgent) && window.matchMedia('(display-mode: standalone)').matches;
   // How the installed app on Android hands VVS-dialog to the real Chrome (with address bar and
   // bookmarks). Phones differ, so the installer can try the ways in the li sheet; the one that
   // works is remembered.
@@ -18031,24 +18543,27 @@ var qrcode = function() {
       if (!e) return;
       e.state = ev.data.ok ? 'sent' : 'error'; e.msg = ev.data.msg || ''; e.cc = ev.data.cc || e.cc;
       e.updated = new Date().toISOString();
+      if (e.state === 'sent') await rememberSent([e]);
       await vqSave(q);
     }
   });
   // li could not reach LinkIQ (Android freezes the tab): it sends the installer back here with the results.
   async function vvsResultsFromAddress() {
     const m = location.hash.match(/liqdone=([\w-]+)/);
-    if (!m) return;
+    if (!m) return false;
     history.replaceState(null, '', location.pathname + location.search);
     let res = [];
-    try { res = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)))); } catch { return; }
+    try { res = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)))); } catch { return false; }
     const q = await vqLoad();
     for (const r of res) {
       const e = q.find((x) => x.id === r.id);
       if (!e) continue;
       e.state = r.ok ? 'sent' : 'error'; e.msg = r.msg || ''; e.cc = r.cc || e.cc; e.updated = new Date().toISOString();
     }
+    await rememberSent(q.filter((e) => e.state === 'sent'));
     await vqSave(q);
     showView('sync');
+    return true;
   }
   $('vvsq-send').onclick = async () => {
     const q = await vqLoad(), waiting = q.filter((e) => e.state !== 'sent');
@@ -18109,7 +18624,8 @@ var qrcode = function() {
     refreshReportDir();
     updateCamPerm();
     vqPrune();
-    vvsResultsFromAddress();
+    const back = vvsResultsFromAddress();       // results from li: the sync page is shown once boot is done
+    sweepPhotos();
     $('tech').value = store.get('tech', '') || '';
     if (!(await serverAnswers())) await startStandalone();
     // Pairing link: https://host/#pair=CODE. The fragment never reaches the server.
@@ -18136,11 +18652,12 @@ var qrcode = function() {
     if (sid) {
       try {
         const s = await api('/api/sessions/' + sid);
-        if (s.session.status === 'ACTIVE') { enterSession(s); return; }
+        if (s.session.status === 'ACTIVE') { enterSession(s); if (await back) showView('sync'); return; }
       } catch { /* fall through */ }
       store.del('session');
     }
     showStart(pairedName);
+    if (await back) showView('sync');
   })();
 })();
 

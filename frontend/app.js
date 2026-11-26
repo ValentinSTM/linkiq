@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const VERSION = '0.24';
+  const VERSION = '0.25';
   const FINE = ['marginea stângă', 'jumătatea stângă', 'centru', 'jumătatea dreaptă', 'marginea dreaptă'];
   const FINE_MOVE = ['Mută la marginea stângă', 'Mută la jumătatea stângă', 'Mută în centru', 'Mută la jumătatea dreaptă', 'Mută la marginea dreaptă'];
   const FINE_SHORT = ['◀◀', '◀', '●', '▶', '▶▶'];
@@ -690,6 +690,7 @@
     return rssi >= th.goodDbm ? '#1b8a3a' : rssi >= th.marginalDbm ? '#b26a00' : '#c62828';
   };
   const meters = (m) => Math.round(m).toLocaleString(lang === 'da' ? 'da-DK' : 'ro-RO') + ' m';
+  const tipNode = (t) => { const e = document.createElement('span'); e.textContent = t; return e; };   // never HTML
   const linkText = (l) => `${Math.round(l.best)} dBm` + (l.distanceM !== null ? ` · ${meters(l.distanceM)}` : '') + (l.age === 'OLD' ? ` · ${T('peste 8 ore')}` : '');
   let lastFit = '';
 
@@ -704,14 +705,14 @@
       if (g) {
         // meter -> site: signal and distance written on the line
         const line = L.polyline([[g.lat, g.lon], [l.lat, l.lon]], { color, weight: l.primary ? 6 : 3, dashArray: st.dashL, opacity: l.age === 'OLD' ? 0.7 : 0.9 }).addTo(mapLayer);
-        line.bindTooltip(linkText(l), { permanent: i < 6 || l.primary, direction: 'center', className: 'link-label' + (l.primary ? ' primary' : '') });
+        line.bindTooltip(tipNode(linkText(l)), { permanent: i < 6 || l.primary, direction: 'center', className: 'link-label' + (l.primary ? ' primary' : '') });
       }
       L.circleMarker([l.lat, l.lon], { radius: l.primary ? 10 : 7, color: '#fff', weight: 3, fillColor: color, fillOpacity: 1 })
-        .bindTooltip(`${[l.name, l.address].filter(Boolean).join(', ') || l.serial} · ${linkText(l)}`).addTo(mapLayer);
+        .bindTooltip(tipNode(`${[l.name, l.address].filter(Boolean).join(', ') || l.serial} · ${linkText(l)}`)).addTo(mapLayer);
       pts.push([l.lat, l.lon]);
     });
     if (g) {
-      L.circleMarker([g.lat, g.lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#1565c0', fillOpacity: 1 }).bindTooltip(T('Contor / telefon')).addTo(mapLayer);
+      L.circleMarker([g.lat, g.lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#1565c0', fillOpacity: 1 }).bindTooltip(tipNode(T('Contor / telefon'))).addTo(mapLayer);
       pts.push([g.lat, g.lon]);
     }
     let info = T('Harta explică doar geometria. Măsurătoarea radio rămâne decisivă.');
@@ -861,7 +862,7 @@
     try { sites = (await api('/api/sites')).filter((x) => x.latitude !== null); } catch { /* map still usable */ }
     for (const x of sites) {
       L.circleMarker([x.latitude, x.longitude], { radius: 7, color: '#fff', weight: 3, fillColor: '#55626b', fillOpacity: 1 })
-        .bindTooltip(x.name || x.siteCode).addTo(mapLayer);
+        .bindTooltip(tipNode(x.name || x.siteCode)).addTo(mapLayer);
     }
     setTimeout(() => {
       map.invalidateSize();
@@ -956,7 +957,7 @@
     store.set('tech', $('tech').value.trim());
     try {
       enterSession(await api('/api/sessions', 'POST', { meterSerial: $('meter').value.trim(), technician: $('tech').value.trim(), gps }));
-    } catch (e) { showError('start-error', e.message); }
+    } catch (e) { showError('start-error', e.message); needRegistry(e); }
   };
 
   $('meter').addEventListener('change', () => {
@@ -969,8 +970,14 @@
     const meter = $('meter').value.trim();
     if (!meter) { showError('start-error', 'Introdu sau scanează seria contorului.'); return; }
     try { enterSession(await api('/api/check', 'POST', { meterSerial: meter, technician: $('tech').value.trim(), gps })); }
-    catch (e) { showError('start-error', e.status === 404 ? 'Verificarea fără CALL există doar în varianta fără server.' : e.message); }
+    catch (e) { showError('start-error', e.status === 404 ? 'Verificarea fără CALL există doar în varianta fără server.' : e.message); needRegistry(e); }
   };
+  // no registry: point at the card where it is loaded
+  function needRegistry(e) {
+    if (e.code !== 'REGISTRY_EMPTY' || $('data-card').hidden) return;
+    const c = $('data-card');
+    c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
+  }
 
   // ---------------------------------------------------------------- camera scanning
   // Native BarcodeDetector where the browser has it (Chrome on Android); jsQR otherwise.
@@ -1350,10 +1357,13 @@
     const r = engine.registryInfo();
     $('reg-info').textContent = r.concentrators
       ? T('Registru: {0} site-uri, {1} concentratoare', r.sites, r.concentrators) + (r.review ? T(', {0} fără site sigur.', r.review) : '.')
+        + (r.foreign ? ' ' + T('{0} au alt proprietar decât Kredsløb și nu contează în rezultat.', r.foreign) : '')
+        + (r.inactive ? ' ' + T('{0} sunt marcate inactive și nu contează în rezultat.', r.inactive) : '')
+        + (r.ownerColumn ? '' : ' ' + T('Registrul nu are coloana de proprietar (Ownership / Ejer): toate concentratoarele din el sunt socotite ale Kredsløb.'))
         + ' ' + T({ embedded: 'Este inclus în aplicație; nu trebuie importat.', folder: 'Se încarcă singur din dosarul aplicației.',
           qr: 'Citit dintr-un cod QR; rămâne pe acest dispozitiv până imporți altul.' }[(engine.db.registrySource || {}).origin]
           || 'Importat manual; rămâne pe acest dispozitiv până imporți altul.')
-      : T('Registrul nu este încărcat: toate receptoarele auzite sunt tratate ca proprii, iar harta nu are site-uri.');
+      : T('Registrul nu este încărcat. Fără el nu se poate face nicio măsurătoare: LinkIQ nu poate ști care concentratoare sunt ale Kredsløb. Doar modul demonstrativ merge fără registru.');
     const embedded = (engine.db.registrySource || {}).origin === 'embedded';
     $('store-warn').hidden = storageWorks || embedded;
     const n = engine.sessionCount();
@@ -1769,8 +1779,21 @@
     return {
       get: async (k) => { const db = await open(); return new Promise((ok, fail) => { const r = db.transaction('kv').objectStore('kv').get(k); r.onsuccess = () => ok(r.result); r.onerror = () => fail(r.error); }); },
       set: async (k, v) => { const db = await open(); return new Promise((ok, fail) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = () => ok(); t.onerror = () => fail(t.error); }); },
+      del: async (k) => { const db = await open(); return new Promise((ok, fail) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').delete(k); t.oncomplete = () => ok(); t.onerror = () => fail(t.error); }); },
+      keys: async () => { const db = await open(); return new Promise((ok, fail) => { const r = db.transaction('kv').objectStore('kv').getAllKeys(); r.onsuccess = () => ok(r.result.map(String)); r.onerror = () => fail(r.error); }); },
     };
   })();
+  // Retention: installation photos of a session that was never finished go after 30 days.
+  const PHOTO_KEEP_DAYS = 30;
+  async function sweepPhotos() {
+    try {
+      for (const k of (await kv.keys()).filter((x) => x.startsWith('iph:'))) {
+        const v = await kv.get(k);
+        const newest = Array.isArray(v) && v.length ? Math.max(...v.map((p) => Date.parse(p.at) || 0)) : 0;
+        if (Date.now() - newest > PHOTO_KEEP_DAYS * 864e5) await kv.del(k);
+      }
+    } catch { /* storage not available: nothing kept either */ }
+  }
 
   /** True when the chosen folder may be written. `ask` may show the browser's permission prompt (needs a tap). */
   async function dirReady(ask) {
@@ -2118,7 +2141,7 @@
         };
       },
       forget() {
-        if (key) kv.set(key, null).catch(() => {});
+        if (key) kv.del(key).catch(() => {});
         for (const p of list) if (p.url) URL.revokeObjectURL(p.url);
         key = null; list = []; asked = false;
       },
@@ -2993,6 +3016,7 @@
     updateCamPerm();
     vqPrune();
     const back = vvsResultsFromAddress();       // results from li: the sync page is shown once boot is done
+    sweepPhotos();
     $('tech').value = store.get('tech', '') || '';
     if (!(await serverAnswers())) await startStandalone();
     // Pairing link: https://host/#pair=CODE. The fragment never reaches the server.

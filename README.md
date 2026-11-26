@@ -67,7 +67,9 @@ I kortet *Data på denne enhed*:
 
 - **Indlæs sites / koncentratorer (CSV)**: registret bliver kun på telefonen. Kolonnerne
   `Breddegrad` / `Længdegrad`, decimalkomma og filer gemt fra Excel accepteres. Uden register
-  behandles alle modtagere, der hører måleren, som vores egne.
+  kan der ikke måles (kun i demotilstand): LinkIQ kan ikke vide, hvilke koncentratorer der tilhører
+  Kredsløb. Har koncentratorlisten en kolonne `Ownership` / `Ejer`, tæller kun rækker med Kredsløb;
+  rækker med `active` = 0 tæller aldrig med.
 - **Eksportér målingerne (CSV)**: alle sessioner på enheden, til analyse.
 - **Demotilstand**: simulator, til oplæring uden måler.
 
@@ -262,7 +264,7 @@ selv om depotet er privat.
 
 1. **Det rigtige register**: eksportér de to lister som CSV, og importér dem. `Breddegrad` /
    `Længdegrad` og decimalkomma genkendes; koncentratorer uden sikkert site bliver `REVIEW` /
-   `MISSING_LOCATION`. Så længe registret er tomt, behandles alle modtagere som egne.
+   `MISSING_LOCATION`. Uden register kan der ikke måles (fail closed); se [docs/SIKKERHED.md](docs/SIKKERHED.md).
    De rigtige CSV-filer er udelukket fra git via `.gitignore`.
 2. **HTTPS** på den endelige adresse.
 3. **Grænseværdier**: værdierne i `.env.example` (−80 / −95 / −110 dBm, 6 dB) er foreløbige.
@@ -277,13 +279,15 @@ frontend/i18n.js          de danske tekster (kildeteksterne er på rumænsk)
 frontend/vvs.js           bogmærket li til VVS-dialog (bygges fra tools/vvs/)
 frontend/lcd.js           aflæsning af målerens 7-segment-display med kameraet
 frontend/                 PWA (HTML + CSS + almindelig JavaScript, intet byggetrin)
-tests-js/                 21 test af engine.js, 17 af lcd.js (billeder af displayet)
+tests-js/                 28 test af engine.js, 17 af lcd.js (billeder af displayet)
 backend/app/              valgfri central server: samme regler i Python
 backend/scripts/          import af register, parringskoder, kontrol af Kamstrup
-backend/tests/            18 test
+backend/tests/            19 test
 docs/VEJLEDNING_DA.md     kort vejledning til montøren
 docs/ARKITEKTUR.md        valgt løsning, licenser, API, trusselsmodel
+docs/SIKKERHED.md         sikkerhedsgennemgang, status og beslutninger før drift
+docs/IDEER.md             ideer og planlagte test
 docs/ANDROID.md           fuld funktion på Android uden hosting
-docs/ro/                  de oprindelige rumænske dokumenter
+docs/en/, docs/ro/        de samme dokumenter på engelsk og rumænsk
 azure-pipelines.yml       test, kopi til Azure Repos og udgivelse på Azure
 ```

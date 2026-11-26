@@ -63,7 +63,9 @@ manual ulterior nu este suprascris.
 
 - **Încarcă site-uri / concentratoare (CSV)** – registrul rămâne doar pe telefon. Se acceptă
   coloanele `Breddegrad` / `Længdegrad`, virgula zecimală și fișiere salvate din Excel. Fără
-  registru, toate receptoarele auzite sunt tratate ca proprii.
+  registru nu se poate măsura (doar în modul demonstrativ): LinkIQ nu poate ști care concentratoare
+  sunt ale Kredsløb. Dacă lista are coloana `Ownership` / `Ejer`, contează doar rândurile cu
+  Kredsløb; rândurile cu `active` = 0 nu contează niciodată.
 - **Exportă măsurătorile (CSV)** – toate sesiunile de pe dispozitiv, pentru analiză.
 - **Mod demonstrație** – simulator, pentru instruire fără contor.
 
@@ -238,7 +240,7 @@ depozitul este privat.
 
 1. **Registrul real**: exportă cele două liste ca CSV și importă-le. `Breddegrad` / `Længdegrad` și
    virgula zecimală sunt recunoscute; concentratoarele fără site sigur devin `REVIEW` /
-   `MISSING_LOCATION`. Cât timp registrul e gol, toate receptoarele sunt tratate ca proprii.
+   `MISSING_LOCATION`. Fără registru nu se poate măsura (fail closed); vezi [SECURITATE.md](SECURITATE.md).
    Fișierele CSV reale sunt excluse din git prin `.gitignore`.
 2. **HTTPS** pe adresa finală.
 3. **Praguri**: valorile din `.env.example` (−80 / −95 / −110 dBm, 6 dB) sunt provizorii.
@@ -253,9 +255,11 @@ frontend/app.js           interfața; aceeași în ambele moduri
 frontend/i18n.js          textele în daneză (sursa este în română)
 frontend/                 PWA (HTML + CSS + JavaScript simplu, fără pas de build)
 frontend/lcd.js           citirea afișajului cu 7 segmente cu camera
-tests-js/                 21 teste pentru engine.js, 17 pentru lcd.js
+tests-js/                 28 teste pentru engine.js, 17 pentru lcd.js
 backend/app/              server central opțional: aceleași reguli, în Python
 backend/scripts/          import registru, coduri de cuplare, verificare Kamstrup
-backend/tests/            18 teste
+backend/tests/            19 teste
 docs/ro/ARHITECTURA.md    alternativa aleasă, licențe, API, model de amenințări
+docs/ro/SECURITATE.md     analiza de securitate, stare și decizii înainte de producție
+docs/ro/IDEI.md           idei și teste planificate
 ```
