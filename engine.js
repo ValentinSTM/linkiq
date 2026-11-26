@@ -60,6 +60,7 @@
     if (needsN && !(n >= 1 && n <= 60)) return null;
     return { kind: l.kind, n };
   }
+  const cleanAddress = (a) => String(a || '').replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
   function cleanInstall(i) {
     if (!i || typeof i !== 'object') return null;
     const out = { meterLevel: cleanLevel(i.meterLevel, LEVEL_KINDS),
@@ -410,7 +411,7 @@
       return s;
     }
 
-    createSession(meterSerial, technician, gps = null) {
+    createSession(meterSerial, technician, gps = null, address = '') {
       meterSerial = String(meterSerial || '').trim();
       technician = String(technician || '').trim() || 'necunoscut';
       if (!METER_RE.test(meterSerial)) throw new EngineError(422, 'BAD_METER_SERIAL', 'Seria contorului trebuie să aibă 4–20 litere sau cifre');
@@ -423,8 +424,10 @@
           gps: this._position(meterSerial, gps),
           startedMs: now, finishedMs: null, status: 'ACTIVE', state: 'READY', initialCallMs: null, finalCallMs: null,
           outcome: null, note: null, decision: null, samples: [], obs: [], nextSampleId: 1 };
-        this.save();
       }
+      const addr = cleanAddress(address);
+      if (addr) s.address = addr;                // the address the installer is at (forbrugssted)
+      this.save();
       return this.summary(s.id);
     }
 
@@ -599,7 +602,7 @@
      * Kamstrup snapshot, showing which of our receivers hear it and when.
      * Nothing is stored on the device.
      */
-    async check(meterSerial, gps = null, technician = '') {
+    async check(meterSerial, gps = null, technician = '', address = '') {
       meterSerial = String(meterSerial || '').trim();
       if (!METER_RE.test(meterSerial)) throw new EngineError(422, 'BAD_METER_SERIAL', 'Seria contorului trebuie să aibă 4–20 litere sau cifre');
       this._needRegistry(this.db.demo);
@@ -654,7 +657,12 @@
       const current = others.filter((r) => r.age === 'CURRENT');
       const pick = current.find((r) => r.relation === 'DISTINCT_SITE') || current[0]
         || others.find((r) => r.relation === 'DISTINCT_SITE') || others[0] || null;
+      const usable = (r) => r.age === 'CURRENT' && r.bestRssi >= this.cfg.rssiMarginalDbm;
       const contact = { current: rows.filter((r) => r.age === 'CURRENT').length,
+        usable: rows.filter(usable).length, weak: rows.filter((r) => r.age === 'CURRENT' && !usable(r)).length,
+        usableSites: new Set(rows.filter(usable).map((r) => r.siteCode || r.serial)).size,
+        goodPrimary: !!(rows[0] && usable(rows[0]) && rows[0].bestRssi >= this.cfg.rssiGoodDbm),
+        marginalDbm: this.cfg.rssiMarginalDbm, goodDbm: this.cfg.rssiGoodDbm,
         occasional: rows.filter((r) => r.age === 'OCCASIONAL').length, old: rows.filter((r) => r.age === 'OLD').length,
         currentMaxMin: this.cfg.contactCurrentMaxMin, historyMaxH: this.cfg.contactHistoryMaxH };
       const lastSeenMs = parseTs(payload.LastSeenTimestampUtc);
@@ -663,7 +671,7 @@
       if (g.lat === null) warnings.push('NO_GPS');
       if (rows.length && !p1) warnings.push('NO_RECENT_CONTACT');
       return {
-        session: { id: null, meterSerial, technician: String(technician || '').trim(), gps: g, status: 'CHECK', state: 'CHECK',
+        session: { id: null, meterSerial, technician: String(technician || '').trim(), gps: g, address: cleanAddress(address) || null, status: 'CHECK', state: 'CHECK',
           startedUtc: iso(now), finishedUtc: iso(now), initialCallUtc: null, finalCallUtc: null, outcome: null, note: null, demo: this.db.demo },
         current: null, coarse: [], fine: [], final: null, coarseWinner: null, fineWinner: null,
         best: p1 ? { phase: 'check', step: null, rssi: p1.bestRssi, serial: p1.serial } : null,
@@ -837,7 +845,7 @@
       return {
         session: { id: s.id, meterSerial: s.meterSerial, technician: s.technician, gps: { ...s.gps }, status: s.status,
           state: s.state, startedUtc: iso(s.startedMs), finishedUtc: iso(s.finishedMs), initialCallUtc: iso(s.initialCallMs),
-          finalCallUtc: iso(s.finalCallMs), outcome: s.outcome, note: s.note, demo: s.demo, install: s.install || null },
+          finalCallUtc: iso(s.finalCallMs), outcome: s.outcome, note: s.note, demo: s.demo, install: s.install || null, address: s.address || null },
         current, coarse, fine, final, coarseWinner, fineWinner, best,
         primary: best ? { serial: primarySerial, siteCode: primarySite, siteName: pReg ? pReg.name : null,
           address: pReg ? pReg.address : null, rssi: best.rssi } : null,
@@ -860,8 +868,8 @@
       }
       if (route === '/api/me') return { technician: null };
       if (route === '/api/sites') return this.sites(q.lat !== undefined ? Number(q.lat) : null, q.lon !== undefined ? Number(q.lon) : null);
-      if (route === '/api/check' && method === 'POST') return this.check(body.meterSerial, body.gps || null, body.technician || '');
-      if (route === '/api/sessions' && method === 'POST') return this.createSession(body.meterSerial, body.technician, body.gps || null);
+      if (route === '/api/check' && method === 'POST') return this.check(body.meterSerial, body.gps || null, body.technician || '', body.address || '');
+      if (route === '/api/sessions' && method === 'POST') return this.createSession(body.meterSerial, body.technician, body.gps || null, body.address || '');
       if (m && !m[2]) return this.summary(m[1]);
       if (m && m[2] === 'call-confirmed') return this.callConfirmed(m[1], body.phase || 'initial', body.step === undefined ? 1 : body.step);
       if (m && m[2] === 'accept') return this.accept(m[1]);

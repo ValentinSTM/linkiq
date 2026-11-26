@@ -76,6 +76,9 @@
         <button type="button" id="gps-btn" class="secondary">GPS</button>
         <button type="button" id="pick-btn" class="secondary">Adresă sau hartă</button>
       </div>
+      <label for="addr">Adresa (locul de consum)</label>
+      <input id="addr" autocomplete="off" maxlength="120" placeholder="Se completează din adresa căutată">
+      <p class="hint" id="addr-hint">Se compară cu adresa cazului în VVS-dialog, ca un contor montat la altă adresă să fie observat.</p>
       <p id="gps-info" class="hint">Măsurarea funcționează și fără GPS. Poziția doar propune site-ul probabil și apare pe hartă.</p>
       <button type="submit" class="primary">Începe</button>
       <button type="button" id="check-btn" class="secondary">Verifică contorul, fără CALL</button>
@@ -196,6 +199,16 @@
           <div id="readings-extra" class="checks"></div>
         </details>
       </div>
+      <div id="elsyn-card">
+        <h3>Instalația (El og syn)</h3>
+        <p class="hint">Aceleași date ca în raportul El og syn: se scriu în raport și în Ny aktivitet, deci nu mai e nevoie de alt formular.</p>
+        <p class="q">Anlæg</p><div class="chips" id="ch-es-anlaeg"></div>
+        <p class="q">Vandvarmer</p><div class="chips" id="ch-es-vv"></div>
+        <p class="q">Unit</p><div class="chips" id="ch-es-unit"></div>
+        <p class="q">Model (opțional)</p><input id="es-model" maxlength="60" autocomplete="off">
+        <p class="q">Hovedhaner lukket?</p><div class="chips" id="ch-es-haner"></div>
+        <p class="q">Plomberet?</p><div class="chips" id="ch-es-plomb"></div>
+      </div>
       <div id="vvsres-card">
         <h3>Pentru VVS-dialog</h3>
         <p class="hint">Textul se scrie singur în „Ny aktivitet” pe caz, cu cuvinte fixe.</p>
@@ -250,9 +263,11 @@
         <label class="file-btn"><span>La montaj</span><input type="file" id="iphoto-mount" accept="image/*" capture="environment" hidden></label>
         <label class="file-btn"><span>La punerea în funcțiune</span><input type="file" id="iphoto-start" accept="image/*" capture="environment" hidden></label>
       </div>
+      <label class="file-btn"><span>Vandvarmer / unit (plăcuța de tip)</span><input type="file" id="iphoto-unit" accept="image/*" capture="environment" hidden></label>
       <p class="hint gal">Lumină slabă? Fă poza cu aplicația Cameră a telefonului (blitz sau mod noapte), apoi alege-o din galerie:
         <button type="button" class="link" data-gallery="iphoto-mount">la montaj</button> ·
-        <button type="button" class="link" data-gallery="iphoto-start">la punerea în funcțiune</button></p>
+        <button type="button" class="link" data-gallery="iphoto-start">la punerea în funcțiune</button> ·
+        <button type="button" class="link" data-gallery="iphoto-unit">vandvarmer / unit</button></p>
       <p class="hint">Doar echipamentul și instalația: fără persoane, acte sau lucruri personale ale clientului.</p>
       <ul id="iphoto-list" class="iphotos"></ul>
       <p id="iphoto-msg" class="hint" hidden></p>
@@ -314,6 +329,11 @@
     <div id="map"></div>
     <div id="map-info" class="card">
       <p id="map-info-text" class="hint">Harta explică doar geometria. Măsurătoarea radio rămâne decisivă.</p>
+      <div id="map-views" class="map-views" hidden>
+        <button type="button" id="map-near" class="secondary on">Aproape de contor</button>
+        <button type="button" id="map-all" class="secondary">Toate site-urile</button>
+      </div>
+      <ol id="map-sites" class="map-sites" hidden></ol>
       <div id="map-legend" class="legend" hidden></div>
     </div>
     <button type="button" id="map-pos" class="primary" hidden>Poziția contorului: adresă sau hartă</button>
@@ -408,8 +428,8 @@
 
 <div id="iphoto-ask" hidden>
   <div class="card sheet">
-    <h2>Nu ai nicio poză cu instalația</h2>
-    <p class="hint">Pozele de la montaj și de la punerea în funcțiune arată cum a fost lăsată instalația. Fă cel puțin una înainte de raport.</p>
+    <h2 id="iask-title">Nu ai nicio poză cu instalația</h2>
+    <p class="hint" id="iask-text">Pozele de la montaj și de la punerea în funcțiune arată cum a fost lăsată instalația. Fă cel puțin una înainte de raport.</p>
     <button type="button" id="iask-yes" class="primary">Fac poze acum</button>
     <button type="button" id="iask-no" class="secondary">Salvează raportul fără poze</button>
   </div>

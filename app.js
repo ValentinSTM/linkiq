@@ -47,8 +47,13 @@
   function contactText(s) {
     const c = s.check && s.check.contact;
     if (!c) return '';
+    // what counts is a usable link: heard in the last hour AND a signal of at least the marginal
+    // limit. Many weak or old links are no reserve, however many there are.
     const parts = [];
-    if (c.current) parts.push(T('{0} cu contact în ultima oră', c.current));
+    if (c.usable !== undefined) {
+      parts.push(T('{0} utilizabile (≥ {1} dBm, ultima oră)', c.usable, c.marginalDbm));
+      if (c.weak) parts.push(T('{0} slabe (< {1} dBm): nu contează', c.weak, c.marginalDbm));
+    } else if (c.current) parts.push(T('{0} cu contact în ultima oră', c.current));
     if (c.occasional) parts.push(T('{0} doar ocazional (1–{1} ore)', c.occasional, c.historyMaxH));
     if (c.old) parts.push(T('{0} fără contact de peste {1} ore (nu contează)', c.old, c.historyMaxH));
     return parts.join(' · ');
@@ -58,6 +63,13 @@
     const c = s.check && s.check.contact;
     if (!c || !s.receivers.length) return ['red', T('Niciun concentrator de-al nostru nu a auzit contorul.')];
     if (!s.primary) return ['red', T('Fără contact în ultimele {0} ore: datele din această perioadă se pierd.', c.historyMaxH)];
+    if (c.usable !== undefined) {
+      if (!c.usable) return c.current ? ['red', T('Contact doar cu semnal slab (sub {0} dBm): datele orare se pot pierde.', c.marginalDbm)]
+        : ['yellow', T('Niciun contact în ultima oră: datele ajung cu întârziere.')];
+      if (c.usable >= 2 && c.goodPrimary) return ['green', c.usableSites >= 2 ? T('Date orare, semnal bun și rezervă pe alt site.') : T('Date orare, semnal bun și rezervă pe același site.')];
+      if (c.usable >= 2) return ['yellow', T('Date orare cu rezervă, dar semnalul principal e doar la limită.')];
+      return ['yellow', T('O singură legătură utilizabilă: fără rezervă sigură.')];
+    }
     if (c.current >= 2) return ['green', T('Date orare, cu redundanță.')];
     if (c.current === 1) return ['yellow', T('Un singur concentrator cu contact în ultima oră: fără redundanță.')];
     return ['yellow', T('Niciun contact în ultima oră: datele ajung cu întârziere.')];
@@ -731,7 +743,7 @@
 
   async function drawMap() {
     if (!ensureMap()) { mapInfo(T('Harta nu este disponibilă.')); return; }
-    mapLayer.clearLayers();
+    mapLayer.clearLayers(); layoutPins = () => {}; if (leaders) leaders.clearLayers();
     $('map-pos').hidden = !S || picking || S.session.gps.lat !== null;
     if (!S) {                                   // no measurement: the sites in the registry
       let sites = [];
@@ -751,36 +763,105 @@
     const g = S && S.session.gps.lat !== null ? S.session.gps : null;
     const links = S ? siteLinks(S) : [];
     const pts = [];
-    links.forEach((l, i) => {
-      const st = linkStyle(l), color = st.color;
+    // Each site a numbered marker; the numbers are explained in the list under the map, so no
+    // text sits on the lines and nothing hides the meter. Tap a marker or a line for its details.
+    const pins = new Map();
+    [...links].reverse().forEach((l) => {           // weakest first, strong lines on top
+      const st = linkStyle(l);
       if (g) {
-        // meter -> site: signal and distance written on the line
-        const line = L.polyline([[g.lat, g.lon], [l.lat, l.lon]], { color, weight: l.primary ? 6 : 3, dashArray: st.dashL, opacity: l.age === 'OLD' ? 0.7 : 0.9 }).addTo(mapLayer);
-        line.bindTooltip(tipNode(linkText(l)), { permanent: i < 6 || l.primary, direction: 'center', className: 'link-label ' + sigClass(l) + (l.primary ? ' primary' : '') });
+        L.polyline([[g.lat, g.lon], [l.lat, l.lon]], { color: st.color, weight: l.primary ? 6 : 3, dashArray: st.dashL, opacity: l.age === 'OLD' ? 0.7 : 0.9 })
+          .bindTooltip(tipNode(linkText(l)), { sticky: true, className: 'link-label ' + sigClass(l) }).addTo(mapLayer);
       }
-      L.circleMarker([l.lat, l.lon], { radius: l.primary ? 10 : 7, color: '#fff', weight: 3, fillColor: color, fillOpacity: 1 })
-        .bindTooltip(tipNode(`${[l.name, l.address].filter(Boolean).join(', ') || l.serial} · ${linkText(l)}`)).addTo(mapLayer);
+    });
+    links.forEach((l, i) => {
+      const el = document.createElement('span'); el.textContent = String(i + 1);
+      const icon = L.divIcon({ className: 'site-pin ' + sigClass(l) + (l.primary ? ' primary' : ''), html: el, iconSize: l.primary ? [34, 34] : [28, 28] });
+      const mk = L.marker([l.lat, l.lon], { icon, zIndexOffset: l.primary ? 500 : 100 - i, keyboard: false, home: [l.lat, l.lon] })
+        .bindTooltip(tipNode(`${i + 1} · ${[l.name, l.address].filter(Boolean).join(', ') || l.serial} · ${linkText(l)}`), { direction: 'top', offset: [0, -14] }).addTo(mapLayer);
+      pins.set(l.key, mk);
       pts.push([l.lat, l.lon]);
     });
     if (g) {
-      L.circleMarker([g.lat, g.lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#1565c0', fillOpacity: 1 }).bindTooltip(tipNode(T('Contor / telefon'))).addTo(mapLayer);
+      L.marker([g.lat, g.lon], { icon: L.divIcon({ className: 'meter-pin', html: document.createElement('span'), iconSize: [18, 18] }), zIndexOffset: 1000, keyboard: false })
+        .bindTooltip(tipNode(T('Contor')), { direction: 'top', offset: [0, -10] }).addTo(mapLayer);
       pts.push([g.lat, g.lon]);
     }
+    layoutPins = () => spreadPins(pins, g);
+    layoutPins();
+    // the list: number, signal, distance, site; a tap shows the site on the map
+    const ol = $('map-sites'); ol.replaceChildren(); ol.hidden = !links.length;
+    links.forEach((l, i) => {
+      const li = document.createElement('li'); li.setAttribute('role', 'button'); li.tabIndex = 0;
+      const n = document.createElement('span'); n.className = 'site-pin ' + sigClass(l) + (l.primary ? ' primary' : ''); n.textContent = String(i + 1);
+      const t = document.createElement('span'); t.className = 'st';
+      const a = document.createElement('b'); a.textContent = linkText(l) + (l.count > 1 ? ' · ' + T('{0} concentratoare', l.count) : '') + (l.primary ? ' · ' + T('principal') : '');
+      const b = document.createElement('small'); b.textContent = [l.name, (l.address || '').split(',').slice(0, 2).join(',')].filter(Boolean).join(', ') || l.serial;
+      t.append(a, b); li.append(n, t);
+      li.onclick = () => { const mk = pins.get(l.key); map.setView([l.lat, l.lon], Math.max(map.getZoom(), 14)); if (mk) mk.openTooltip(); $('map').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+      ol.append(li);
+    });
     let info = T('Harta explică doar geometria. Măsurătoarea radio rămâne decisivă.');
     if (links.length) {
-      info = T('{0} site-uri au auzit contorul.', links.length)
+      info = T('{0} site-uri au auzit contorul. Numerele de pe hartă sunt în lista de mai jos; atinge un rând ca să vezi site-ul.', links.length)
         + (g ? '' : ' ' + T('Alege poziția contorului (adresă sau hartă) ca să apară liniile și distanțele.'));
     } else if (S && S.warnings.includes('REGISTRY_EMPTY')) info = T('Încarcă registrul (site-uri și concentratoare) pe ecranul de start ca să apară concentratoarele pe hartă.');
     else if (!pts.length) info = T('Fără poziție GPS și fără receptoare cu coordonate. ') + info;
     mapInfo(info, links.length ? { lines: !!g, old: links.some((l) => l.age === 'OLD'), meter: !!g } : null);
+    // Many sites far apart crowd around the meter: start close to the meter (the 5 nearest sites),
+    // with a button for all of them.
+    const nearPts = g ? [[g.lat, g.lon], ...links.filter((l) => l.distanceM !== null).sort((p, q) => p.distanceM - q.distanceM).slice(0, 5).map((l) => [l.lat, l.lon])] : pts;
+    const twoViews = !!g && links.length > 5;
+    $('map-views').hidden = !twoViews;
+    const show = (which) => {
+      mapScope = which;
+      $('map-near').classList.toggle('on', which === 'near'); $('map-all').classList.toggle('on', which === 'all');
+      const p = which === 'near' && twoViews ? nearPts : pts;
+      if (p.length > 1) map.fitBounds(p, { padding: [40, 40] });
+      else map.setView(p[0] || [56, 10.5], p.length ? 16 : 6);
+    };
+    $('map-near').onclick = () => show('near');
+    $('map-all').onclick = () => show('all');
     const fit = pts.map((q) => q.join(',')).join(';');
     setTimeout(() => {
       map.invalidateSize();
       if (fit === lastFit) return;              // keep the installer's own pan and zoom
       lastFit = fit;
-      if (pts.length > 1) map.fitBounds(pts, { padding: [50, 50] });
-      else map.setView(pts[0] || [56, 10.5], pts.length ? 16 : 6);
+      show(twoViews ? 'near' : 'all');
+      layoutPins();
     }, 0);
+  }
+  let mapScope = 'near';
+  // Markers that would overlap each other or the meter at this zoom are moved apart on screen,
+  // with a thin line to their true place; zooming in brings them back.
+  let layoutPins = () => {}, leaders = null;
+  function spreadPins(pins, g) {
+    if (!map) return;
+    if (leaders) leaders.clearLayers(); else leaders = L.layerGroup().addTo(map);
+    const R = 15, list = [...pins.values()].map((mk) => {
+      const p = map.latLngToContainerPoint(mk.options.home);
+      return { mk, px: p.x, py: p.y, x: p.x, y: p.y };
+    });
+    const m = g ? map.latLngToContainerPoint([g.lat, g.lon]) : null;
+    for (let it = 0; it < 60; it++) {
+      let moved = false;
+      for (let i = 0; i < list.length; i++) {
+        const a = list[i];
+        for (let j = i + 1; j < list.length; j++) {
+          const b = list[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.01, need = 2 * R + 4;
+          if (d < need) { const k = (need - d) / 2 / d; a.x -= dx * k; a.y -= dy * k; b.x += dx * k; b.y += dy * k; moved = true; }
+        }
+        if (m) {
+          const dx = a.x - m.x, dy = a.y - m.y, d = Math.hypot(dx, dy) || 0.01, need = R + 16;
+          if (d < need) { a.x += dx / d * (need - d); a.y += dy / d * (need - d); moved = true; }
+        }
+      }
+      if (!moved) break;
+    }
+    for (const q of list) {
+      const shifted = Math.hypot(q.x - q.px, q.y - q.py) > 2;
+      q.mk.setLatLng(shifted ? map.containerPointToLatLng([q.x, q.y]) : q.mk.options.home);
+      if (shifted) L.polyline([q.mk.options.home, map.containerPointToLatLng([q.x, q.y])], { color: '#0b1f2a', weight: 1.5, interactive: false }).addTo(leaders);
+    }
   }
 
   // ---------------------------------------------------------------- session plumbing
@@ -855,6 +936,7 @@
     render();
     renderReadings();
     renderVvs();
+    renderElsyn();
     if (navigator.wakeLock) navigator.wakeLock.request('screen').then((w) => { wakeLock = w; }).catch(() => {});
   }
 
@@ -863,7 +945,7 @@
     store.del('session'); store.del('ui');
     if (pollTimer) { clearInterval(pollTimer); clearInterval(tickTimer); pollTimer = tickTimer = null; }
     if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
-    $('meter').value = '';
+    $('meter').value = ''; $('addr').value = '';
     $('scan-info').hidden = true; $('scan-chips').hidden = true;
     $('report-msg').hidden = true; $('report-preview').hidden = true; lastPhoto = null; instPhotos.forget();
     $('vvs-msg').textContent = T('Copiază seria contorului și deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță.');
@@ -933,6 +1015,7 @@
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
     mapLayer = L.layerGroup().addTo(map);
     map.on('click', (e) => { if (picking) setPick(e.latlng.lat, e.latlng.lng, false); });
+    map.on('zoomend', () => layoutPins());
     return true;
   }
   function setPick(lat, lon, recenter) {
@@ -945,7 +1028,7 @@
   }
   async function drawPickMap() {
     if (!ensureMap()) { $('pick-info').textContent = T('Harta nu este disponibilă.'); return; }
-    mapLayer.clearLayers();
+    mapLayer.clearLayers(); layoutPins = () => {}; if (leaders) leaders.clearLayers();
     let sites = [];
     try { sites = (await api('/api/sites')).filter((x) => x.latitude !== null); } catch { /* map still usable */ }
     for (const x of sites) {
@@ -968,7 +1051,7 @@
     if (pickMarker) { pickMarker.remove(); pickMarker = null; }
     showView(S ? 'align' : 'start');
   }
-  $('pick-btn').onclick = () => { picking = true; picked = null; $('pick-ok').disabled = true; $('pick-info').textContent = T('Nicio poziție aleasă.'); showView('map'); };
+  $('pick-btn').onclick = () => { picking = true; picked = null; pickedAddr = null; $('pick-ok').disabled = true; $('pick-info').textContent = T('Nicio poziție aleasă.'); showView('map'); };
   $('pick-cancel').onclick = endPick;
   $('map-pos').onclick = () => $('pos-btn').click();
   $('pos-btn').onclick = () => { picking = true; picked = null; $('pick-ok').disabled = true; $('pick-info').textContent = T('Nicio poziție aleasă.'); showView('map'); };
@@ -978,7 +1061,7 @@
       const pos = { lat: picked.lat, lon: picked.lon, accuracyM: null };
       try {
         apply(S.session.status === 'CHECK'
-          ? await api('/api/check', 'POST', { meterSerial: S.session.meterSerial, technician: S.session.technician, gps: pos })
+          ? await api('/api/check', 'POST', { meterSerial: S.session.meterSerial, technician: S.session.technician, gps: pos, address: S.session.address || '' })
           : await api(`/api/sessions/${S.session.id}/position`, 'POST', { gps: pos }));
       } catch (e) { showError('align-error', e.status === 404 ? 'Poziția se poate schimba doar în varianta fără server.' : e.message); }
       lastFit = '';
@@ -987,6 +1070,7 @@
       return;
     }
     gps = { lat: picked.lat, lon: picked.lon, accuracyM: null };
+    if (pickedAddr) $('addr').value = pickedAddr;
     $('gps-info').textContent = T('Poziție aleasă pe hartă: {0}, {1}.', picked.lat.toFixed(5), picked.lon.toFixed(5));
     endPick();
     showCandidates();
@@ -1001,12 +1085,12 @@
     }
     return m && Math.abs(+m[1]) <= 90 && Math.abs(+m[2]) <= 180 ? [+m[1], +m[2]] : null;
   }
-  let lastSearch = '';
+  let lastSearch = '', pickedAddr = null;
   async function searchAddress(t) {
     const list = $('pick-results'), info = $('pick-info');
     list.replaceChildren(); list.hidden = true;
     info.textContent = T('Caut adresa…');
-    const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=0&limit=5&countrycodes=dk&accept-language=da'
+    const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countrycodes=dk&accept-language=da'
       + '&viewbox=9.4,56.5,10.9,55.8&q=' + encodeURIComponent(t);
     let res;
     try {
@@ -1015,7 +1099,10 @@
       res = await r.json();
     } catch (e) { info.textContent = T('Căutarea adresei nu merge acum ({0}). Atinge harta sau folosește GPS.', e.message); return; }
     if (!res.length) { info.textContent = T('Nu am găsit adresa. Scrie strada, numărul și orașul, de ex. Søndergade 1, 8000 Aarhus C.'); return; }
-    const pick = (x) => { list.hidden = true; if (ensureMap()) setPick(+x.lat, +x.lon, true); $('pick-info').textContent = x.display_name.split(', ').slice(0, 4).join(', ') + ' · ' + T('verifică pe hartă și mută punctul dacă e nevoie.'); };
+    const pick = (x) => {
+      list.hidden = true; if (ensureMap()) setPick(+x.lat, +x.lon, true);
+      const a = x.address || {}, town = a.city || a.town || a.village || a.suburb || '';
+      pickedAddr = a.road ? `${a.road}${a.house_number ? ' ' + a.house_number : ''}${a.postcode ? ', ' + a.postcode + (town ? ' ' + town : '') : ''}` : x.display_name.split(', ').slice(0, 2).join(' '); $('pick-info').textContent = x.display_name.split(', ').slice(0, 4).join(', ') + ' · ' + T('verifică pe hartă și mută punctul dacă e nevoie.'); };
     if (res.length === 1) { pick(res[0]); return; }
     for (const x of res) {
       const li = document.createElement('li'), b = document.createElement('button');
@@ -1045,7 +1132,7 @@
     $('start-error').hidden = true;
     store.set('tech', $('tech').value.trim());
     try {
-      enterSession(await api('/api/sessions', 'POST', { meterSerial: $('meter').value.trim(), technician: $('tech').value.trim(), gps }));
+      enterSession(await api('/api/sessions', 'POST', { meterSerial: $('meter').value.trim(), technician: $('tech').value.trim(), gps, address: $('addr').value.trim() }));
     } catch (e) { showError('start-error', e.message); needRegistry(e); }
   };
 
@@ -1058,7 +1145,7 @@
     $('start-error').hidden = true;
     const meter = $('meter').value.trim();
     if (!meter) { showError('start-error', 'Introdu sau scanează seria contorului.'); return; }
-    try { enterSession(await api('/api/check', 'POST', { meterSerial: meter, technician: $('tech').value.trim(), gps })); }
+    try { enterSession(await api('/api/check', 'POST', { meterSerial: meter, technician: $('tech').value.trim(), gps, address: $('addr').value.trim() })); }
     catch (e) { showError('start-error', e.status === 404 ? 'Verificarea fără CALL există doar în varianta fără server.' : e.message); needRegistry(e); }
   };
   // no registry: point at the card where it is loaded
@@ -1546,19 +1633,23 @@
   }
 
   /** Map for the report: OpenStreetMap background when it loads, plain grid otherwise. */
-  async function reportMap(s, W, H, useTiles = true) {
-    const g = s.session.gps, links = siteLinks(s);
-    if (!g || g.lat === null || !links.length) return null;
+  // Report map: every site a numbered marker (the same numbers as in the list under the map), no
+  // text on the lines, the meter drawn last so nothing covers it. Markers that would overlap are
+  // moved apart with a thin leader line to their true place. `fit`: the sites the view must hold.
+  async function reportMap(s, W, H, useTiles = true, fit = null) {
+    const g = s.session.gps, all = siteLinks(s);
+    if (!g || g.lat === null || !all.length) return null;
+    const num = new Map(all.map((l, i) => [l.key, i + 1])), links = all;
     const merc = (lat, lon, z) => {
       const n = 256 * 2 ** z, sl = Math.sin(lat * Math.PI / 180);
       return [(lon + 180) / 360 * n, (0.5 - Math.log((1 + sl) / (1 - sl)) / (4 * Math.PI)) * n];
     };
-    const pts = [[g.lat, g.lon], ...links.map((l) => [l.lat, l.lon])];
+    const pts = [[g.lat, g.lon], ...links.filter((l) => !fit || fit.has(l.key)).map((l) => [l.lat, l.lon])];
     let z = 17, box;
     for (; z >= 4; z--) {
       const q = pts.map((p) => merc(p[0], p[1], z));
       box = [Math.min(...q.map((v) => v[0])), Math.min(...q.map((v) => v[1])), Math.max(...q.map((v) => v[0])), Math.max(...q.map((v) => v[1]))];
-      if (box[2] - box[0] <= W - 260 && box[3] - box[1] <= H - 170) break;
+      if (box[2] - box[0] <= W - 120 && box[3] - box[1] <= H - 130) break;
     }
     const ox = (box[0] + box[2]) / 2 - W / 2, oy = (box[1] + box[3]) / 2 - H / 2;
     const c = document.createElement('canvas');
@@ -1584,7 +1675,7 @@
         x.fillStyle = 'rgba(255,255,255,0.45)'; x.fillRect(0, 0, W, H);
         x.getImageData(0, 0, 1, 1);               // throws if the tiles may not be exported
         tiles = true;
-      } catch { return reportMap(s, W, H, false); }
+      } catch { return reportMap(s, W, H, false, fit); }
     }
     if (!tiles) {
       x.strokeStyle = '#d5dde2'; x.lineWidth = 1;
@@ -1593,34 +1684,60 @@
     }
     const P = (lat, lon) => { const m = merc(lat, lon, z); return [m[0] - ox, m[1] - oy]; };
     const [mx, my] = P(g.lat, g.lon);
-    const boxed = (str, bx, by, color, bold) => {
-      x.font = `${bold ? 700 : 600} 21px ${SANS}`;
-      const w = x.measureText(str).width + 16;
-      const lx = Math.max(4, Math.min(W - w - 4, bx - w / 2)), ly = Math.max(4, Math.min(H - 34, by - 15));
-      x.fillStyle = '#fff'; x.strokeStyle = color; x.lineWidth = 2;
-      x.beginPath(); x.roundRect(lx, ly, w, 30, 6); x.fill(); x.stroke();
-      x.fillStyle = INK.ink; x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillText(str, lx + 8, ly + 16);
-    };
-    [...links].reverse().forEach((l) => {          // weakest first, so the strong links stay on top
-      const [sx, sy] = P(l.lat, l.lon), st = linkStyle(l), color = st.color;
-      x.strokeStyle = color; x.lineWidth = l.primary ? 7 : 3; x.setLineDash(st.dash);
-      x.beginPath(); x.moveTo(mx, my); x.lineTo(sx, sy); x.stroke(); x.setLineDash([]);
-      x.fillStyle = color; x.strokeStyle = '#fff'; x.lineWidth = 3;
-      x.beginPath(); x.arc(sx, sy, l.primary ? 12 : 9, 0, 2 * Math.PI); x.fill(); x.stroke();
+    // marker places, pushed apart where they would overlap each other or the meter
+    const R = 17, marks = links.map((l) => { const [px, py] = P(l.lat, l.lon); return { l, px, py, x: px, y: py }; });
+    for (let it = 0; it < 80; it++) {
+      let moved = false;
+      for (let i = 0; i < marks.length; i++) {
+        const a = marks[i];
+        for (let j = i + 1; j < marks.length; j++) {
+          const b = marks[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.01, need = 2 * R + 6;
+          if (d < need) { const k = (need - d) / 2 / d; a.x -= dx * k; a.y -= dy * k; b.x += dx * k; b.y += dy * k; moved = true; }
+        }
+        const dx = a.x - mx, dy = a.y - my, d = Math.hypot(dx, dy) || 0.01, need = R + 34;
+        if (d < need) { a.x += dx / d * (need - d); a.y += dy / d * (need - d); moved = true; }
+      }
+      if (!moved) break;
+    }
+    [...marks].reverse().forEach(({ l, px, py }) => {          // weakest first, so the strong links stay on top
+      const st = linkStyle(l);
+      x.strokeStyle = st.color; x.lineWidth = l.primary ? 7 : 3; x.setLineDash(st.dash);
+      x.beginPath(); x.moveTo(mx, my); x.lineTo(px, py); x.stroke(); x.setLineDash([]);
     });
-    links.forEach((l, i) => {
-      if (i >= 8 && !l.primary) return;
-      const [sx, sy] = P(l.lat, l.lon);
-      boxed(linkText(l), mx + (sx - mx) * 0.62, my + (sy - my) * 0.62, linkStyle(l).color, l.primary);
-      x.font = `600 18px ${SANS}`; x.fillStyle = INK.ink; x.textAlign = 'center'; x.textBaseline = 'top';
-      x.lineWidth = 4; x.strokeStyle = 'rgba(255,255,255,0.9)';
-      const nm = (l.name || (l.address || '').split(',')[0] || l.serial).slice(0, 26);
-      x.strokeText(nm, sx, sy + 15); x.fillText(nm, sx, sy + 15);
+    [...marks].reverse().forEach((m) => {
+      const st = linkStyle(m.l), n = num.get(m.l.key);
+      if (Math.hypot(m.x - m.px, m.y - m.py) > 3) {             // moved: a thin line to the true place
+        x.strokeStyle = INK.ink; x.lineWidth = 1.5; x.beginPath(); x.moveTo(m.px, m.py); x.lineTo(m.x, m.y); x.stroke();
+        x.fillStyle = INK.ink; x.beginPath(); x.arc(m.px, m.py, 3, 0, 2 * Math.PI); x.fill();
+      }
+      x.fillStyle = st.color; x.strokeStyle = '#fff'; x.lineWidth = m.l.primary ? 5 : 3;
+      x.beginPath(); x.arc(m.x, m.y, m.l.primary ? R + 3 : R, 0, 2 * Math.PI); x.fill(); x.stroke();
+      if (m.l.primary) { x.strokeStyle = INK.ink; x.lineWidth = 2; x.beginPath(); x.arc(m.x, m.y, R + 6, 0, 2 * Math.PI); x.stroke(); }
+      x.font = `800 ${n > 9 ? 17 : 20}px ${SANS}`; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillStyle = m.l.age === 'OLD' || st.color === SIG.mid ? INK.ink : '#fff'; x.fillText(String(n), m.x, m.y + 1);
     });
-    x.fillStyle = INK.blue; x.strokeStyle = '#fff'; x.lineWidth = 4;
-    x.beginPath(); x.arc(mx, my, 12, 0, 2 * Math.PI); x.fill(); x.stroke();
-    x.font = `700 19px ${SANS}`; x.textAlign = 'center'; x.textBaseline = 'bottom'; x.lineWidth = 4; x.strokeStyle = 'rgba(255,255,255,0.9)';
-    x.strokeText(T('Contor'), mx, my - 15); x.fillStyle = INK.ink; x.fillText(T('Contor'), mx, my - 15);
+    // the meter last, on top of everything, with its name in a white box
+    x.fillStyle = INK.blue; x.strokeStyle = '#fff'; x.lineWidth = 5;
+    x.beginPath(); x.arc(mx, my, 13, 0, 2 * Math.PI); x.fill(); x.stroke();
+    x.strokeStyle = INK.blue; x.lineWidth = 2; x.beginPath(); x.arc(mx, my, 18, 0, 2 * Math.PI); x.stroke();
+    x.font = `800 19px ${SANS}`;
+    const mw = x.measureText(T('Contor')).width + 14, mh = 26;
+    // the label goes on the side of the meter where it covers no marker and no line end
+    let mlx = 0, mly = 0, bestFree = -1;
+    for (const [dx, dy] of [[0, -1], [0, 1], [1, 0], [-1, 0], [1, -1], [-1, -1], [1, 1], [-1, 1]]) {
+      const cx = mx + dx * (mw / 2 + 28), cy = my + dy * 34;
+      const lx = Math.max(4, Math.min(W - mw - 4, cx - mw / 2)), ly = Math.max(4, Math.min(H - mh - 44, cy - mh / 2));
+      const free = Math.min(999, ...marks.map((m) => {
+        const qx = Math.max(lx, Math.min(lx + mw, m.x)), qy = Math.max(ly, Math.min(ly + mh, m.y));
+        return Math.hypot(m.x - qx, m.y - qy) - R;
+      }));
+      if (free > bestFree + 0.5) { bestFree = free; mlx = lx; mly = ly; }
+      if (free > 12) break;
+    }
+    x.fillStyle = 'rgba(255,255,255,0.95)'; x.strokeStyle = INK.blue; x.lineWidth = 2;
+    x.beginPath(); x.roundRect(mlx, mly, mw, mh, 6); x.fill(); x.stroke();
+    x.fillStyle = INK.blue; x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillText(T('Contor'), mlx + 7, mly + 14);
+    c.crowded = marks.some((m) => Math.hypot(m.x - m.px, m.y - m.py) > 3);
     // legend, scale, north, attribution
     const legend = [[linkColor(-50), T('bun')], [linkColor(-100), T('la limită')], [linkColor(-130), T('slab')]];
     if (s.session.status === 'CHECK') legend.push([OLD_GRAY, T('peste 8 ore')]);
@@ -1654,13 +1771,19 @@
   // report: they cannot carry hourly data, and they may stem from the meter being switched
   // on before installation (heard on the road or in the van).
   const REPORT_MAX_AGE_H = 9;
+  const REPORT_VERSION = '0.2';   // the report's own layout; changes without a new app version
   const isStale = (q) => q.ageMin !== null && q.ageMin !== undefined && q.ageMin > REPORT_MAX_AGE_H * 60;
 
   async function buildReport(s) {
     const staleCount = s.receivers.filter(isStale).length;
     const shown = s.receivers.filter((q) => !isStale(q));
+    // On paper only the links that can carry the data: the primary, and the others with at least
+    // the marginal signal and contact within the history window. The rest is counted, not listed.
+    const margDbm = (cfg.thresholds || { marginalDbm: -110 }).marginalDbm;
+    const useful = shown.filter((q) => q.relation === 'PRIMARY' || (q.bestRssi >= margDbm && q.age !== 'OLD'));
+    const weakHidden = shown.length - useful.length;
     const W = 1080, P = 56, big = document.createElement('canvas');
-    big.width = W; big.height = 4400;
+    big.width = W; big.height = 5400;
     const x = big.getContext('2d');
     let y = 0;
     const font = (weight, px) => { x.font = `${weight} ${px}px ${SANS}`; };
@@ -1674,8 +1797,12 @@
       if (line) out.push(line);
       return out;
     };
-    const section = (title) => { y += 36; x.fillStyle = INK.light; x.fillRect(P, y, W - 2 * P, 2); y += 50; font(700, 30); text(title, P, y, INK.navy); y += 10; };
+    const breaks = [];                          // places where a printed page may end (never inside a map or a line)
+    let keep = false;                           // a heading stays with what follows it
+    const brk = () => { if (keep) { keep = false; return; } breaks.push(Math.round(y) + 14); };   // below the descenders of the line above
+    const section = (title) => { brk(); keep = true; y += 36; x.fillStyle = INK.light; x.fillRect(P, y, W - 2 * P, 2); y += 50; font(700, 30); text(title, P, y, INK.navy); y += 10; };
     const row = (label, value, color = INK.ink) => {
+      brk();
       y += 44; font(500, 25); text(label, P, y, INK.gray);
       font(600, 27);
       wrap(value, W - 2 * P - 300).forEach((l, i) => { if (i) y += 36; text(l, P + 300, y, color); });
@@ -1706,6 +1833,7 @@
     row(T('Data'), fmtTime(s.session.finishedUtc || s.session.startedUtc));
     row(T('Instalator'), s.session.technician);
     const g = s.session.gps;
+    if (s.session.address) row(T('Adresă'), s.session.address);
     row(T('Poziție'), g && g.lat !== null ? `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}` + (g.accuracyM ? ` (±${g.accuracyM} m)` : '') + (g.source === 'saved' ? ' · ' + T('salvată la vizita din {0}', fmtTime(g.savedUtc)) : '') : T('neînregistrată'));
     if (isCheck) {
       row(T('Auzit ultima dată'), s.check.lastSeenUtc ? `${fmtTime(s.check.lastSeenUtc)} (${ago(s.check.lastSeenUtc)})` : '–');
@@ -1722,16 +1850,68 @@
       row(T('Locul antenei'), ins.antennaType === 'internal' ? T('în contor') : levelText(ins.antennaPlace));
     }
 
+    if (!isCheck) {
+      // the El og syn fields, so the separate KMD form is not needed; the last two are filled by the app itself
+      const es = (ui.vvs && ui.vvs.meter === s.session.meterSerial && ui.vvs.es) || {};
+      const vals = Object.fromEntries(filledReadings().filter((r) => r.value).map((r) => [r.k, true]));
+      const all3 = ['E1', 'V1', 'HR'].every((k) => vals[k]);
+      const nPh = instPhotos.count(), nUnit = instPhotos.countOf('unit');
+      section(T('El og syn'));
+      const miss = (v) => v || T('necompletat');
+      row('Anlæg', miss(es.anlaeg), es.anlaeg ? INK.ink : INK.gray);
+      row('Vandvarmer', miss(es.vv), es.vv ? INK.ink : INK.gray);
+      if (es.unit || es.vv === 'Unit') row('Unit', miss(es.unit), es.unit ? INK.ink : INK.gray);
+      if (es.model) row('Model', es.model);
+      row('Hovedhaner lukket', miss(es.haner), es.haner ? INK.ink : INK.gray);
+      row('Plomberet', miss(es.plomb), es.plomb === 'Ja' ? INK.green : es.plomb ? INK.amber : INK.gray);
+      row(T('Cele 3 registre citite'), all3 ? T('Da: E1, V1 și HR') : T('Nu: lipsește {0}', ['E1', 'V1', 'HR'].filter((k) => !vals[k]).join(', ')), all3 ? INK.green : INK.amber);
+      row(T('Foto'), nPh ? T('Da: {0} poze', nPh) + (nUnit ? '' : ' · ' + T('fără vandvarmer / unit')) : T('Nu'), nPh && nUnit ? INK.green : INK.amber);
+    }
+
     y = await drawReadings(x, P, W, y, (t) => { section(t); return y; }, font, text);
     y = drawVvsSection(x, P, W, y, (t) => { section(t); return y; }, font, text);
 
-    const mapCanvas = await reportMap({ ...s, receivers: shown }, W - 2 * P, 620);
+    const sm = { ...s, receivers: useful };
+    const mapCanvas = await reportMap(sm, W - 2 * P, 620);
     if (mapCanvas) {
       section(T('Hartă'));
-      y += 14;
+      y += 34; font(700, 22); text(T('Toate site-urile'), P, y, INK.gray); y += 12;
       x.drawImage(mapCanvas, P, y);
       x.strokeStyle = INK.light; x.lineWidth = 2; x.strokeRect(P, y, W - 2 * P, 620);
       y += 620;
+      keep = false;
+      const sites = siteLinks(sm);
+      // sites crowd together near the meter: a second map, close up, with the nearest ones
+      const near = sites.filter((l) => l.distanceM !== null).sort((a, b) => a.distanceM - b.distanceM);
+      if (mapCanvas.crowded && near.length >= 2) {
+        const fit = new Set(near.slice(0, Math.min(5, near.length)).map((l) => l.key));
+        const close = await reportMap(sm, W - 2 * P, 460, true, fit);
+        if (close) {
+          brk();
+          y += 44; font(700, 22); text(T('Mărit: cele {0} site-uri cele mai apropiate de contor', fit.size), P, y, INK.gray); y += 12;
+          x.drawImage(close, P, y); x.strokeStyle = INK.light; x.lineWidth = 2; x.strokeRect(P, y, W - 2 * P, 460);
+          y += 460;
+        }
+      }
+      // the numbers on the map
+      y += 22;
+      const REL = { PRIMARY: T('principal'), SAME_SITE: T('același site'), DISTINCT_SITE: T('alt site'), UNKNOWN_SITE: T('site necunoscut') };
+      brk();
+      y += 8; font(700, 22); text(T('Numerele de pe hărți'), P, y + 14, INK.gray); y += 30;
+      sites.forEach((l, i) => {
+        if (y > big.height - 400) return;
+        brk();
+        const col = linkStyle(l).color, rel = s.receivers.find((q) => q.serial === l.serial);
+        x.fillStyle = col; x.beginPath(); x.arc(P + 16, y + 2, 15, 0, 2 * Math.PI); x.fill();
+        font(800, 17); x.fillStyle = l.age === 'OLD' || col === SIG.mid ? INK.ink : '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(i + 1), P + 16, y + 3);
+        x.textBaseline = 'alphabetic';
+        font(l.primary ? 800 : 700, 21);
+        text(`${dbm(l.best)}${l.distanceM !== null ? ' · ' + meters(l.distanceM) : ''}${rel && REL[rel.relation] ? ' · ' + REL[rel.relation] : ''}${l.count > 1 ? ' · ' + T('{0} concentratoare', l.count) : ''}`, P + 44, y + 8, INK.ink);
+        font(500, 19);
+        const where = [l.name, (l.address || '').split(',').slice(0, 2).join(',')].filter(Boolean).join(', ') || l.serial;
+        text(where.slice(0, 80), P + 44, y + 34, INK.gray);
+        y += 58;
+      });
     } else {
       section(T('Hartă'));
       row('', T(g && g.lat !== null ? 'Harta lipsește: registrul cu site-uri nu este încărcat pe acest dispozitiv.' : 'Harta lipsește: sesiunea nu are poziția contorului.'), INK.gray);
@@ -1793,14 +1973,15 @@
 
     section(T('Receptoare'));
     const where = (q) => [q.siteName, q.address].filter(Boolean).join(', ');
-    const p1 = shown.find((q) => q.relation === 'PRIMARY');
+    const p1 = useful.find((q) => q.relation === 'PRIMARY');
     row(T('Receptor principal'), p1 ? [p1.serial, dbm(p1.bestRssi), where(p1)].filter(Boolean).join(' · ') : '–');
     const b = s.backup;
     const occasional = b && b.age && b.age !== 'CURRENT';
     row(T('Rezervă'), b ? [b.serial, dbm(b.bestRssi), T(RELATION_RO[b.redundancy] || 'site necunoscut'), b.siteName,
       occasional ? T('doar ocazional – nu contează ca redundanță') : null].filter(Boolean).join(' · ') : T('niciuna'), b && !occasional ? INK.ink : INK.gray);
     y += 16;
-    for (const q of shown.slice(0, 10)) {
+    for (const q of useful.slice(0, 12)) {
+      brk();
       y += 36; font(500, 23);
       const old = q.age === 'OLD', ageCol = q.age === 'CURRENT' ? INK.green : q.age === 'OCCASIONAL' ? INK.amber : INK.gray;
       text(q.serial, P, y, old ? INK.gray : INK.ink); text(dbm(q.bestRssi), P + 250, y, old ? INK.gray : INK.ink, 'right');
@@ -1811,7 +1992,12 @@
       font(500, 21);
       text((wrap(where(q) + (q.distanceM !== null ? ' · ' + meters(q.distanceM) : ''), W - 2 * P - 660)[0] || ''), P + 660, y, INK.gray);
     }
-    if (shown.length > 10) { y += 34; font(500, 20); text(T('… și încă {0}', shown.length - 10), P, y, INK.gray); }
+    if (useful.length > 12) { y += 34; font(500, 20); text(T('… și încă {0}', useful.length - 12), P, y, INK.gray); }
+    if (weakHidden) {
+      y += 36; font(600, 21);
+      for (const l of wrap(T('{0} alte legături sub {1} dBm sau fără contact de peste 8 ore nu sunt arătate: nu pot duce datele în siguranță.', weakHidden, margDbm), W - 2 * P)) { text(l, P, y, INK.gray); y += 30; }
+      y -= 30;
+    }
     if (staleCount) {
       y += 34; font(500, 20);
       text(T(staleCount === 1 ? '1 concentrator văzut ultima dată acum peste {1} ore nu este inclus în raport.' : '{0} concentratoare văzute ultima dată acum peste {1} ore nu sunt incluse în raport.', staleCount, REPORT_MAX_AGE_H), P, y, INK.gray);
@@ -1820,7 +2006,7 @@
     for (const l of wrap(limitsText(isCheck), W - 2 * P)) { y += 28; text(l, P, y, INK.gray); }
     if (instPhotos.count()) {
       section(T('Poze cu instalația'));
-      row('', T('{0} poze în paginile următoare: montaj și punere în funcțiune', instPhotos.count()));
+      row('', instPhotos.count() === 1 ? T('1 poză pe pagina următoare') : T('{0} poze în paginile următoare: montaj, punere în funcțiune și vandvarmer / unit', instPhotos.count()));
     }
     if (s.session.note) {
       section(T('Observații'));
@@ -1828,11 +2014,69 @@
       for (const l of wrap(s.session.note, W - 2 * P)) { y += 38; text(l, P, y); }
     }
     y += 70; font(400, 21);
-    text(`LinkIQ Field Assistant v${VERSION} · ${T('generat {0}', fmtTime(new Date().toISOString()))}`, P, y, INK.gray);
+    text(`LinkIQ Field Assistant v${VERSION} · ${T('raport')} v${REPORT_VERSION} · ${T('generat {0}', fmtTime(new Date().toISOString()))}`, P, y, INK.gray);
     y += 44;
     const out = document.createElement('canvas');
     out.width = W; out.height = y;
     out.getContext('2d').drawImage(big, 0, 0);
+    out.breaks = breaks.filter((b) => b > 0 && b < y);
+    return out;
+  }
+
+  // ---------------------------------------------------------------- printable pages
+  // The report is one long picture on screen; on paper it is cut into A4 pages, only where a
+  // section or a line starts (never through a map), with the meter number and page number on each.
+  const A4W = 1080, A4H = Math.round(1080 * 297 / 210);
+  function pageCanvas() {
+    const c = document.createElement('canvas'); c.width = A4W; c.height = A4H;
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, A4W, A4H);
+    return c;
+  }
+  function pageFrame(c, s, n, total, first) {
+    const x = c.getContext('2d');
+    x.font = `500 20px ${SANS}`; x.fillStyle = INK.gray; x.textBaseline = 'alphabetic';
+    if (!first) {
+      x.fillStyle = INK.navy; x.fillRect(0, 0, A4W, 64);
+      x.font = `700 24px ${SANS}`; x.fillStyle = '#fff'; x.textAlign = 'left';
+      x.fillText(`LinkIQ · ${T('Contor')} ${s.session.meterSerial}`, 56, 41);
+    }
+    x.font = `500 20px ${SANS}`; x.fillStyle = INK.gray; x.textAlign = 'right';
+    x.fillText(T('Pagina {0} din {1}', n, total), A4W - 56, A4H - 26);
+    x.textAlign = 'left';
+    x.fillText(`${T('Contor')} ${s.session.meterSerial} · ${fmtTime(new Date().toISOString())}`, 56, A4H - 26);
+  }
+  function paginate(report, s, extra) {
+    const foot = 64, head = 84, pages = [];
+    let start = 0;
+    while (start < report.height - 4) {
+      const avail = A4H - foot - (pages.length ? head : 0);
+      let end = start + avail;
+      if (end >= report.height) end = report.height;
+      else {
+        const fit = (report.breaks || []).filter((b) => b > start + avail * 0.25 && b <= end);
+        if (fit.length) end = fit[fit.length - 1];
+      }
+      pages.push([start, end]);
+      start = end;
+    }
+    const total = pages.length + extra.length;
+    const out = pages.map(([a, b], i) => {
+      const c = pageCanvas(), x = c.getContext('2d');
+      x.drawImage(report, 0, a, A4W, b - a, 0, i ? head : 0, A4W, b - a);
+      pageFrame(c, s, i + 1, total, i === 0);
+      return c;
+    });
+    extra.forEach((ph, k) => {                  // a photo on its own page, as large as it fits
+      const c = pageCanvas(), x = c.getContext('2d');
+      const n = out.length + 1, top = head + 50, maxW = A4W - 112, maxH = A4H - top - 100;
+      const sc = Math.min(maxW / ph.canvas.width, maxH / ph.canvas.height);
+      const w = Math.round(ph.canvas.width * sc), h = Math.round(ph.canvas.height * sc);
+      x.font = `700 28px ${SANS}`; x.fillStyle = INK.navy; x.textAlign = 'left'; x.fillText(ph.title, 56, head + 34);
+      x.drawImage(ph.canvas, (A4W - w) / 2, top, w, h);
+      x.strokeStyle = INK.light; x.lineWidth = 2; x.strokeRect((A4W - w) / 2, top, w, h);
+      pageFrame(c, s, n, total, false);
+      out.push(c);
+    });
     return out;
   }
 
@@ -2135,11 +2379,13 @@
   async function savePdf() {
     if (!S) return;
     try {
-      const pages = [await buildReport(S)];
+      const report = await buildReport(S);
       const internal = ui.install && ui.install.antennaType === 'internal';
-      if (lastPhoto && S.session.status !== 'CHECK' && !internal) pages.push(lastPhoto);
+      const photos = [];
+      if (lastPhoto && S.session.status !== 'CHECK' && !internal) photos.push({ canvas: lastPhoto, title: T('Antena') });
       const inst = await instPhotos.pages();
-      pages.push(...inst);
+      photos.push(...inst);
+      const pages = paginate(report, S, photos);
       await saveBlob(pdfFromCanvases(pages), reportName(S) + '.pdf', inst.length ? 'Raportul PDF, cu pozele instalației, a fost salvat ca {0}.' : pages.length > 1 ? 'Raportul PDF, cu fotografia antenei, a fost salvat ca {0}.' : 'Raportul PDF a fost salvat ca {0}.', null);
     } catch (e) { showError('align-error', T('Nu am putut crea fișierul: {0}', e.message)); }
   }
@@ -2252,6 +2498,10 @@
     if (!check) {
       const n = instPhotos.count();
       rows.push({ ok: n > 0, label: T('Poze cu instalația'), sub: n === 1 ? T('1 poză') : n ? T('{0} poze', n) : T('Nicio poză încă.'), open: n ? async () => viewer.open(await instPhotos.files()) : null });
+      const nu = instPhotos.countOf('unit');
+      rows.push({ ok: nu > 0, label: T('Poza cu vandvarmer / unit'), sub: nu ? T('făcută') : T('plăcuța de tip: ce unitate e montată') });
+      const es = (ui.vvs && ui.vvs.es) || {}, esMiss = ['anlaeg', 'vv', 'haner', 'plomb'].filter((k) => !es[k]).length;
+      rows.push({ ok: !esMiss, label: T('Instalația (El og syn)'), sub: esMiss ? T('{0} câmpuri necompletate', esMiss) : elsynLine(es).replace(/^Installation: /, ''), open: () => { showView('align'); $('elsyn-card').scrollIntoView({ block: 'center' }); } });
       if (!internal) rows.push({ ok: !!lastPhoto, opt: true, label: T('Poza antenei'), sub: lastPhoto ? T('făcută') : T('opțională'), open: lastPhoto ? async () => viewer.open([{ name: T('Poza antenei'), blob: await canvasBlob(lastPhoto, 'image/jpeg') }]) : null });
     }
     const rd = (ui.readings || []).filter((r) => r.value);
@@ -2284,7 +2534,7 @@
   // stamped with meter, moment, time and place, kept with the session (IndexedDB) until the
   // report is made, and added to the PDF as history and proof of a correct installation.
   const instPhotos = (() => {
-    const MAX = 6, STAGES = { mount: 'La montaj', start: 'La punerea în funcțiune' }, FILE = { mount: 'montage', start: 'idrift' };
+    const MAX = 8, STAGES = { mount: 'La montaj', start: 'La punerea în funcțiune', unit: 'Vandvarmer / unit' }, FILE = { mount: 'montage', start: 'idrift', unit: 'unit' };
     let key = null, list = [], loading = null, asked = false;
     const keyOf = (s) => 'iph:' + (s.session.id || s.session.meterSerial);
     async function sync() {
@@ -2332,10 +2582,10 @@
         del.onclick = () => { if (!confirm(T('Ștergi poza?'))) return; URL.revokeObjectURL(p.url); list.splice(i, 1); keep(); draw(); renderLeave(); };
         li.append(img, cap, del); ul.append(li);
       });
-      const nm = list.filter((p) => p.stage === 'mount').length, ns = list.length - nm;
-      $('iphoto-n').textContent = list.length ? T('({0} la montaj, {1} la punerea în funcțiune)', nm, ns) : '';
+      const nm = list.filter((p) => p.stage === 'mount').length, ns = list.filter((p) => p.stage === 'start').length, nu = list.filter((p) => p.stage === 'unit').length;
+      $('iphoto-n').textContent = list.length ? T('({0} la montaj, {1} la punerea în funcțiune, {2} vandvarmer/unit)', nm, ns, nu) : '';
       $('iphoto-card').classList.toggle('need', !list.length && !!S && S.session.status !== 'CHECK' && S.session.status !== 'ACTIVE');
-      for (const id of ['iphoto-mount', 'iphoto-start']) $(id).parentElement.classList.toggle('disabled', list.length >= MAX);
+      for (const id of ['iphoto-mount', 'iphoto-start', 'iphoto-unit']) $(id).parentElement.classList.toggle('disabled', list.length >= MAX);
     }
     async function add(file, stage) {
       if (!file || !S) return;
@@ -2355,6 +2605,7 @@
     }
     $('iphoto-mount').onchange = (ev) => { const f = ev.target.files[0]; ev.target.value = ''; add(f, 'mount'); };
     $('iphoto-start').onchange = (ev) => { const f = ev.target.files[0]; ev.target.value = ''; add(f, 'start'); };
+    $('iphoto-unit').onchange = (ev) => { const f = ev.target.files[0]; ev.target.value = ''; add(f, 'unit'); };
     return {
       // while measuring: under the installation card; at the end: in the report card, above "save"
       place(s, kind) {
@@ -2369,30 +2620,38 @@
         draw();
       },
       count: () => list.length,
+      countOf: (st) => list.filter((p) => p.stage === st).length,
       async files() {
         await sync();
-        const name = { mount: T('La montaj'), start: T('La punerea în funcțiune') };
+        const name = { mount: T('La montaj'), start: T('La punerea în funcțiune'), unit: T('Vandvarmer / unit') };
         return list.map((p, i) => ({ name: `${name[p.stage]} ${i + 1}`, blob: p.blob }));
       },
       async pages() {
         await sync();
         const out = [];
-        for (const st of ['mount', 'start']) {
-          for (const p of list.filter((q) => q.stage === st)) {
-            try {
-              const bmp = await createImageBitmap(p.blob), c = document.createElement('canvas');
-              c.width = bmp.width; c.height = bmp.height; c.getContext('2d').drawImage(bmp, 0, 0);
-              out.push(c);
-            } catch { /* unreadable: left out */ }
-          }
+        for (const st of ['mount', 'start', 'unit']) {
+          list.filter((q) => q.stage === st).forEach((p) => out.push(p));
         }
-        return out;
+        const res = [];
+        for (const p of out) {
+          try {
+            const bmp = await createImageBitmap(p.blob), c = document.createElement('canvas');
+            c.width = bmp.width; c.height = bmp.height; c.getContext('2d').drawImage(bmp, 0, 0);
+            const same = out.filter((q) => q.stage === p.stage);
+            res.push({ canvas: c, title: T(STAGES[p.stage]) + (same.length > 1 ? ` ${same.indexOf(p) + 1}` : '') });
+          } catch { /* unreadable: left out */ }
+        }
+        return res;
       },
       // asked once per session before a report is saved without any installation photo
       async ask(then) {
         await sync();
-        if (asked || list.length || !S || S.session.status === 'CHECK') { then(); return; }
+        const noUnit = !list.some((p) => p.stage === 'unit');
+        if (asked || (list.length && !noUnit) || !S || S.session.status === 'CHECK') { then(); return; }
         asked = true;
+        $('iask-title').textContent = T(list.length ? 'Lipsește poza cu vandvarmer / unit' : 'Nu ai nicio poză cu instalația');
+        $('iask-text').textContent = T(list.length ? 'Poza cu plăcuța de tip arată ce unitate e montată la adresă. Fă una înainte de raport.'
+          : 'Pozele de la montaj și de la punerea în funcțiune arată cum a fost lăsată instalația. Fă cel puțin una înainte de raport, și una cu vandvarmer / unit.');
         $('iphoto-ask').hidden = false;
         $('iask-no').onclick = () => { $('iphoto-ask').hidden = true; then(); };
         $('iask-yes').onclick = () => {
@@ -2842,8 +3101,42 @@
     const lines = [];
     if (v.result && !(v.result === 'Fejl' && v.faults.length)) lines.push(v.result);
     for (const f of VT.faults) if (v.faults.includes(f)) lines.push(VT.faultPrefix + f);
+    const inst = elsynLine(v.es);
+    if (inst) lines.push(inst);
     if (v.comment && v.comment.trim()) lines.push(VT.commentPrefix + v.comment.trim().replace(/\s+/g, ' '));
     return lines.join('\n');
+  }
+  const ES = { anlaeg: ['Direkte', 'Indirekte', 'Direkte med bladesløjfe'], vv: ['Veksler', 'Beholder', 'Unit'],
+    unit: ['APV', 'Gemina Termix', 'Hoval', 'Metrotherm', 'Redan', 'Wavin'], yn: ['Ja', 'Nej'] };
+  function elsynState() {
+    const v = vvsState();
+    if (!v.es) v.es = { anlaeg: null, vv: null, unit: null, model: '', haner: null, plomb: null };
+    return v.es;
+  }
+  // one line in Ny aktivitet, never with the result words the robot looks for
+  function elsynLine(es) {
+    if (!es) return '';
+    const p = [];
+    if (es.anlaeg) p.push('Anlæg ' + es.anlaeg);
+    if (es.vv) p.push('Vandvarmer ' + es.vv);
+    if (es.unit) p.push('Unit ' + es.unit);
+    if (es.model && es.model.trim()) p.push('Model ' + es.model.trim().replace(/\s+/g, ' '));
+    if (es.haner) p.push('Hovedhaner lukket ' + es.haner);
+    if (es.plomb) p.push('Plomberet ' + es.plomb);
+    return p.length ? 'Installation: ' + p.join(', ') : '';
+  }
+  function renderElsyn() {
+    if (!S) return;
+    $('elsyn-card').hidden = S.session.status === 'CHECK';
+    const es = elsynState(), save = () => { store.set('ui', ui); renderElsyn(); renderVvs(); vvsQueueTouch(); };
+    const one = (id, key, opts) => chipRow($(id), opts.map((o) => [o, o]), es[key], (o) => { es[key] = es[key] === o ? null : o; save(); });
+    one('ch-es-anlaeg', 'anlaeg', ES.anlaeg); one('ch-es-vv', 'vv', ES.vv); one('ch-es-unit', 'unit', ES.unit);
+    one('ch-es-haner', 'haner', ES.yn); one('ch-es-plomb', 'plomb', ES.yn);
+    const showUnit = !es.vv || es.vv === 'Unit';      // brand row only matters for a unit
+    $('ch-es-unit').hidden = !showUnit; $('ch-es-unit').previousElementSibling.hidden = !showUnit;
+    if (!showUnit && es.unit) es.unit = null;
+    if (document.activeElement !== $('es-model')) $('es-model').value = es.model || '';
+    $('es-model').onchange = () => { es.model = $('es-model').value.trim().slice(0, 60); save(); };
   }
   const vvsReady = (v) => !!(v.result || v.faults.length) && !!v.status;
   function renderVvs() {
@@ -2910,6 +3203,7 @@
     if (!e) { e = { id, meter: String(S.session.meterSerial), created: new Date().toISOString(), files: [], state: 'pending' }; q.unshift(e); }
     if (e.state === 'sent' && (fileName || vvsText(v) !== e.text || v.status !== e.status)) e.state = 'pending';   // changed after sending
     e.text = vvsText(v); e.status = v.status; e.updated = new Date().toISOString();
+    if (S.session.address) e.addr = S.session.address;
     if (fileName && blob) {
       const ext = (fileName.match(/\.[a-z0-9]+$/i) || [''])[0].toLowerCase();
       const old = e.files.find((f) => f.toLowerCase().endsWith(ext));
@@ -3187,7 +3481,7 @@
   async function openVvs(items) {
     vvsOffer = items.map((e) => e.id);
     const first = items[0];
-    const work = b64url(new TextEncoder().encode(JSON.stringify(items.slice(0, 30).map((e) => ({ m: e.meter, s: e.status || '', t: e.text || '', id: e.id })))));
+    const work = b64url(new TextEncoder().encode(JSON.stringify(items.slice(0, 30).map((e) => ({ m: e.meter, s: e.status || '', t: e.text || '', id: e.id, a: e.addr || '' })))));
     const path = 'Home.aspx?liq=' + work;
     if (isAndroidApp() && openWay() !== 'tab') {
       location.href = androidUrl(openWay(), VVS_ORIGIN + '/' + path);
@@ -3227,7 +3521,7 @@
       for (const e of q.filter((x) => vvsOffer.includes(x.id))) {
         const files = [];
         for (const f of e.files) { try { const b = await kv.get('vvsf:' + e.id + ':' + f); if (b) files.push({ name: f, blob: b }); } catch { /* */ } }
-        items.push({ id: e.id, meter: e.meter, status: e.status, text: e.text, files });
+        items.push({ id: e.id, meter: e.meter, status: e.status, text: e.text, files, addr: e.addr || '' });
       }
       ev.source.postMessage({ liq: 'items', items }, VVS_ORIGIN);
     } else if (ev.data.liq === 'result') {
