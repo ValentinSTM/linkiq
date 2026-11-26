@@ -47,8 +47,13 @@
   function contactText(s) {
     const c = s.check && s.check.contact;
     if (!c) return '';
+    // what counts is a usable link: heard in the last hour AND a signal of at least the marginal
+    // limit. Many weak or old links are no reserve, however many there are.
     const parts = [];
-    if (c.current) parts.push(T('{0} cu contact în ultima oră', c.current));
+    if (c.usable !== undefined) {
+      parts.push(T('{0} utilizabile (≥ {1} dBm, ultima oră)', c.usable, c.marginalDbm));
+      if (c.weak) parts.push(T('{0} slabe (< {1} dBm): nu contează', c.weak, c.marginalDbm));
+    } else if (c.current) parts.push(T('{0} cu contact în ultima oră', c.current));
     if (c.occasional) parts.push(T('{0} doar ocazional (1–{1} ore)', c.occasional, c.historyMaxH));
     if (c.old) parts.push(T('{0} fără contact de peste {1} ore (nu contează)', c.old, c.historyMaxH));
     return parts.join(' · ');
@@ -58,6 +63,13 @@
     const c = s.check && s.check.contact;
     if (!c || !s.receivers.length) return ['red', T('Niciun concentrator de-al nostru nu a auzit contorul.')];
     if (!s.primary) return ['red', T('Fără contact în ultimele {0} ore: datele din această perioadă se pierd.', c.historyMaxH)];
+    if (c.usable !== undefined) {
+      if (!c.usable) return c.current ? ['red', T('Contact doar cu semnal slab (sub {0} dBm): datele orare se pot pierde.', c.marginalDbm)]
+        : ['yellow', T('Niciun contact în ultima oră: datele ajung cu întârziere.')];
+      if (c.usable >= 2 && c.goodPrimary) return ['green', c.usableSites >= 2 ? T('Date orare, semnal bun și rezervă pe alt site.') : T('Date orare, semnal bun și rezervă pe același site.')];
+      if (c.usable >= 2) return ['yellow', T('Date orare cu rezervă, dar semnalul principal e doar la limită.')];
+      return ['yellow', T('O singură legătură utilizabilă: fără rezervă sigură.')];
+    }
     if (c.current >= 2) return ['green', T('Date orare, cu redundanță.')];
     if (c.current === 1) return ['yellow', T('Un singur concentrator cu contact în ultima oră: fără redundanță.')];
     return ['yellow', T('Niciun contact în ultima oră: datele ajung cu întârziere.')];
@@ -924,6 +936,7 @@
     render();
     renderReadings();
     renderVvs();
+    renderElsyn();
     if (navigator.wakeLock) navigator.wakeLock.request('screen').then((w) => { wakeLock = w; }).catch(() => {});
   }
 
@@ -932,7 +945,7 @@
     store.del('session'); store.del('ui');
     if (pollTimer) { clearInterval(pollTimer); clearInterval(tickTimer); pollTimer = tickTimer = null; }
     if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
-    $('meter').value = '';
+    $('meter').value = ''; $('addr').value = '';
     $('scan-info').hidden = true; $('scan-chips').hidden = true;
     $('report-msg').hidden = true; $('report-preview').hidden = true; lastPhoto = null; instPhotos.forget();
     $('vvs-msg').textContent = T('Copiază seria contorului și deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță.');
@@ -1038,7 +1051,7 @@
     if (pickMarker) { pickMarker.remove(); pickMarker = null; }
     showView(S ? 'align' : 'start');
   }
-  $('pick-btn').onclick = () => { picking = true; picked = null; $('pick-ok').disabled = true; $('pick-info').textContent = T('Nicio poziție aleasă.'); showView('map'); };
+  $('pick-btn').onclick = () => { picking = true; picked = null; pickedAddr = null; $('pick-ok').disabled = true; $('pick-info').textContent = T('Nicio poziție aleasă.'); showView('map'); };
   $('pick-cancel').onclick = endPick;
   $('map-pos').onclick = () => $('pos-btn').click();
   $('pos-btn').onclick = () => { picking = true; picked = null; $('pick-ok').disabled = true; $('pick-info').textContent = T('Nicio poziție aleasă.'); showView('map'); };
@@ -1048,7 +1061,7 @@
       const pos = { lat: picked.lat, lon: picked.lon, accuracyM: null };
       try {
         apply(S.session.status === 'CHECK'
-          ? await api('/api/check', 'POST', { meterSerial: S.session.meterSerial, technician: S.session.technician, gps: pos })
+          ? await api('/api/check', 'POST', { meterSerial: S.session.meterSerial, technician: S.session.technician, gps: pos, address: S.session.address || '' })
           : await api(`/api/sessions/${S.session.id}/position`, 'POST', { gps: pos }));
       } catch (e) { showError('align-error', e.status === 404 ? 'Poziția se poate schimba doar în varianta fără server.' : e.message); }
       lastFit = '';
@@ -1057,6 +1070,7 @@
       return;
     }
     gps = { lat: picked.lat, lon: picked.lon, accuracyM: null };
+    if (pickedAddr) $('addr').value = pickedAddr;
     $('gps-info').textContent = T('Poziție aleasă pe hartă: {0}, {1}.', picked.lat.toFixed(5), picked.lon.toFixed(5));
     endPick();
     showCandidates();
@@ -1071,12 +1085,12 @@
     }
     return m && Math.abs(+m[1]) <= 90 && Math.abs(+m[2]) <= 180 ? [+m[1], +m[2]] : null;
   }
-  let lastSearch = '';
+  let lastSearch = '', pickedAddr = null;
   async function searchAddress(t) {
     const list = $('pick-results'), info = $('pick-info');
     list.replaceChildren(); list.hidden = true;
     info.textContent = T('Caut adresa…');
-    const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=0&limit=5&countrycodes=dk&accept-language=da'
+    const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countrycodes=dk&accept-language=da'
       + '&viewbox=9.4,56.5,10.9,55.8&q=' + encodeURIComponent(t);
     let res;
     try {
@@ -1085,7 +1099,10 @@
       res = await r.json();
     } catch (e) { info.textContent = T('Căutarea adresei nu merge acum ({0}). Atinge harta sau folosește GPS.', e.message); return; }
     if (!res.length) { info.textContent = T('Nu am găsit adresa. Scrie strada, numărul și orașul, de ex. Søndergade 1, 8000 Aarhus C.'); return; }
-    const pick = (x) => { list.hidden = true; if (ensureMap()) setPick(+x.lat, +x.lon, true); $('pick-info').textContent = x.display_name.split(', ').slice(0, 4).join(', ') + ' · ' + T('verifică pe hartă și mută punctul dacă e nevoie.'); };
+    const pick = (x) => {
+      list.hidden = true; if (ensureMap()) setPick(+x.lat, +x.lon, true);
+      const a = x.address || {}, town = a.city || a.town || a.village || a.suburb || '';
+      pickedAddr = a.road ? `${a.road}${a.house_number ? ' ' + a.house_number : ''}${a.postcode ? ', ' + a.postcode + (town ? ' ' + town : '') : ''}` : x.display_name.split(', ').slice(0, 2).join(' '); $('pick-info').textContent = x.display_name.split(', ').slice(0, 4).join(', ') + ' · ' + T('verifică pe hartă și mută punctul dacă e nevoie.'); };
     if (res.length === 1) { pick(res[0]); return; }
     for (const x of res) {
       const li = document.createElement('li'), b = document.createElement('button');
@@ -1115,7 +1132,7 @@
     $('start-error').hidden = true;
     store.set('tech', $('tech').value.trim());
     try {
-      enterSession(await api('/api/sessions', 'POST', { meterSerial: $('meter').value.trim(), technician: $('tech').value.trim(), gps }));
+      enterSession(await api('/api/sessions', 'POST', { meterSerial: $('meter').value.trim(), technician: $('tech').value.trim(), gps, address: $('addr').value.trim() }));
     } catch (e) { showError('start-error', e.message); needRegistry(e); }
   };
 
@@ -1128,7 +1145,7 @@
     $('start-error').hidden = true;
     const meter = $('meter').value.trim();
     if (!meter) { showError('start-error', 'Introdu sau scanează seria contorului.'); return; }
-    try { enterSession(await api('/api/check', 'POST', { meterSerial: meter, technician: $('tech').value.trim(), gps })); }
+    try { enterSession(await api('/api/check', 'POST', { meterSerial: meter, technician: $('tech').value.trim(), gps, address: $('addr').value.trim() })); }
     catch (e) { showError('start-error', e.status === 404 ? 'Verificarea fără CALL există doar în varianta fără server.' : e.message); needRegistry(e); }
   };
   // no registry: point at the card where it is loaded
@@ -1754,14 +1771,19 @@
   // report: they cannot carry hourly data, and they may stem from the meter being switched
   // on before installation (heard on the road or in the van).
   const REPORT_MAX_AGE_H = 9;
-  const REPORT_VERSION = '0.1';   // the report's own layout; changes without a new app version
+  const REPORT_VERSION = '0.2';   // the report's own layout; changes without a new app version
   const isStale = (q) => q.ageMin !== null && q.ageMin !== undefined && q.ageMin > REPORT_MAX_AGE_H * 60;
 
   async function buildReport(s) {
     const staleCount = s.receivers.filter(isStale).length;
     const shown = s.receivers.filter((q) => !isStale(q));
+    // On paper only the links that can carry the data: the primary, and the others with at least
+    // the marginal signal and contact within the history window. The rest is counted, not listed.
+    const margDbm = (cfg.thresholds || { marginalDbm: -110 }).marginalDbm;
+    const useful = shown.filter((q) => q.relation === 'PRIMARY' || (q.bestRssi >= margDbm && q.age !== 'OLD'));
+    const weakHidden = shown.length - useful.length;
     const W = 1080, P = 56, big = document.createElement('canvas');
-    big.width = W; big.height = 4400;
+    big.width = W; big.height = 5400;
     const x = big.getContext('2d');
     let y = 0;
     const font = (weight, px) => { x.font = `${weight} ${px}px ${SANS}`; };
@@ -1777,7 +1799,7 @@
     };
     const breaks = [];                          // places where a printed page may end (never inside a map or a line)
     let keep = false;                           // a heading stays with what follows it
-    const brk = () => { if (keep) { keep = false; return; } breaks.push(Math.round(y)); };
+    const brk = () => { if (keep) { keep = false; return; } breaks.push(Math.round(y) + 14); };   // below the descenders of the line above
     const section = (title) => { brk(); keep = true; y += 36; x.fillStyle = INK.light; x.fillRect(P, y, W - 2 * P, 2); y += 50; font(700, 30); text(title, P, y, INK.navy); y += 10; };
     const row = (label, value, color = INK.ink) => {
       brk();
@@ -1811,6 +1833,7 @@
     row(T('Data'), fmtTime(s.session.finishedUtc || s.session.startedUtc));
     row(T('Instalator'), s.session.technician);
     const g = s.session.gps;
+    if (s.session.address) row(T('Adresă'), s.session.address);
     row(T('Poziție'), g && g.lat !== null ? `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}` + (g.accuracyM ? ` (±${g.accuracyM} m)` : '') + (g.source === 'saved' ? ' · ' + T('salvată la vizita din {0}', fmtTime(g.savedUtc)) : '') : T('neînregistrată'));
     if (isCheck) {
       row(T('Auzit ultima dată'), s.check.lastSeenUtc ? `${fmtTime(s.check.lastSeenUtc)} (${ago(s.check.lastSeenUtc)})` : '–');
@@ -1827,10 +1850,28 @@
       row(T('Locul antenei'), ins.antennaType === 'internal' ? T('în contor') : levelText(ins.antennaPlace));
     }
 
+    if (!isCheck) {
+      // the El og syn fields, so the separate KMD form is not needed; the last two are filled by the app itself
+      const es = (ui.vvs && ui.vvs.meter === s.session.meterSerial && ui.vvs.es) || {};
+      const vals = Object.fromEntries(filledReadings().filter((r) => r.value).map((r) => [r.k, true]));
+      const all3 = ['E1', 'V1', 'HR'].every((k) => vals[k]);
+      const nPh = instPhotos.count(), nUnit = instPhotos.countOf('unit');
+      section(T('El og syn'));
+      const miss = (v) => v || T('necompletat');
+      row('Anlæg', miss(es.anlaeg), es.anlaeg ? INK.ink : INK.gray);
+      row('Vandvarmer', miss(es.vv), es.vv ? INK.ink : INK.gray);
+      if (es.unit || es.vv === 'Unit') row('Unit', miss(es.unit), es.unit ? INK.ink : INK.gray);
+      if (es.model) row('Model', es.model);
+      row('Hovedhaner lukket', miss(es.haner), es.haner ? INK.ink : INK.gray);
+      row('Plomberet', miss(es.plomb), es.plomb === 'Ja' ? INK.green : es.plomb ? INK.amber : INK.gray);
+      row(T('Cele 3 registre citite'), all3 ? T('Da: E1, V1 și HR') : T('Nu: lipsește {0}', ['E1', 'V1', 'HR'].filter((k) => !vals[k]).join(', ')), all3 ? INK.green : INK.amber);
+      row(T('Foto'), nPh ? T('Da: {0} poze', nPh) + (nUnit ? '' : ' · ' + T('fără vandvarmer / unit')) : T('Nu'), nPh && nUnit ? INK.green : INK.amber);
+    }
+
     y = await drawReadings(x, P, W, y, (t) => { section(t); return y; }, font, text);
     y = drawVvsSection(x, P, W, y, (t) => { section(t); return y; }, font, text);
 
-    const sm = { ...s, receivers: shown };
+    const sm = { ...s, receivers: useful };
     const mapCanvas = await reportMap(sm, W - 2 * P, 620);
     if (mapCanvas) {
       section(T('Hartă'));
@@ -1932,14 +1973,15 @@
 
     section(T('Receptoare'));
     const where = (q) => [q.siteName, q.address].filter(Boolean).join(', ');
-    const p1 = shown.find((q) => q.relation === 'PRIMARY');
+    const p1 = useful.find((q) => q.relation === 'PRIMARY');
     row(T('Receptor principal'), p1 ? [p1.serial, dbm(p1.bestRssi), where(p1)].filter(Boolean).join(' · ') : '–');
     const b = s.backup;
     const occasional = b && b.age && b.age !== 'CURRENT';
     row(T('Rezervă'), b ? [b.serial, dbm(b.bestRssi), T(RELATION_RO[b.redundancy] || 'site necunoscut'), b.siteName,
       occasional ? T('doar ocazional – nu contează ca redundanță') : null].filter(Boolean).join(' · ') : T('niciuna'), b && !occasional ? INK.ink : INK.gray);
     y += 16;
-    for (const q of shown.slice(0, 10)) {
+    for (const q of useful.slice(0, 12)) {
+      brk();
       y += 36; font(500, 23);
       const old = q.age === 'OLD', ageCol = q.age === 'CURRENT' ? INK.green : q.age === 'OCCASIONAL' ? INK.amber : INK.gray;
       text(q.serial, P, y, old ? INK.gray : INK.ink); text(dbm(q.bestRssi), P + 250, y, old ? INK.gray : INK.ink, 'right');
@@ -1950,7 +1992,12 @@
       font(500, 21);
       text((wrap(where(q) + (q.distanceM !== null ? ' · ' + meters(q.distanceM) : ''), W - 2 * P - 660)[0] || ''), P + 660, y, INK.gray);
     }
-    if (shown.length > 10) { y += 34; font(500, 20); text(T('… și încă {0}', shown.length - 10), P, y, INK.gray); }
+    if (useful.length > 12) { y += 34; font(500, 20); text(T('… și încă {0}', useful.length - 12), P, y, INK.gray); }
+    if (weakHidden) {
+      y += 36; font(600, 21);
+      for (const l of wrap(T('{0} alte legături sub {1} dBm sau fără contact de peste 8 ore nu sunt arătate: nu pot duce datele în siguranță.', weakHidden, margDbm), W - 2 * P)) { text(l, P, y, INK.gray); y += 30; }
+      y -= 30;
+    }
     if (staleCount) {
       y += 34; font(500, 20);
       text(T(staleCount === 1 ? '1 concentrator văzut ultima dată acum peste {1} ore nu este inclus în raport.' : '{0} concentratoare văzute ultima dată acum peste {1} ore nu sunt incluse în raport.', staleCount, REPORT_MAX_AGE_H), P, y, INK.gray);
@@ -1959,7 +2006,7 @@
     for (const l of wrap(limitsText(isCheck), W - 2 * P)) { y += 28; text(l, P, y, INK.gray); }
     if (instPhotos.count()) {
       section(T('Poze cu instalația'));
-      row('', instPhotos.count() === 1 ? T('1 poză pe pagina următoare') : T('{0} poze în paginile următoare: montaj și punere în funcțiune', instPhotos.count()));
+      row('', instPhotos.count() === 1 ? T('1 poză pe pagina următoare') : T('{0} poze în paginile următoare: montaj, punere în funcțiune și vandvarmer / unit', instPhotos.count()));
     }
     if (s.session.note) {
       section(T('Observații'));
@@ -2451,6 +2498,10 @@
     if (!check) {
       const n = instPhotos.count();
       rows.push({ ok: n > 0, label: T('Poze cu instalația'), sub: n === 1 ? T('1 poză') : n ? T('{0} poze', n) : T('Nicio poză încă.'), open: n ? async () => viewer.open(await instPhotos.files()) : null });
+      const nu = instPhotos.countOf('unit');
+      rows.push({ ok: nu > 0, label: T('Poza cu vandvarmer / unit'), sub: nu ? T('făcută') : T('plăcuța de tip: ce unitate e montată') });
+      const es = (ui.vvs && ui.vvs.es) || {}, esMiss = ['anlaeg', 'vv', 'haner', 'plomb'].filter((k) => !es[k]).length;
+      rows.push({ ok: !esMiss, label: T('Instalația (El og syn)'), sub: esMiss ? T('{0} câmpuri necompletate', esMiss) : elsynLine(es).replace(/^Installation: /, ''), open: () => { showView('align'); $('elsyn-card').scrollIntoView({ block: 'center' }); } });
       if (!internal) rows.push({ ok: !!lastPhoto, opt: true, label: T('Poza antenei'), sub: lastPhoto ? T('făcută') : T('opțională'), open: lastPhoto ? async () => viewer.open([{ name: T('Poza antenei'), blob: await canvasBlob(lastPhoto, 'image/jpeg') }]) : null });
     }
     const rd = (ui.readings || []).filter((r) => r.value);
@@ -2483,7 +2534,7 @@
   // stamped with meter, moment, time and place, kept with the session (IndexedDB) until the
   // report is made, and added to the PDF as history and proof of a correct installation.
   const instPhotos = (() => {
-    const MAX = 6, STAGES = { mount: 'La montaj', start: 'La punerea în funcțiune' }, FILE = { mount: 'montage', start: 'idrift' };
+    const MAX = 8, STAGES = { mount: 'La montaj', start: 'La punerea în funcțiune', unit: 'Vandvarmer / unit' }, FILE = { mount: 'montage', start: 'idrift', unit: 'unit' };
     let key = null, list = [], loading = null, asked = false;
     const keyOf = (s) => 'iph:' + (s.session.id || s.session.meterSerial);
     async function sync() {
@@ -2531,10 +2582,10 @@
         del.onclick = () => { if (!confirm(T('Ștergi poza?'))) return; URL.revokeObjectURL(p.url); list.splice(i, 1); keep(); draw(); renderLeave(); };
         li.append(img, cap, del); ul.append(li);
       });
-      const nm = list.filter((p) => p.stage === 'mount').length, ns = list.length - nm;
-      $('iphoto-n').textContent = list.length ? T('({0} la montaj, {1} la punerea în funcțiune)', nm, ns) : '';
+      const nm = list.filter((p) => p.stage === 'mount').length, ns = list.filter((p) => p.stage === 'start').length, nu = list.filter((p) => p.stage === 'unit').length;
+      $('iphoto-n').textContent = list.length ? T('({0} la montaj, {1} la punerea în funcțiune, {2} vandvarmer/unit)', nm, ns, nu) : '';
       $('iphoto-card').classList.toggle('need', !list.length && !!S && S.session.status !== 'CHECK' && S.session.status !== 'ACTIVE');
-      for (const id of ['iphoto-mount', 'iphoto-start']) $(id).parentElement.classList.toggle('disabled', list.length >= MAX);
+      for (const id of ['iphoto-mount', 'iphoto-start', 'iphoto-unit']) $(id).parentElement.classList.toggle('disabled', list.length >= MAX);
     }
     async function add(file, stage) {
       if (!file || !S) return;
@@ -2554,6 +2605,7 @@
     }
     $('iphoto-mount').onchange = (ev) => { const f = ev.target.files[0]; ev.target.value = ''; add(f, 'mount'); };
     $('iphoto-start').onchange = (ev) => { const f = ev.target.files[0]; ev.target.value = ''; add(f, 'start'); };
+    $('iphoto-unit').onchange = (ev) => { const f = ev.target.files[0]; ev.target.value = ''; add(f, 'unit'); };
     return {
       // while measuring: under the installation card; at the end: in the report card, above "save"
       place(s, kind) {
@@ -2568,16 +2620,17 @@
         draw();
       },
       count: () => list.length,
+      countOf: (st) => list.filter((p) => p.stage === st).length,
       async files() {
         await sync();
-        const name = { mount: T('La montaj'), start: T('La punerea în funcțiune') };
+        const name = { mount: T('La montaj'), start: T('La punerea în funcțiune'), unit: T('Vandvarmer / unit') };
         return list.map((p, i) => ({ name: `${name[p.stage]} ${i + 1}`, blob: p.blob }));
       },
       async pages() {
         await sync();
         const out = [];
-        for (const st of ['mount', 'start']) {
-          list.filter((q) => q.stage === st).forEach((p, k, arr) => out.push(p));
+        for (const st of ['mount', 'start', 'unit']) {
+          list.filter((q) => q.stage === st).forEach((p) => out.push(p));
         }
         const res = [];
         for (const p of out) {
@@ -2593,8 +2646,12 @@
       // asked once per session before a report is saved without any installation photo
       async ask(then) {
         await sync();
-        if (asked || list.length || !S || S.session.status === 'CHECK') { then(); return; }
+        const noUnit = !list.some((p) => p.stage === 'unit');
+        if (asked || (list.length && !noUnit) || !S || S.session.status === 'CHECK') { then(); return; }
         asked = true;
+        $('iask-title').textContent = T(list.length ? 'Lipsește poza cu vandvarmer / unit' : 'Nu ai nicio poză cu instalația');
+        $('iask-text').textContent = T(list.length ? 'Poza cu plăcuța de tip arată ce unitate e montată la adresă. Fă una înainte de raport.'
+          : 'Pozele de la montaj și de la punerea în funcțiune arată cum a fost lăsată instalația. Fă cel puțin una înainte de raport, și una cu vandvarmer / unit.');
         $('iphoto-ask').hidden = false;
         $('iask-no').onclick = () => { $('iphoto-ask').hidden = true; then(); };
         $('iask-yes').onclick = () => {
@@ -3044,8 +3101,42 @@
     const lines = [];
     if (v.result && !(v.result === 'Fejl' && v.faults.length)) lines.push(v.result);
     for (const f of VT.faults) if (v.faults.includes(f)) lines.push(VT.faultPrefix + f);
+    const inst = elsynLine(v.es);
+    if (inst) lines.push(inst);
     if (v.comment && v.comment.trim()) lines.push(VT.commentPrefix + v.comment.trim().replace(/\s+/g, ' '));
     return lines.join('\n');
+  }
+  const ES = { anlaeg: ['Direkte', 'Indirekte', 'Direkte med bladesløjfe'], vv: ['Veksler', 'Beholder', 'Unit'],
+    unit: ['APV', 'Gemina Termix', 'Hoval', 'Metrotherm', 'Redan', 'Wavin'], yn: ['Ja', 'Nej'] };
+  function elsynState() {
+    const v = vvsState();
+    if (!v.es) v.es = { anlaeg: null, vv: null, unit: null, model: '', haner: null, plomb: null };
+    return v.es;
+  }
+  // one line in Ny aktivitet, never with the result words the robot looks for
+  function elsynLine(es) {
+    if (!es) return '';
+    const p = [];
+    if (es.anlaeg) p.push('Anlæg ' + es.anlaeg);
+    if (es.vv) p.push('Vandvarmer ' + es.vv);
+    if (es.unit) p.push('Unit ' + es.unit);
+    if (es.model && es.model.trim()) p.push('Model ' + es.model.trim().replace(/\s+/g, ' '));
+    if (es.haner) p.push('Hovedhaner lukket ' + es.haner);
+    if (es.plomb) p.push('Plomberet ' + es.plomb);
+    return p.length ? 'Installation: ' + p.join(', ') : '';
+  }
+  function renderElsyn() {
+    if (!S) return;
+    $('elsyn-card').hidden = S.session.status === 'CHECK';
+    const es = elsynState(), save = () => { store.set('ui', ui); renderElsyn(); renderVvs(); vvsQueueTouch(); };
+    const one = (id, key, opts) => chipRow($(id), opts.map((o) => [o, o]), es[key], (o) => { es[key] = es[key] === o ? null : o; save(); });
+    one('ch-es-anlaeg', 'anlaeg', ES.anlaeg); one('ch-es-vv', 'vv', ES.vv); one('ch-es-unit', 'unit', ES.unit);
+    one('ch-es-haner', 'haner', ES.yn); one('ch-es-plomb', 'plomb', ES.yn);
+    const showUnit = !es.vv || es.vv === 'Unit';      // brand row only matters for a unit
+    $('ch-es-unit').hidden = !showUnit; $('ch-es-unit').previousElementSibling.hidden = !showUnit;
+    if (!showUnit && es.unit) es.unit = null;
+    if (document.activeElement !== $('es-model')) $('es-model').value = es.model || '';
+    $('es-model').onchange = () => { es.model = $('es-model').value.trim().slice(0, 60); save(); };
   }
   const vvsReady = (v) => !!(v.result || v.faults.length) && !!v.status;
   function renderVvs() {
@@ -3112,6 +3203,7 @@
     if (!e) { e = { id, meter: String(S.session.meterSerial), created: new Date().toISOString(), files: [], state: 'pending' }; q.unshift(e); }
     if (e.state === 'sent' && (fileName || vvsText(v) !== e.text || v.status !== e.status)) e.state = 'pending';   // changed after sending
     e.text = vvsText(v); e.status = v.status; e.updated = new Date().toISOString();
+    if (S.session.address) e.addr = S.session.address;
     if (fileName && blob) {
       const ext = (fileName.match(/\.[a-z0-9]+$/i) || [''])[0].toLowerCase();
       const old = e.files.find((f) => f.toLowerCase().endsWith(ext));
@@ -3389,7 +3481,7 @@
   async function openVvs(items) {
     vvsOffer = items.map((e) => e.id);
     const first = items[0];
-    const work = b64url(new TextEncoder().encode(JSON.stringify(items.slice(0, 30).map((e) => ({ m: e.meter, s: e.status || '', t: e.text || '', id: e.id })))));
+    const work = b64url(new TextEncoder().encode(JSON.stringify(items.slice(0, 30).map((e) => ({ m: e.meter, s: e.status || '', t: e.text || '', id: e.id, a: e.addr || '' })))));
     const path = 'Home.aspx?liq=' + work;
     if (isAndroidApp() && openWay() !== 'tab') {
       location.href = androidUrl(openWay(), VVS_ORIGIN + '/' + path);
@@ -3429,7 +3521,7 @@
       for (const e of q.filter((x) => vvsOffer.includes(x.id))) {
         const files = [];
         for (const f of e.files) { try { const b = await kv.get('vvsf:' + e.id + ':' + f); if (b) files.push({ name: f, blob: b }); } catch { /* */ } }
-        items.push({ id: e.id, meter: e.meter, status: e.status, text: e.text, files });
+        items.push({ id: e.id, meter: e.meter, status: e.status, text: e.text, files, addr: e.addr || '' });
       }
       ev.source.postMessage({ liq: 'items', items }, VVS_ORIGIN);
     } else if (ev.data.liq === 'result') {

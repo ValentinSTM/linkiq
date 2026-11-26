@@ -1114,6 +1114,9 @@ nav .badge { position: absolute; top: 3px; left: calc(50% + 22px); }
         <button type="button" id="gps-btn" class="secondary">GPS</button>
         <button type="button" id="pick-btn" class="secondary">Adresă sau hartă</button>
       </div>
+      <label for="addr">Adresa (locul de consum)</label>
+      <input id="addr" autocomplete="off" maxlength="120" placeholder="Se completează din adresa căutată">
+      <p class="hint" id="addr-hint">Se compară cu adresa cazului în VVS-dialog, ca un contor montat la altă adresă să fie observat.</p>
       <p id="gps-info" class="hint">Măsurarea funcționează și fără GPS. Poziția doar propune site-ul probabil și apare pe hartă.</p>
       <button type="submit" class="primary">Începe</button>
       <button type="button" id="check-btn" class="secondary">Verifică contorul, fără CALL</button>
@@ -1234,6 +1237,16 @@ nav .badge { position: absolute; top: 3px; left: calc(50% + 22px); }
           <div id="readings-extra" class="checks"></div>
         </details>
       </div>
+      <div id="elsyn-card">
+        <h3>Instalația (El og syn)</h3>
+        <p class="hint">Aceleași date ca în raportul El og syn: se scriu în raport și în Ny aktivitet, deci nu mai e nevoie de alt formular.</p>
+        <p class="q">Anlæg</p><div class="chips" id="ch-es-anlaeg"></div>
+        <p class="q">Vandvarmer</p><div class="chips" id="ch-es-vv"></div>
+        <p class="q">Unit</p><div class="chips" id="ch-es-unit"></div>
+        <p class="q">Model (opțional)</p><input id="es-model" maxlength="60" autocomplete="off">
+        <p class="q">Hovedhaner lukket?</p><div class="chips" id="ch-es-haner"></div>
+        <p class="q">Plomberet?</p><div class="chips" id="ch-es-plomb"></div>
+      </div>
       <div id="vvsres-card">
         <h3>Pentru VVS-dialog</h3>
         <p class="hint">Textul se scrie singur în „Ny aktivitet” pe caz, cu cuvinte fixe.</p>
@@ -1288,9 +1301,11 @@ nav .badge { position: absolute; top: 3px; left: calc(50% + 22px); }
         <label class="file-btn"><span>La montaj</span><input type="file" id="iphoto-mount" accept="image/*" capture="environment" hidden></label>
         <label class="file-btn"><span>La punerea în funcțiune</span><input type="file" id="iphoto-start" accept="image/*" capture="environment" hidden></label>
       </div>
+      <label class="file-btn"><span>Vandvarmer / unit (plăcuța de tip)</span><input type="file" id="iphoto-unit" accept="image/*" capture="environment" hidden></label>
       <p class="hint gal">Lumină slabă? Fă poza cu aplicația Cameră a telefonului (blitz sau mod noapte), apoi alege-o din galerie:
         <button type="button" class="link" data-gallery="iphoto-mount">la montaj</button> ·
-        <button type="button" class="link" data-gallery="iphoto-start">la punerea în funcțiune</button></p>
+        <button type="button" class="link" data-gallery="iphoto-start">la punerea în funcțiune</button> ·
+        <button type="button" class="link" data-gallery="iphoto-unit">vandvarmer / unit</button></p>
       <p class="hint">Doar echipamentul și instalația: fără persoane, acte sau lucruri personale ale clientului.</p>
       <ul id="iphoto-list" class="iphotos"></ul>
       <p id="iphoto-msg" class="hint" hidden></p>
@@ -1451,8 +1466,8 @@ nav .badge { position: absolute; top: 3px; left: calc(50% + 22px); }
 
 <div id="iphoto-ask" hidden>
   <div class="card sheet">
-    <h2>Nu ai nicio poză cu instalația</h2>
-    <p class="hint">Pozele de la montaj și de la punerea în funcțiune arată cum a fost lăsată instalația. Fă cel puțin una înainte de raport.</p>
+    <h2 id="iask-title">Nu ai nicio poză cu instalația</h2>
+    <p class="hint" id="iask-text">Pozele de la montaj și de la punerea în funcțiune arată cum a fost lăsată instalația. Fă cel puțin una înainte de raport.</p>
     <button type="button" id="iask-yes" class="primary">Fac poze acum</button>
     <button type="button" id="iask-no" class="secondary">Salvează raportul fără poze</button>
   </div>
@@ -2154,13 +2169,54 @@ window.LINKIQ_DA = {
  "Pagina {0} din {1}": "Side {0} af {1}",
  "Antena": "Antennen",
  "1 poză pe pagina următoare": "1 billede på næste side",
+ "{0} utilizabile (≥ {1} dBm, ultima oră)": "{0} brugbare (≥ {1} dBm, seneste time)",
+ "{0} slabe (< {1} dBm): nu contează": "{0} svage (< {1} dBm): tæller ikke",
+ "Contact doar cu semnal slab (sub {0} dBm): datele orare se pot pierde.": "Kun kontakt med svagt signal (under {0} dBm): timedata kan gå tabt.",
+ "Date orare, semnal bun și rezervă pe alt site.": "Timedata, godt signal og reserve på et andet site.",
+ "Date orare, semnal bun și rezervă pe același site.": "Timedata, godt signal og reserve på samme site.",
+ "Date orare cu rezervă, dar semnalul principal e doar la limită.": "Timedata med reserve, men hovedsignalet er kun på grænsen.",
+ "O singură legătură utilizabilă: fără rezervă sigură.": "Kun én brugbar forbindelse: ingen sikker reserve.",
+ "{0} · {1}.": "{0} · {1}.",
+ "Adresă": "Adresse",
+ "El og syn": "El og syn",
+ "necompletat": "ikke udfyldt",
+ "Cele 3 registre citite": "3 tælleværker aflæst",
+ "Da: E1, V1 și HR": "Ja: E1, V1 og HR",
+ "Nu: lipsește {0}": "Nej: mangler {0}",
+ "Foto": "Foto",
+ "Da: {0} poze": "Ja: {0} billeder",
+ "fără vandvarmer / unit": "uden vandvarmer / unit",
+ "Nu": "Nej",
+ "{0} alte legături sub {1} dBm sau fără contact de peste 8 ore nu sunt arătate: nu pot duce datele în siguranță.": "{0} andre forbindelser under {1} dBm eller uden kontakt i over 8 timer vises ikke: de kan ikke bære data sikkert.",
+ "{0} poze în paginile următoare: montaj, punere în funcțiune și vandvarmer / unit": "{0} billeder på de næste sider: montage, idriftsættelse og vandvarmer / unit",
+ "({0} la montaj, {1} la punerea în funcțiune, {2} vandvarmer/unit)": "({0} ved montage, {1} ved idriftsættelse, {2} vandvarmer/unit)",
+ "Vandvarmer / unit": "Vandvarmer / unit",
+ "Lipsește poza cu vandvarmer / unit": "Billede af vandvarmer / unit mangler",
+ "Poza cu plăcuța de tip arată ce unitate e montată la adresă. Fă una înainte de raport.": "Billedet af typeskiltet viser, hvilken unit der sidder på adressen. Tag et før rapporten.",
+ "Pozele de la montaj și de la punerea în funcțiune arată cum a fost lăsată instalația. Fă cel puțin una înainte de raport, și una cu vandvarmer / unit.": "Billeder fra montage og idriftsættelse viser, hvordan installationen blev efterladt. Tag mindst ét før rapporten, og ét af vandvarmer / unit.",
+ "Adresa (locul de consum)": "Adresse (forbrugssted)",
+ "Se compară cu adresa cazului în VVS-dialog, ca un contor montat la altă adresă să fie observat.": "Sammenlignes med sagens adresse i VVS-dialog, så en måler monteret på en forkert adresse bliver opdaget.",
+ "Instalația (El og syn)": "Installationen (El og syn)",
+ "Aceleași date ca în raportul El og syn: se scriu în raport și în Ny aktivitet, deci nu mai e nevoie de alt formular.": "Samme oplysninger som i El og syn-rapporten: de skrives i rapporten og i Ny aktivitet, så der ikke skal udfyldes en anden formular.",
+ "Anlæg": "Anlæg",
+ "Vandvarmer": "Vandvarmer",
+ "Unit": "Unit",
+ "Model (opțional)": "Model (valgfri)",
+ "Hovedhaner lukket?": "Hovedhaner lukket?",
+ "Plomberet?": "Plomberet?",
+ "Vandvarmer / unit (plăcuța de tip)": "Vandvarmer / unit (typeskilt)",
+ "vandvarmer / unit": "vandvarmer / unit",
+ "Se completează din adresa căutată": "Udfyldes fra den søgte adresse",
+ "Poza cu vandvarmer / unit": "Billede af vandvarmer / unit",
+ "plăcuța de tip: ce unitate e montată": "typeskiltet: hvilken unit der er monteret",
+ "{0} câmpuri necompletate": "{0} felter ikke udfyldt",
 };
 
 </script>
 <script>
 /* Generated by tools/build_vvs.py from tools/vvs/bookmark.src.js and loader.src.js. Do not edit. */
-window.LINKIQ_VVS_BOOKMARK = "javascript:!async%20function()%7Bvar%20e=%5B%22afsluttet%22,%22lukket%22%5D,t=%22ctl00$DefaultContent$CaseNewLogUC$%22;if(%22vvsdialog.kmd.dk%22===location.hostname)%7Bvar%20n=document.getElementById(%22linkiq-box%22);n&&n.remove();var%20r=document.createElement(%22div%22);r.id=%22linkiq-box%22,r.style.cssText=%22position:fixed;left:0;right:0;top:0;z-index:99999;background:%231f5e4f;color:%23fff;font:17px/1.4%20Arial,sans-serif;padding:14px;max-height:100%25;overflow:auto;box-shadow:0%202px%2010px%20rgba(0,0,0,.5)%22,document.body.appendChild(r);var%20a=new%20DOMParser,i=function(e)%7Breturn%20new%20Promise(function(t)%7BsetTimeout(t,e)%7D)%7D,o=/%5Ehttps:%5C/%5C/(valentinstm%5C.github%5C.io%7C%5Ba-z0-9-%5D+%5C.kredslob%5C.dk)$%7C%5Ehttps?:%5C/%5C/(localhost%7C127%5C.0%5C.0%5C.1)(:%5Cd+)?$/,l=null,c=null,u=%5B%5D,s=null;try%7BT(%22LinkIQ:%20henter%20opgaver%20%E2%80%A6%22);var%20f=await%20async%20function()%7Breturn%20window.opener?new%20Promise(function(e)%7Bvar%20t=!1;window.addEventListener(%22message%22,function%20n(r)%7Br.source===window.opener&&o.test(r.origin)&&r.data&&%22items%22===r.data.liq&&(l=r.origin,t=!0,window.removeEventListener(%22message%22,n),e(r.data.items%7C%7C%5B%5D))%7D);try%7Bwindow.opener.postMessage(%7Bliq:%22hello%22,v:2%7D,%22*%22)%7Dcatch(t)%7Breturn%20void%20e(null)%7DsetTimeout(function()%7Bt%7C%7Ce(null)%7D,2500)%7D):null%7D(),d=!!f;f&&f.length%7C%7C(f=U(),d=!1);var%20p=%22%22;if(!f)%7Btry%7Bnavigator.clipboard&&navigator.clipboard.readText&&(p=await%20Promise.race(%5Bnavigator.clipboard.readText(),i(4e3).then(function()%7Breturn%22%22%7D)%5D))%7Dcatch(e)%7Bp=%22%22%7Df=U(p=String(p%7C%7C%22%22).trim())%7Dif(!f)%7Bvar%20m=(prompt(%22LinkIQ:%20M%C3%A5lernummer?%22,/%5E%5Cd%7B6,12%7D$/.test(p)?p:%22%22)%7C%7C%22%22).replace(/%5CD/g,%22%22);if(!m)return%20void%20r.remove();f=%5B%7Bmeter:m,files:%5B%5D%7D%5D%7Dvar%20g=f.filter(function(e)%7Breturn!(d%7C%7Cvoid%200===e.text%7C%7Ce.files&&e.files.length)%7D);if(g.length%3E1&&!window.showDirectoryPicker)%7Bvar%20h=await%20_(g.map(function(e)%7Breturn%20e.meter%7D).join(%22,%20%22),g.map(function(e)%7Breturn%20String(e.meter)%7D));g.forEach(function(e)%7Bvar%20t=%7B%7D;h.filter(function(t)%7Breturn%20t.name.indexOf(String(e.meter))%3E=0%7D).forEach(function(e)%7Bvar%20n=/%5C.pdf$/i.test(e.name)?%22pdf%22:%22img%22;(!t%5Bn%5D%7C%7C(e.blob.lastModified%7C%7C0)%3E(t%5Bn%5D.blob.lastModified%7C%7C0))&&(t%5Bn%5D=e)%7D),e.files=%5B%22pdf%22,%22img%22%5D.filter(function(e)%7Breturn%20t%5Be%5D%7D).map(function(e)%7Breturn%20t%5Be%5D%7D),e.picked=!0%7D)%7Dfor(var%20v=%5B%5D,w=null,y=0;y%3Cf.length;y++)%7Bvar%20b=f%5By%5D,x=f.length%3E1?%22(%22+(y+1)+%22/%22+f.length+%22)%20%22:%22%22;try%7BT(%22LinkIQ:%20%22+x+%22s%C3%B8ger%20m%C3%A5ler%20%22+b.meter+%22%20%E2%80%A6%22);var%20k=await%20H(String(b.meter));if(!k)%7Bv.push(b.meter+%22:%20sprunget%20over%22);continue%7Dvar%20S=b.files%7C%7C%5B%5D;d%7C%7CS.length%7C%7Cvoid%200===b.text%7C%7Cb.picked%7C%7C(S=await%20B(String(b.meter))%7C%7Cawait%20_(b.meter)),T(%22LinkIQ:%20%22+x+%22sag%20%22+k+%22%20%E2%80%93%20uploader%20%E2%80%A6%22);var%20C=await%20V(k,S),L=null;b.text&&(T(%22LinkIQ:%20%22+x+%22sag%20%22+k+%22%20%E2%80%93%20skriver%20Ny%20aktivitet%20og%20status%20%E2%80%A6%22),L=await%20M(k,b.text,b.status)),w=k;var%20A=(C.length?C.length+%22%20fil(er)%22:%22ingen%20nye%20filer%22)+(b.text?%22exists%22===L?%22,%20aktiviteten%20fandtes%20allerede%22:%22,%20aktivitet%22+(b.status?%22%20+%20%22+b.status:%22%22):%22%22);if(v.push(%22%E2%9C%93%20%22+b.meter+%22%20%E2%86%92%20sag%20%22+k+%22:%20%22+A),D(%7Bliq:%22result%22,id:b.id,ok:!0,cc:k,msg:A%7D),!b.text&&!S.length&&1===f.length)return%20void(location.href=%22/Cases/ShowCase.aspx?cc=%22+k)%7Dcatch(e)%7Bvar%20q=e&&%22LOGIN%22===e.message?%22Log%20ind%20i%20VVS-dialog%20(Chrome%20udfylder%20selv),%20og%20tryk%20p%C3%A5%20li%20igen.%22:e&&e.message?e.message:String(e);if(v.push(%22%E2%9C%97%20%22+b.meter+%22:%20%22+q),D(%7Bliq:%22result%22,id:b.id,ok:!1,msg:q%7D),e&&%22LOGIN%22===e.message)break%7D%7D/%5Elinkiq_j/.test(String(window.name%7C%7C%22%22))&&(window.name=%22%22),T(%22LinkIQ:%20f%C3%A6rdig%22),v.forEach(function(e)%7BO(e)%7D);var%20E=c&&u.length&&!window.opener;if(E)%7Bvar%20I=btoa(unescape(encodeURIComponent(JSON.stringify(u)))).replace(/%5C+/g,%22-%22).replace(/%5C//g,%22_%22).replace(/=+$/,%22%22);P(%22Tilbage%20til%20LinkIQ%22,function()%7Blocation.href=c+%22%23liqdone=%22+I%7D,!0)%7Delse%201===f.length&&w&&%22%E2%9C%93%22===v%5B0%5D.charAt(0)&&setTimeout(function()%7Blocation.href=%22/Cases/ShowCase.aspx?cc=%22+w%7D,2500);w&&P(%22Vis%20sagen%22,function()%7Blocation.href=%22/Cases/ShowCase.aspx?cc=%22+w%7D,!E),N()%7Dcatch(e)%7BT(%22LinkIQ:%20Fejl%20%E2%80%93%20%22+(e&&e.message?e.message:e)),N()%7D%7Delse%20alert(%22LinkIQ:%20%C3%85bn%20VVS-dialog%20og%20log%20ind%20f%C3%B8rst.%22);function%20O(e,t)%7Bvar%20n=document.createElement(%22div%22);return%20n.textContent=e,n.style.margin=%220%200%208px%22,n.style.whiteSpace=%22pre-wrap%22,t&&(n.style.fontWeight=%22bold%22),r.appendChild(n),n%7Dfunction%20P(e,t,n)%7Bvar%20a=document.createElement(%22button%22);return%20a.type=%22button%22,a.textContent=e,a.style.cssText=%22display:block;width:100%25;margin:0%200%208px;padding:12px;font:16px%20Arial,sans-serif;text-align:left;border:0;border-radius:6px;%22+(n?%22background:%23ffd23f;color:%23111;font-weight:bold%22:%22background:%23fff;color:%23111%22),a.onclick=t,r.appendChild(a),a%7Dfunction%20T(e)%7Br.textContent=%22%22,O(e,!0)%7Dfunction%20N()%7BP(%22Luk%22,function()%7Br.remove()%7D)%7Dasync%20function%20Q(e)%7Bfor(var%20t,n=0;n%3C3;n++)try%7Breturn%20await%20e()%7Dcatch(e)%7Bt=e,await%20i(1500*(n+1))%7Dthrow%20t%7Dasync%20function%20j(e,t)%7Bvar%20n=await%20Q(function()%7Breturn%20fetch(e,Object.assign(%7Bcredentials:%22same-origin%22%7D,t%7C%7C%7B%7D))%7D),r=await%20n.text();return%7Bres:n,url:n.url,html:r,doc:a.parseFromString(r,%22text/html%22)%7D%7Dfunction%20$(e,t)%7Bvar%20n=new%20URLSearchParams;return%20Array.prototype.forEach.call(e.querySelectorAll(%22input,select,textarea%22),function(e)%7Bif(e.name&&!e.disabled)%7Bvar%20r=(e.type%7C%7C%22%22).toLowerCase();if(%22submit%22!==r&&%22button%22!==r&&%22image%22!==r&&%22file%22!==r&&%22reset%22!==r&&(!t%7C%7C!Object.prototype.hasOwnProperty.call(t,e.name))&&(%22checkbox%22!==r&&%22radio%22!==r%7C%7Ce.hasAttribute(%22checked%22)))if(%22SELECT%22!==e.tagName)n.append(e.name,%22TEXTAREA%22===e.tagName?e.textContent:e.getAttribute(%22value%22)%7C%7C%22%22);else%7Bvar%20a=e.querySelector(%22option%5Bselected%5D%22)%7C%7Ce.querySelector(%22option%22);a&&n.append(e.name,null!==a.getAttribute(%22value%22)?a.getAttribute(%22value%22):a.textContent)%7D%7D%7D),Object.keys(t%7C%7C%7B%7D).forEach(function(e)%7Bnull!==t%5Be%5D&&n.append(e,t%5Be%5D)%7D),n%7Dfunction%20D(e)%7Be.id&&u.push(%7Bid:e.id,ok:e.ok,cc:e.cc,msg:e.msg%7D);try%7Bwindow.opener&&l&&window.opener.postMessage(e,l)%7Dcatch(e)%7B%7D%7Dfunction%20R(e)%7Breturn%20atob(e.replace(/-/g,%22+%22).replace(/_/g,%22/%22))%7Dfunction%20U(e)%7Bvar%20t=String(window.name%7C%7C%22%22).split(%22%7CLIQCODE:%22)%5B0%5D,n=t.split(%22%7CLIQBACK:%22);if(n%5B1%5D)%7Bvar%20r=null;try%7Br=new%20URL(decodeURIComponent(n%5B1%5D))%7Dcatch(e)%7Br=null%7Dr&&o.test(r.origin)&&(c=r.origin+r.pathname+r.search),t=n%5B0%5D%7Dvar%20a=t.split(%22%7CLIQFILES:%22),i=%7B%7D;if(a%5B1%5D)try%7Bi=JSON.parse(decodeURIComponent(escape(R(a%5B1%5D))))%7Dcatch(e)%7Bi=%7B%7D%7Dvar%20l=a%5B0%5D.match(/%5Elinkiq_j(%5B%5Cw-%5D+)$/)%7C%7Clocation.search.match(/%5B?&%5Dliq=(%5B%5Cw-%5D+)/)%7C%7Cnull%7C%7CString(e%7C%7C%22%22).trim().match(/%5ELIQ1:(%5B%5Cw-%5D+)$/)%7C%7Cnull;if(l)try%7Bvar%20u=JSON.parse(decodeURIComponent(escape(R(l%5B1%5D))));return(Array.isArray(u)?u:%5Bu%5D).map(function(e)%7Bvar%20t=(i%5Be.id%5D%7C%7C%5B%5D).map(function(e)%7Bfor(var%20t=atob(e.d),n=new%20Uint8Array(t.length),r=0;r%3Ct.length;r++)n%5Br%5D=t.charCodeAt(r);return%7Bname:e.n,blob:new%20Blob(%5Bn%5D,%7Btype:e.t%7C%7C%22application/octet-stream%22%7D)%7D%7D);return%7Bid:e.id,meter:e.m,status:e.s,text:e.t,files:t%7D%7D)%7Dcatch(e)%7B%7Dvar%20s=(location.hash.match(/linkiq=(%5Cd+)/)%7C%7C%5B%5D)%5B1%5D%7C%7C(a%5B0%5D.match(/%5Elinkiq_(%5Cd+)$/)%7C%7C%5B%5D)%5B1%5D;return%20s?%5B%7Bmeter:s,files:%5B%5D%7D%5D:null%7Dasync%20function%20H(t)%7Bvar%20n=location.pathname.match(/ShowCase%5C.aspx/i)&&new%20URLSearchParams(location.search).get(%22cc%22);if(n&&document.body.innerText.indexOf(t)%3E=0)return%20n;var%20r=(await%20j(%22/Home.aspx%22)).doc.querySelector(%22form%22),a=r?Array.prototype.slice.call(r.querySelectorAll(%22input%22)):%5B%5D,i=a.find(function(e)%7Breturn/meternumber/i.test(e.name%7C%7C%22%22)%7D),o=a.find(function(e)%7Breturn%22submit%22===(e.type%7C%7C%22%22).toLowerCase()&&%22S%C3%B8g%22===(e.value%7C%7C%22%22).trim()%7D);if(!i%7C%7C!o)throw%20new%20Error(%22LOGIN%22);var%20l=%7B%7D;l%5Bi.name%5D=t,l%5Bo.name%5D=o.value;var%20c=new%20URL(r.getAttribute(%22action%22)%7C%7C%22Home.aspx%22,location.origin+%22/Home.aspx%22),u=await%20j(c.href,%7Bmethod:%22POST%22,headers:%7B%22Content-Type%22:%22application/x-www-form-urlencoded%22%7D,body:$(r,l).toString()%7D);if(!/ShowCustomer%5C.aspx/i.test(u.url))throw%20new%20Error(%22M%C3%A5ler%20%22+t+%22%20blev%20ikke%20fundet%20entydigt.%22);var%20s,f,d=%7B%7D,p=%5B%5D;if(Array.prototype.forEach.call(u.doc.querySelectorAll('%5Bonclick*=%22ShowCase.aspx%22%5D'),function(n)%7Bvar%20r=((n.getAttribute(%22onclick%22)%7C%7C%22%22).match(/cc=(%5Cd+)/)%7C%7C%5B%5D)%5B1%5D;if(r&&!d%5Br%5D)%7Bd%5Br%5D=1;var%20a=i(%22.ucCHCol2%22);e.indexOf(a.toLowerCase())%3E=0%7C%7Cp.push(%7Bcc:r,date:i(%22.ucCHCol1%22),status:a,type:i(%22.ucCHCol3%22),own:n.textContent.indexOf(t)%3E=0%7D)%7Dfunction%20i(e)%7Bvar%20t=n.querySelector(e);return%20t?t.textContent.trim():%22%22%7D%7D),1===p.length)return%20p%5B0%5D.cc;if(!p.length)throw%20new%20Error(%22Ingen%20%C3%A5ben%20sag%20for%20m%C3%A5ler%20%22+t+%22.%22);return%20s=%22LinkIQ:%20%22+p.length+%22%20%C3%A5bne%20sager%20for%20m%C3%A5ler%20%22+t+%22.%20V%C3%A6lg%20sag:%22,f=p.map(function(e)%7Breturn%7Blabel:e.date+%22%20%C2%B7%20%22+e.status+%22%20%C2%B7%20%22+e.type+(e.own?%22%20%C2%B7%20m%C3%A5ler%20n%C3%A6vnt%22:%22%22),value:e.cc%7D%7D).concat(%5B%7Blabel:%22Spring%20over%22,value:null%7D%5D),new%20Promise(function(e)%7BT(s),f.forEach(function(t)%7BP(t.label,function()%7Be(t.value)%7D,t.main)%7D)%7D)%7Dasync%20function%20V(e,t)%7Bif(!t.length)return%5B%5D;var%20n=%7B%7D;try%7Bvar%20r=await%20Q(function()%7Breturn%20fetch(%22/Handlers/GetFiles.ashx?caseId=%22+e,%7Bcredentials:%22same-origin%22%7D)%7D);(await%20r.json()).files.forEach(function(e)%7Bn%5Be.name%5D=1%7D)%7Dcatch(e)%7B%7Dvar%20a=t.filter(function(e)%7Breturn!n%5Be.name%5D%7D);if(!a.length)return%5B%5D;var%20i=new%20FormData;a.forEach(function(e)%7Bi.append(%22files%22,e.blob,e.name)%7D),i.append(%22caseId%22,e);var%20o=await%20Q(function()%7Breturn%20fetch(%22/Handlers/FileHandler.ashx%22,%7Bmethod:%22POST%22,body:i,credentials:%22same-origin%22,headers:%7B%22X-Requested-With%22:%22XMLHttpRequest%22%7D%7D)%7D),l=o.ok?await%20o.json().catch(function()%7Breturn%20null%7D):null;if(!l%7C%7C!l.files)throw%20new%20Error(%22Upload%20fejlede%20(HTTP%20%22+o.status+%22)%22);return%20l.files.map(function(e)%7Breturn%20e.name%7D)%7Dasync%20function%20M(e,n,r)%7Bn=String(n%7C%7C%22%22).replace(/%5B%5Cu2013%5Cu2014%5D/g,%22-%22);var%20a=%22/Cases/ShowCase.aspx?cc=%22+e,i=await%20j(a);if(function(e)%7Breturn!e.doc.querySelector(%22form%22)%7C%7C/login%7Clogon%7Csignin/i.test(e.url)%7D(i))throw%20new%20Error(%22LOGIN%22);var%20o=i.doc.querySelector(%22form%22),l=i.doc.querySelector('textarea%5Bname=%22'+t+'LogTextTextArea%22%5D'),c=i.doc.querySelector('input%5Bname=%22'+t+'SaveLogButton%22%5D');if(!o%7C%7C!l%7C%7C!c)throw%20new%20Error(%22Fandt%20ikke%20feltet%20Ny%20aktivitet%22);for(var%20u=function(e)%7Breturn%20String(e%7C%7C%22%22).toLowerCase().replace(/%5B%5E0-9a-z%C3%A6%C3%B8%C3%A5%C3%A4%C3%B6%C3%BC()%5D+/g,%22%22)%7D,s=u(i.doc.body.textContent),f=u(n),d=s.indexOf(f);d%3E=0;)%7Bif(%22(slettet)%22!==s.substr(d+f.length,9))return%22exists%22;d=s.indexOf(f,d+1)%7Dvar%20p=%7B%7D;if(p%5Bl.name%5D=n,p%5Bc.name%5D=c.getAttribute(%22value%22)%7C%7C%22Gem%22,r)%7Bvar%20m=function(e,t)%7Bvar%20n=String(t%7C%7C%22%22).trim().toLowerCase(),r=null;return%20Array.prototype.forEach.call(e.querySelectorAll(%22input%5Btype=radio%5D%22),function(t)%7Bvar%20a=t.id?e.querySelector('label%5Bfor=%22'+t.id+'%22%5D'):null,i=a?a.textContent:t.nextSibling?t.nextSibling.textContent:t.parentNode?t.parentNode.textContent:%22%22;r%7C%7CString(i%7C%7C%22%22).trim().toLowerCase()!==n%7C%7C(r=t)%7D),r%7D(i.doc,r);if(!m)throw%20new%20Error(%22Status%20%E2%80%9E%22+r+%22%E2%80%9C%20findes%20ikke%20i%20VVS-dialog%22);Array.prototype.forEach.call(i.doc.querySelectorAll('input%5Btype=radio%5D%5Bname=%22'+m.name+'%22%5D'),function(e)%7Be.removeAttribute(%22checked%22)%7D),p%5Bm.name%5D=m.getAttribute(%22value%22);var%20g=i.doc.querySelector('select%5Bname$=%22NewStatusDropDownList%22%5D');g&&g.querySelector('option%5Bvalue=%22'+m.getAttribute(%22value%22)+'%22%5D')&&(p%5Bg.name%5D=m.getAttribute(%22value%22))%7Dvar%20h=new%20URL(o.getAttribute(%22action%22)%7C%7Ca,location.origin+a),v=await%20j(h.href,%7Bmethod:%22POST%22,headers:%7B%22Content-Type%22:%22application/x-www-form-urlencoded%22%7D,body:$(o,p).toString()%7D),w=u(v.doc.body?v.doc.body.textContent:%22%22),y=u(n);if(y&&w.indexOf(y)%3C0)throw%20new%20Error(%22Aktiviteten%20blev%20ikke%20fundet%20efter%20Gem%20%E2%80%93%20se%20sagen%22)%7Dfunction%20F()%7Breturn%20new%20Promise(function(e,t)%7Bvar%20n=indexedDB.open(%22linkiq-li%22,1);n.onupgradeneeded=function()%7Bn.result.createObjectStore(%22kv%22)%7D,n.onsuccess=function()%7Be(n.result)%7D,n.onerror=function()%7Bt(n.error)%7D%7D)%7Dasync%20function%20G(e,t)%7Bvar%20n=%7B%7D;for%20await(var%20r%20of%20e.values())if(!(%22file%22!==r.kind%7C%7Cr.name.indexOf(t)%3C0))%7Bvar%20a=(r.name.match(/%5C.(pdf%7Cpng%7Cjpe?g)$/i)%7C%7C%5B%5D)%5B1%5D;if(a)%7Ba=%22pdf%22===a.toLowerCase()?%22pdf%22:%22img%22;var%20i=await%20r.getFile();(!n%5Ba%5D%7C%7Ci.lastModified%3En%5Ba%5D.lastModified)&&(n%5Ba%5D=i)%7D%7Dreturn%5B%22pdf%22,%22img%22%5D.filter(function(e)%7Breturn%20n%5Be%5D%7D).map(function(e)%7Breturn%7Bname:n%5Be%5D.name,blob:n%5Be%5D%7D%7D)%7Dasync%20function%20B(e)%7Bif(!window.showDirectoryPicker)return%20null;if(s)try%7Bvar%20t=await%20G(s,e);if(t.length)return%20t%7Dcatch(e)%7B%7Dvar%20n=null;try%7Bn=await%20async%20function(e)%7Bvar%20t=await%20F();return%20new%20Promise(function(n)%7Bvar%20r=t.transaction(%22kv%22).objectStore(%22kv%22).get(e);r.onsuccess=function()%7Bn(r.result)%7D,r.onerror=function()%7Bn(null)%7D%7D)%7D(%22dir%22)%7Dcatch(e)%7Bn=null%7Dreturn%20new%20Promise(function(t)%7Basync%20function%20r(n)%7Btry%7Bif(%22granted%22!==await%20n.queryPermission(%7Bmode:%22read%22%7D)&&%22granted%22!==await%20n.requestPermission(%7Bmode:%22read%22%7D))return%20void%20t(null);await%20async%20function(e,t)%7Btry%7Bvar%20n=await%20F()%7Dcatch(e)%7Breturn%7Dreturn%20new%20Promise(function(r)%7Btry%7Bvar%20a=n.transaction(%22kv%22,%22readwrite%22);a.objectStore(%22kv%22).put(t,e),a.oncomplete=r,a.onerror=r%7Dcatch(e)%7Br()%7D%7D)%7D(%22dir%22,n),s=n;var%20r=await%20G(n,e);if(!r.length)return%20T(%22LinkIQ:%20ingen%20rapport%20med%20%22+e+%22%20i%20mappen%20%E2%80%9E%22+n.name+%22%E2%80%9C.%22),await%20i(2e3),void%20t(null);t(r)%7Dcatch(e)%7Bt(null)%7D%7DT(%22LinkIQ:%20m%C3%A5ler%20%22+e+%22%20%E2%80%93%20rapporten%20hentes%20fra%20mappen%22),n&&P(%22Brug%20mappen%20%E2%80%9E%22+n.name+%22%E2%80%9C%22,function()%7Br(n)%7D,!0),P(n?%22V%C3%A6lg%20en%20anden%20mappe%22:%22V%C3%A6lg%20rapportmappen%20(%C3%A9n%20gang)%22,async%20function()%7Btry%7Br(await%20window.showDirectoryPicker(%7Bid:%22linkiq-rapporter%22,mode:%22read%22%7D))%7Dcatch(e)%7Bt(null)%7D%7D,!n),P(%22V%C3%A6lg%20filerne%20selv%22,function()%7Bt(null)%7D)%7D)%7Dfunction%20_(e,t)%7Bt=t%7C%7C%5BString(e)%5D;var%20n=function(e)%7Breturn%20t.some(function(t)%7Breturn%20e.indexOf(t)%3E=0%7D)%7D;return%20new%20Promise(function(t)%7BT(%22LinkIQ:%20m%C3%A5ler%20%22+e+%22%20%E2%80%93%20v%C3%A6lg%20rapporten%20(PDF/PNG)%20fra%20mappen%22);var%20a=document.createElement(%22input%22);a.type=%22file%22,a.multiple=!0,a.accept=%22.pdf,.png,.jpg,application/pdf,image/*%22,a.style.cssText=%22display:block;margin:0%200%2010px;color:%23fff%22,r.appendChild(a);var%20i=O(%22%22),o=P(%22Send%20til%20sagen%22,function()%7Bvar%20e=Array.prototype.slice.call(a.files%7C%7C%5B%5D).filter(function(e,t)%7Breturn%20r.querySelector('%5Bdata-i=%22'+t+'%22%5D').checked%7D);t(e.map(function(e)%7Breturn%7Bname:e.name,blob:e%7D%7D))%7D,!0);o.disabled=!0,P(%22Send%20uden%20filer%22,function()%7Bt(%5B%5D)%7D),a.onchange=function()%7Bi.textContent=%22%22,Array.prototype.forEach.call(a.files,function(e,t)%7Bvar%20r=document.createElement(%22label%22),a=document.createElement(%22input%22);a.type=%22checkbox%22,a.dataset.i=t,a.checked=n(e.name),r.style.display=%22block%22,r.appendChild(a),r.appendChild(document.createTextNode(%22%20%22+e.name+(n(e.name)?%22%22:%22%20%20(ikke%20denne%20m%C3%A5ler!)%22))),i.appendChild(r)%7D),o.disabled=!1%7D%7D)%7D%7D();";
-window.LINKIQ_VVS_CODE = "!async function(){var e=[\"afsluttet\",\"lukket\"],t=\"ctl00$DefaultContent$CaseNewLogUC$\";if(\"vvsdialog.kmd.dk\"===location.hostname){var n=document.getElementById(\"linkiq-box\");n&&n.remove();var r=document.createElement(\"div\");r.id=\"linkiq-box\",r.style.cssText=\"position:fixed;left:0;right:0;top:0;z-index:99999;background:#1f5e4f;color:#fff;font:17px/1.4 Arial,sans-serif;padding:14px;max-height:100%;overflow:auto;box-shadow:0 2px 10px rgba(0,0,0,.5)\",document.body.appendChild(r);var a=new DOMParser,i=function(e){return new Promise(function(t){setTimeout(t,e)})},o=/^https:\\/\\/(valentinstm\\.github\\.io|[a-z0-9-]+\\.kredslob\\.dk)$|^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$/,l=null,c=null,u=[],s=null;try{T(\"LinkIQ: henter opgaver \u2026\");var f=await async function(){return window.opener?new Promise(function(e){var t=!1;window.addEventListener(\"message\",function n(r){r.source===window.opener&&o.test(r.origin)&&r.data&&\"items\"===r.data.liq&&(l=r.origin,t=!0,window.removeEventListener(\"message\",n),e(r.data.items||[]))});try{window.opener.postMessage({liq:\"hello\",v:2},\"*\")}catch(t){return void e(null)}setTimeout(function(){t||e(null)},2500)}):null}(),d=!!f;f&&f.length||(f=U(),d=!1);var p=\"\";if(!f){try{navigator.clipboard&&navigator.clipboard.readText&&(p=await Promise.race([navigator.clipboard.readText(),i(4e3).then(function(){return\"\"})]))}catch(e){p=\"\"}f=U(p=String(p||\"\").trim())}if(!f){var m=(prompt(\"LinkIQ: M\u00e5lernummer?\",/^\\d{6,12}$/.test(p)?p:\"\")||\"\").replace(/\\D/g,\"\");if(!m)return void r.remove();f=[{meter:m,files:[]}]}var g=f.filter(function(e){return!(d||void 0===e.text||e.files&&e.files.length)});if(g.length>1&&!window.showDirectoryPicker){var h=await _(g.map(function(e){return e.meter}).join(\", \"),g.map(function(e){return String(e.meter)}));g.forEach(function(e){var t={};h.filter(function(t){return t.name.indexOf(String(e.meter))>=0}).forEach(function(e){var n=/\\.pdf$/i.test(e.name)?\"pdf\":\"img\";(!t[n]||(e.blob.lastModified||0)>(t[n].blob.lastModified||0))&&(t[n]=e)}),e.files=[\"pdf\",\"img\"].filter(function(e){return t[e]}).map(function(e){return t[e]}),e.picked=!0})}for(var v=[],w=null,y=0;y<f.length;y++){var b=f[y],x=f.length>1?\"(\"+(y+1)+\"/\"+f.length+\") \":\"\";try{T(\"LinkIQ: \"+x+\"s\u00f8ger m\u00e5ler \"+b.meter+\" \u2026\");var k=await H(String(b.meter));if(!k){v.push(b.meter+\": sprunget over\");continue}var S=b.files||[];d||S.length||void 0===b.text||b.picked||(S=await B(String(b.meter))||await _(b.meter)),T(\"LinkIQ: \"+x+\"sag \"+k+\" \u2013 uploader \u2026\");var C=await V(k,S),L=null;b.text&&(T(\"LinkIQ: \"+x+\"sag \"+k+\" \u2013 skriver Ny aktivitet og status \u2026\"),L=await M(k,b.text,b.status)),w=k;var A=(C.length?C.length+\" fil(er)\":\"ingen nye filer\")+(b.text?\"exists\"===L?\", aktiviteten fandtes allerede\":\", aktivitet\"+(b.status?\" + \"+b.status:\"\"):\"\");if(v.push(\"\u2713 \"+b.meter+\" \u2192 sag \"+k+\": \"+A),D({liq:\"result\",id:b.id,ok:!0,cc:k,msg:A}),!b.text&&!S.length&&1===f.length)return void(location.href=\"/Cases/ShowCase.aspx?cc=\"+k)}catch(e){var q=e&&\"LOGIN\"===e.message?\"Log ind i VVS-dialog (Chrome udfylder selv), og tryk p\u00e5 li igen.\":e&&e.message?e.message:String(e);if(v.push(\"\u2717 \"+b.meter+\": \"+q),D({liq:\"result\",id:b.id,ok:!1,msg:q}),e&&\"LOGIN\"===e.message)break}}/^linkiq_j/.test(String(window.name||\"\"))&&(window.name=\"\"),T(\"LinkIQ: f\u00e6rdig\"),v.forEach(function(e){O(e)});var E=c&&u.length&&!window.opener;if(E){var I=btoa(unescape(encodeURIComponent(JSON.stringify(u)))).replace(/\\+/g,\"-\").replace(/\\//g,\"_\").replace(/=+$/,\"\");P(\"Tilbage til LinkIQ\",function(){location.href=c+\"#liqdone=\"+I},!0)}else 1===f.length&&w&&\"\u2713\"===v[0].charAt(0)&&setTimeout(function(){location.href=\"/Cases/ShowCase.aspx?cc=\"+w},2500);w&&P(\"Vis sagen\",function(){location.href=\"/Cases/ShowCase.aspx?cc=\"+w},!E),N()}catch(e){T(\"LinkIQ: Fejl \u2013 \"+(e&&e.message?e.message:e)),N()}}else alert(\"LinkIQ: \u00c5bn VVS-dialog og log ind f\u00f8rst.\");function O(e,t){var n=document.createElement(\"div\");return n.textContent=e,n.style.margin=\"0 0 8px\",n.style.whiteSpace=\"pre-wrap\",t&&(n.style.fontWeight=\"bold\"),r.appendChild(n),n}function P(e,t,n){var a=document.createElement(\"button\");return a.type=\"button\",a.textContent=e,a.style.cssText=\"display:block;width:100%;margin:0 0 8px;padding:12px;font:16px Arial,sans-serif;text-align:left;border:0;border-radius:6px;\"+(n?\"background:#ffd23f;color:#111;font-weight:bold\":\"background:#fff;color:#111\"),a.onclick=t,r.appendChild(a),a}function T(e){r.textContent=\"\",O(e,!0)}function N(){P(\"Luk\",function(){r.remove()})}async function Q(e){for(var t,n=0;n<3;n++)try{return await e()}catch(e){t=e,await i(1500*(n+1))}throw t}async function j(e,t){var n=await Q(function(){return fetch(e,Object.assign({credentials:\"same-origin\"},t||{}))}),r=await n.text();return{res:n,url:n.url,html:r,doc:a.parseFromString(r,\"text/html\")}}function $(e,t){var n=new URLSearchParams;return Array.prototype.forEach.call(e.querySelectorAll(\"input,select,textarea\"),function(e){if(e.name&&!e.disabled){var r=(e.type||\"\").toLowerCase();if(\"submit\"!==r&&\"button\"!==r&&\"image\"!==r&&\"file\"!==r&&\"reset\"!==r&&(!t||!Object.prototype.hasOwnProperty.call(t,e.name))&&(\"checkbox\"!==r&&\"radio\"!==r||e.hasAttribute(\"checked\")))if(\"SELECT\"!==e.tagName)n.append(e.name,\"TEXTAREA\"===e.tagName?e.textContent:e.getAttribute(\"value\")||\"\");else{var a=e.querySelector(\"option[selected]\")||e.querySelector(\"option\");a&&n.append(e.name,null!==a.getAttribute(\"value\")?a.getAttribute(\"value\"):a.textContent)}}}),Object.keys(t||{}).forEach(function(e){null!==t[e]&&n.append(e,t[e])}),n}function D(e){e.id&&u.push({id:e.id,ok:e.ok,cc:e.cc,msg:e.msg});try{window.opener&&l&&window.opener.postMessage(e,l)}catch(e){}}function R(e){return atob(e.replace(/-/g,\"+\").replace(/_/g,\"/\"))}function U(e){var t=String(window.name||\"\").split(\"|LIQCODE:\")[0],n=t.split(\"|LIQBACK:\");if(n[1]){var r=null;try{r=new URL(decodeURIComponent(n[1]))}catch(e){r=null}r&&o.test(r.origin)&&(c=r.origin+r.pathname+r.search),t=n[0]}var a=t.split(\"|LIQFILES:\"),i={};if(a[1])try{i=JSON.parse(decodeURIComponent(escape(R(a[1]))))}catch(e){i={}}var l=a[0].match(/^linkiq_j([\\w-]+)$/)||location.search.match(/[?&]liq=([\\w-]+)/)||null||String(e||\"\").trim().match(/^LIQ1:([\\w-]+)$/)||null;if(l)try{var u=JSON.parse(decodeURIComponent(escape(R(l[1]))));return(Array.isArray(u)?u:[u]).map(function(e){var t=(i[e.id]||[]).map(function(e){for(var t=atob(e.d),n=new Uint8Array(t.length),r=0;r<t.length;r++)n[r]=t.charCodeAt(r);return{name:e.n,blob:new Blob([n],{type:e.t||\"application/octet-stream\"})}});return{id:e.id,meter:e.m,status:e.s,text:e.t,files:t}})}catch(e){}var s=(location.hash.match(/linkiq=(\\d+)/)||[])[1]||(a[0].match(/^linkiq_(\\d+)$/)||[])[1];return s?[{meter:s,files:[]}]:null}async function H(t){var n=location.pathname.match(/ShowCase\\.aspx/i)&&new URLSearchParams(location.search).get(\"cc\");if(n&&document.body.innerText.indexOf(t)>=0)return n;var r=(await j(\"/Home.aspx\")).doc.querySelector(\"form\"),a=r?Array.prototype.slice.call(r.querySelectorAll(\"input\")):[],i=a.find(function(e){return/meternumber/i.test(e.name||\"\")}),o=a.find(function(e){return\"submit\"===(e.type||\"\").toLowerCase()&&\"S\u00f8g\"===(e.value||\"\").trim()});if(!i||!o)throw new Error(\"LOGIN\");var l={};l[i.name]=t,l[o.name]=o.value;var c=new URL(r.getAttribute(\"action\")||\"Home.aspx\",location.origin+\"/Home.aspx\"),u=await j(c.href,{method:\"POST\",headers:{\"Content-Type\":\"application/x-www-form-urlencoded\"},body:$(r,l).toString()});if(!/ShowCustomer\\.aspx/i.test(u.url))throw new Error(\"M\u00e5ler \"+t+\" blev ikke fundet entydigt.\");var s,f,d={},p=[];if(Array.prototype.forEach.call(u.doc.querySelectorAll('[onclick*=\"ShowCase.aspx\"]'),function(n){var r=((n.getAttribute(\"onclick\")||\"\").match(/cc=(\\d+)/)||[])[1];if(r&&!d[r]){d[r]=1;var a=i(\".ucCHCol2\");e.indexOf(a.toLowerCase())>=0||p.push({cc:r,date:i(\".ucCHCol1\"),status:a,type:i(\".ucCHCol3\"),own:n.textContent.indexOf(t)>=0})}function i(e){var t=n.querySelector(e);return t?t.textContent.trim():\"\"}}),1===p.length)return p[0].cc;if(!p.length)throw new Error(\"Ingen \u00e5ben sag for m\u00e5ler \"+t+\".\");return s=\"LinkIQ: \"+p.length+\" \u00e5bne sager for m\u00e5ler \"+t+\". V\u00e6lg sag:\",f=p.map(function(e){return{label:e.date+\" \u00b7 \"+e.status+\" \u00b7 \"+e.type+(e.own?\" \u00b7 m\u00e5ler n\u00e6vnt\":\"\"),value:e.cc}}).concat([{label:\"Spring over\",value:null}]),new Promise(function(e){T(s),f.forEach(function(t){P(t.label,function(){e(t.value)},t.main)})})}async function V(e,t){if(!t.length)return[];var n={};try{var r=await Q(function(){return fetch(\"/Handlers/GetFiles.ashx?caseId=\"+e,{credentials:\"same-origin\"})});(await r.json()).files.forEach(function(e){n[e.name]=1})}catch(e){}var a=t.filter(function(e){return!n[e.name]});if(!a.length)return[];var i=new FormData;a.forEach(function(e){i.append(\"files\",e.blob,e.name)}),i.append(\"caseId\",e);var o=await Q(function(){return fetch(\"/Handlers/FileHandler.ashx\",{method:\"POST\",body:i,credentials:\"same-origin\",headers:{\"X-Requested-With\":\"XMLHttpRequest\"}})}),l=o.ok?await o.json().catch(function(){return null}):null;if(!l||!l.files)throw new Error(\"Upload fejlede (HTTP \"+o.status+\")\");return l.files.map(function(e){return e.name})}async function M(e,n,r){n=String(n||\"\").replace(/[\\u2013\\u2014]/g,\"-\");var a=\"/Cases/ShowCase.aspx?cc=\"+e,i=await j(a);if(function(e){return!e.doc.querySelector(\"form\")||/login|logon|signin/i.test(e.url)}(i))throw new Error(\"LOGIN\");var o=i.doc.querySelector(\"form\"),l=i.doc.querySelector('textarea[name=\"'+t+'LogTextTextArea\"]'),c=i.doc.querySelector('input[name=\"'+t+'SaveLogButton\"]');if(!o||!l||!c)throw new Error(\"Fandt ikke feltet Ny aktivitet\");for(var u=function(e){return String(e||\"\").toLowerCase().replace(/[^0-9a-z\u00e6\u00f8\u00e5\u00e4\u00f6\u00fc()]+/g,\"\")},s=u(i.doc.body.textContent),f=u(n),d=s.indexOf(f);d>=0;){if(\"(slettet)\"!==s.substr(d+f.length,9))return\"exists\";d=s.indexOf(f,d+1)}var p={};if(p[l.name]=n,p[c.name]=c.getAttribute(\"value\")||\"Gem\",r){var m=function(e,t){var n=String(t||\"\").trim().toLowerCase(),r=null;return Array.prototype.forEach.call(e.querySelectorAll(\"input[type=radio]\"),function(t){var a=t.id?e.querySelector('label[for=\"'+t.id+'\"]'):null,i=a?a.textContent:t.nextSibling?t.nextSibling.textContent:t.parentNode?t.parentNode.textContent:\"\";r||String(i||\"\").trim().toLowerCase()!==n||(r=t)}),r}(i.doc,r);if(!m)throw new Error(\"Status \u201e\"+r+\"\u201c findes ikke i VVS-dialog\");Array.prototype.forEach.call(i.doc.querySelectorAll('input[type=radio][name=\"'+m.name+'\"]'),function(e){e.removeAttribute(\"checked\")}),p[m.name]=m.getAttribute(\"value\");var g=i.doc.querySelector('select[name$=\"NewStatusDropDownList\"]');g&&g.querySelector('option[value=\"'+m.getAttribute(\"value\")+'\"]')&&(p[g.name]=m.getAttribute(\"value\"))}var h=new URL(o.getAttribute(\"action\")||a,location.origin+a),v=await j(h.href,{method:\"POST\",headers:{\"Content-Type\":\"application/x-www-form-urlencoded\"},body:$(o,p).toString()}),w=u(v.doc.body?v.doc.body.textContent:\"\"),y=u(n);if(y&&w.indexOf(y)<0)throw new Error(\"Aktiviteten blev ikke fundet efter Gem \u2013 se sagen\")}function F(){return new Promise(function(e,t){var n=indexedDB.open(\"linkiq-li\",1);n.onupgradeneeded=function(){n.result.createObjectStore(\"kv\")},n.onsuccess=function(){e(n.result)},n.onerror=function(){t(n.error)}})}async function G(e,t){var n={};for await(var r of e.values())if(!(\"file\"!==r.kind||r.name.indexOf(t)<0)){var a=(r.name.match(/\\.(pdf|png|jpe?g)$/i)||[])[1];if(a){a=\"pdf\"===a.toLowerCase()?\"pdf\":\"img\";var i=await r.getFile();(!n[a]||i.lastModified>n[a].lastModified)&&(n[a]=i)}}return[\"pdf\",\"img\"].filter(function(e){return n[e]}).map(function(e){return{name:n[e].name,blob:n[e]}})}async function B(e){if(!window.showDirectoryPicker)return null;if(s)try{var t=await G(s,e);if(t.length)return t}catch(e){}var n=null;try{n=await async function(e){var t=await F();return new Promise(function(n){var r=t.transaction(\"kv\").objectStore(\"kv\").get(e);r.onsuccess=function(){n(r.result)},r.onerror=function(){n(null)}})}(\"dir\")}catch(e){n=null}return new Promise(function(t){async function r(n){try{if(\"granted\"!==await n.queryPermission({mode:\"read\"})&&\"granted\"!==await n.requestPermission({mode:\"read\"}))return void t(null);await async function(e,t){try{var n=await F()}catch(e){return}return new Promise(function(r){try{var a=n.transaction(\"kv\",\"readwrite\");a.objectStore(\"kv\").put(t,e),a.oncomplete=r,a.onerror=r}catch(e){r()}})}(\"dir\",n),s=n;var r=await G(n,e);if(!r.length)return T(\"LinkIQ: ingen rapport med \"+e+\" i mappen \u201e\"+n.name+\"\u201c.\"),await i(2e3),void t(null);t(r)}catch(e){t(null)}}T(\"LinkIQ: m\u00e5ler \"+e+\" \u2013 rapporten hentes fra mappen\"),n&&P(\"Brug mappen \u201e\"+n.name+\"\u201c\",function(){r(n)},!0),P(n?\"V\u00e6lg en anden mappe\":\"V\u00e6lg rapportmappen (\u00e9n gang)\",async function(){try{r(await window.showDirectoryPicker({id:\"linkiq-rapporter\",mode:\"read\"}))}catch(e){t(null)}},!n),P(\"V\u00e6lg filerne selv\",function(){t(null)})})}function _(e,t){t=t||[String(e)];var n=function(e){return t.some(function(t){return e.indexOf(t)>=0})};return new Promise(function(t){T(\"LinkIQ: m\u00e5ler \"+e+\" \u2013 v\u00e6lg rapporten (PDF/PNG) fra mappen\");var a=document.createElement(\"input\");a.type=\"file\",a.multiple=!0,a.accept=\".pdf,.png,.jpg,application/pdf,image/*\",a.style.cssText=\"display:block;margin:0 0 10px;color:#fff\",r.appendChild(a);var i=O(\"\"),o=P(\"Send til sagen\",function(){var e=Array.prototype.slice.call(a.files||[]).filter(function(e,t){return r.querySelector('[data-i=\"'+t+'\"]').checked});t(e.map(function(e){return{name:e.name,blob:e}}))},!0);o.disabled=!0,P(\"Send uden filer\",function(){t([])}),a.onchange=function(){i.textContent=\"\",Array.prototype.forEach.call(a.files,function(e,t){var r=document.createElement(\"label\"),a=document.createElement(\"input\");a.type=\"checkbox\",a.dataset.i=t,a.checked=n(e.name),r.style.display=\"block\",r.appendChild(a),r.appendChild(document.createTextNode(\" \"+e.name+(n(e.name)?\"\":\"  (ikke denne m\u00e5ler!)\"))),i.appendChild(r)}),o.disabled=!1}})}}();";
+window.LINKIQ_VVS_BOOKMARK = "javascript:!async%20function()%7Bvar%20e=%5B%22afsluttet%22,%22lukket%22%5D,t=%22ctl00$DefaultContent$CaseNewLogUC$%22;if(%22vvsdialog.kmd.dk%22===location.hostname)%7Bvar%20n=document.getElementById(%22linkiq-box%22);n&&n.remove();var%20r=document.createElement(%22div%22);r.id=%22linkiq-box%22,r.style.cssText=%22position:fixed;left:0;right:0;top:0;z-index:99999;background:%231f5e4f;color:%23fff;font:17px/1.4%20Arial,sans-serif;padding:14px;max-height:100%25;overflow:auto;box-shadow:0%202px%2010px%20rgba(0,0,0,.5)%22,document.body.appendChild(r);var%20a=new%20DOMParser,i=function(e)%7Breturn%20new%20Promise(function(t)%7BsetTimeout(t,e)%7D)%7D,o=/%5Ehttps:%5C/%5C/(valentinstm%5C.github%5C.io%7C%5Ba-z0-9-%5D+%5C.kredslob%5C.dk)$%7C%5Ehttps?:%5C/%5C/(localhost%7C127%5C.0%5C.0%5C.1)(:%5Cd+)?$/,l=null,c=null,u=%5B%5D,s=%22%22,d=null;try%7Bj(%22LinkIQ:%20henter%20opgaver%20%E2%80%A6%22);var%20f=await%20async%20function()%7Breturn%20window.opener?new%20Promise(function(e)%7Bvar%20t=!1;window.addEventListener(%22message%22,function%20n(r)%7Br.source===window.opener&&o.test(r.origin)&&r.data&&%22items%22===r.data.liq&&(l=r.origin,t=!0,window.removeEventListener(%22message%22,n),e(r.data.items%7C%7C%5B%5D))%7D);try%7Bwindow.opener.postMessage(%7Bliq:%22hello%22,v:2%7D,%22*%22)%7Dcatch(t)%7Breturn%20void%20e(null)%7DsetTimeout(function()%7Bt%7C%7Ce(null)%7D,2500)%7D):null%7D(),p=!!f;f&&f.length%7C%7C(f=H(),p=!1);var%20m=%22%22;if(!f)%7Btry%7Bnavigator.clipboard&&navigator.clipboard.readText&&(m=await%20Promise.race(%5Bnavigator.clipboard.readText(),i(4e3).then(function()%7Breturn%22%22%7D)%5D))%7Dcatch(e)%7Bm=%22%22%7Df=H(m=String(m%7C%7C%22%22).trim())%7Dif(!f)%7Bvar%20g=(prompt(%22LinkIQ:%20M%C3%A5lernummer?%22,/%5E%5Cd%7B6,12%7D$/.test(m)?m:%22%22)%7C%7C%22%22).replace(/%5CD/g,%22%22);if(!g)return%20void%20r.remove();f=%5B%7Bmeter:g,files:%5B%5D%7D%5D%7Dvar%20h=f.filter(function(e)%7Breturn!(p%7C%7Cvoid%200===e.text%7C%7Ce.files&&e.files.length)%7D);if(h.length%3E1&&!window.showDirectoryPicker)%7Bvar%20v=await%20W(h.map(function(e)%7Breturn%20e.meter%7D).join(%22,%20%22),h.map(function(e)%7Breturn%20String(e.meter)%7D));h.forEach(function(e)%7Bvar%20t=%7B%7D;v.filter(function(t)%7Breturn%20t.name.indexOf(String(e.meter))%3E=0%7D).forEach(function(e)%7Bvar%20n=/%5C.pdf$/i.test(e.name)?%22pdf%22:%22img%22;(!t%5Bn%5D%7C%7C(e.blob.lastModified%7C%7C0)%3E(t%5Bn%5D.blob.lastModified%7C%7C0))&&(t%5Bn%5D=e)%7D),e.files=%5B%22pdf%22,%22img%22%5D.filter(function(e)%7Breturn%20t%5Be%5D%7D).map(function(e)%7Breturn%20t%5Be%5D%7D),e.picked=!0%7D)%7Dfor(var%20w=%5B%5D,y=null,b=0;b%3Cf.length;b++)%7Bvar%20k=f%5Bb%5D,x=f.length%3E1?%22(%22+(b+1)+%22/%22+f.length+%22)%20%22:%22%22;try%7Bj(%22LinkIQ:%20%22+x+%22s%C3%B8ger%20m%C3%A5ler%20%22+k.meter+%22%20%E2%80%A6%22);var%20S=await%20M(String(k.meter));if(!S)%7Bw.push(k.meter+%22:%20sprunget%20over%22);continue%7Dif(k.addr&&!G(k.addr,s))if(!await%20Q(%22LinkIQ:%20m%C3%A5ler%20%22+k.meter+%22%20er%20m%C3%A5lt%20p%C3%A5%20%22+k.addr+%22,%20men%20den%20adresse%20st%C3%A5r%20ikke%20p%C3%A5%20sagen%20i%20VVS-dialog.%20Sidder%20m%C3%A5leren%20p%C3%A5%20den%20rigtige%20adresse?%22,%5B%7Blabel:%22Ja,%20send%20alligevel%22,value:!0%7D,%7Blabel:%22Nej%20%E2%80%93%20spring%20over,%20og%20tjek%20sagen%22,value:!1,main:!0%7D%5D))%7Bw.push(%22%E2%9C%97%20%22+k.meter+%22:%20adressen%20passer%20ikke%20med%20sagen%22),R(%7Bliq:%22result%22,id:k.id,ok:!1,msg:%22Adressen%20(%22+k.addr+%22)%20passer%20ikke%20med%20sagen%20%22+S+%22.%20Tjek,%20at%20m%C3%A5leren%20sidder%20p%C3%A5%20den%20rigtige%20adresse.%22%7D);continue%7Dvar%20C=k.files%7C%7C%5B%5D;p%7C%7CC.length%7C%7Cvoid%200===k.text%7C%7Ck.picked%7C%7C(C=await%20X(String(k.meter))%7C%7Cawait%20W(k.meter)),j(%22LinkIQ:%20%22+x+%22sag%20%22+S+%22%20%E2%80%93%20uploader%20%E2%80%A6%22);var%20L=await%20z(S,C),A=null;k.text&&(j(%22LinkIQ:%20%22+x+%22sag%20%22+S+%22%20%E2%80%93%20skriver%20Ny%20aktivitet%20og%20status%20%E2%80%A6%22),A=await%20B(S,k.text,k.status)),y=S;var%20q=(L.length?L.length+%22%20fil(er)%22:%22ingen%20nye%20filer%22)+(k.text?%22exists%22===A?%22,%20aktiviteten%20fandtes%20allerede%22:%22,%20aktivitet%22+(k.status?%22%20+%20%22+k.status:%22%22):%22%22);if(w.push(%22%E2%9C%93%20%22+k.meter+%22%20%E2%86%92%20sag%20%22+S+%22:%20%22+q),R(%7Bliq:%22result%22,id:k.id,ok:!0,cc:S,msg:q%7D),!k.text&&!C.length&&1===f.length)return%20void(location.href=%22/Cases/ShowCase.aspx?cc=%22+S)%7Dcatch(e)%7Bvar%20E=e&&%22LOGIN%22===e.message?%22Log%20ind%20i%20VVS-dialog%20(Chrome%20udfylder%20selv),%20og%20tryk%20p%C3%A5%20li%20igen.%22:e&&e.message?e.message:String(e);if(w.push(%22%E2%9C%97%20%22+k.meter+%22:%20%22+E),R(%7Bliq:%22result%22,id:k.id,ok:!1,msg:E%7D),e&&%22LOGIN%22===e.message)break%7D%7D/%5Elinkiq_j/.test(String(window.name%7C%7C%22%22))&&(window.name=%22%22),j(%22LinkIQ:%20f%C3%A6rdig%22),w.forEach(function(e)%7BT(e)%7D);var%20I=c&&u.length&&!window.opener;if(I)%7Bvar%20O=btoa(unescape(encodeURIComponent(JSON.stringify(u)))).replace(/%5C+/g,%22-%22).replace(/%5C//g,%22_%22).replace(/=+$/,%22%22);P(%22Tilbage%20til%20LinkIQ%22,function()%7Blocation.href=c+%22%23liqdone=%22+O%7D,!0)%7Delse%201===f.length&&y&&%22%E2%9C%93%22===w%5B0%5D.charAt(0)&&setTimeout(function()%7Blocation.href=%22/Cases/ShowCase.aspx?cc=%22+y%7D,2500);y&&P(%22Vis%20sagen%22,function()%7Blocation.href=%22/Cases/ShowCase.aspx?cc=%22+y%7D,!I),N()%7Dcatch(e)%7Bj(%22LinkIQ:%20Fejl%20%E2%80%93%20%22+(e&&e.message?e.message:e)),N()%7D%7Delse%20alert(%22LinkIQ:%20%C3%85bn%20VVS-dialog%20og%20log%20ind%20f%C3%B8rst.%22);function%20T(e,t)%7Bvar%20n=document.createElement(%22div%22);return%20n.textContent=e,n.style.margin=%220%200%208px%22,n.style.whiteSpace=%22pre-wrap%22,t&&(n.style.fontWeight=%22bold%22),r.appendChild(n),n%7Dfunction%20P(e,t,n)%7Bvar%20a=document.createElement(%22button%22);return%20a.type=%22button%22,a.textContent=e,a.style.cssText=%22display:block;width:100%25;margin:0%200%208px;padding:12px;font:16px%20Arial,sans-serif;text-align:left;border:0;border-radius:6px;%22+(n?%22background:%23ffd23f;color:%23111;font-weight:bold%22:%22background:%23fff;color:%23111%22),a.onclick=t,r.appendChild(a),a%7Dfunction%20j(e)%7Br.textContent=%22%22,T(e,!0)%7Dfunction%20N()%7BP(%22Luk%22,function()%7Br.remove()%7D)%7Dfunction%20Q(e,t)%7Breturn%20new%20Promise(function(n)%7Bj(e),t.forEach(function(e)%7BP(e.label,function()%7Bn(e.value)%7D,e.main)%7D)%7D)%7Dasync%20function%20$(e)%7Bfor(var%20t,n=0;n%3C3;n++)try%7Breturn%20await%20e()%7Dcatch(e)%7Bt=e,await%20i(1500*(n+1))%7Dthrow%20t%7Dasync%20function%20V(e,t)%7Bvar%20n=await%20$(function()%7Breturn%20fetch(e,Object.assign(%7Bcredentials:%22same-origin%22%7D,t%7C%7C%7B%7D))%7D),r=await%20n.text();return%7Bres:n,url:n.url,html:r,doc:a.parseFromString(r,%22text/html%22)%7D%7Dfunction%20D(e,t)%7Bvar%20n=new%20URLSearchParams;return%20Array.prototype.forEach.call(e.querySelectorAll(%22input,select,textarea%22),function(e)%7Bif(e.name&&!e.disabled)%7Bvar%20r=(e.type%7C%7C%22%22).toLowerCase();if(%22submit%22!==r&&%22button%22!==r&&%22image%22!==r&&%22file%22!==r&&%22reset%22!==r&&(!t%7C%7C!Object.prototype.hasOwnProperty.call(t,e.name))&&(%22checkbox%22!==r&&%22radio%22!==r%7C%7Ce.hasAttribute(%22checked%22)))if(%22SELECT%22!==e.tagName)n.append(e.name,%22TEXTAREA%22===e.tagName?e.textContent:e.getAttribute(%22value%22)%7C%7C%22%22);else%7Bvar%20a=e.querySelector(%22option%5Bselected%5D%22)%7C%7Ce.querySelector(%22option%22);a&&n.append(e.name,null!==a.getAttribute(%22value%22)?a.getAttribute(%22value%22):a.textContent)%7D%7D%7D),Object.keys(t%7C%7C%7B%7D).forEach(function(e)%7Bnull!==t%5Be%5D&&n.append(e,t%5Be%5D)%7D),n%7Dfunction%20R(e)%7Be.id&&u.push(%7Bid:e.id,ok:e.ok,cc:e.cc,msg:e.msg%7D);try%7Bwindow.opener&&l&&window.opener.postMessage(e,l)%7Dcatch(e)%7B%7D%7Dfunction%20U(e)%7Breturn%20atob(e.replace(/-/g,%22+%22).replace(/_/g,%22/%22))%7Dfunction%20H(e)%7Bvar%20t=String(window.name%7C%7C%22%22).split(%22%7CLIQCODE:%22)%5B0%5D,n=t.split(%22%7CLIQBACK:%22);if(n%5B1%5D)%7Bvar%20r=null;try%7Br=new%20URL(decodeURIComponent(n%5B1%5D))%7Dcatch(e)%7Br=null%7Dr&&o.test(r.origin)&&(c=r.origin+r.pathname+r.search),t=n%5B0%5D%7Dvar%20a=t.split(%22%7CLIQFILES:%22),i=%7B%7D;if(a%5B1%5D)try%7Bi=JSON.parse(decodeURIComponent(escape(U(a%5B1%5D))))%7Dcatch(e)%7Bi=%7B%7D%7Dvar%20l=a%5B0%5D.match(/%5Elinkiq_j(%5B%5Cw-%5D+)$/)%7C%7Clocation.search.match(/%5B?&%5Dliq=(%5B%5Cw-%5D+)/)%7C%7Cnull%7C%7CString(e%7C%7C%22%22).trim().match(/%5ELIQ1:(%5B%5Cw-%5D+)$/)%7C%7Cnull;if(l)try%7Bvar%20u=JSON.parse(decodeURIComponent(escape(U(l%5B1%5D))));return(Array.isArray(u)?u:%5Bu%5D).map(function(e)%7Bvar%20t=(i%5Be.id%5D%7C%7C%5B%5D).map(function(e)%7Bfor(var%20t=atob(e.d),n=new%20Uint8Array(t.length),r=0;r%3Ct.length;r++)n%5Br%5D=t.charCodeAt(r);return%7Bname:e.n,blob:new%20Blob(%5Bn%5D,%7Btype:e.t%7C%7C%22application/octet-stream%22%7D)%7D%7D);return%7Bid:e.id,meter:e.m,status:e.s,text:e.t,files:t,addr:e.a%7C%7C%22%22%7D%7D)%7Dcatch(e)%7B%7Dvar%20s=(location.hash.match(/linkiq=(%5Cd+)/)%7C%7C%5B%5D)%5B1%5D%7C%7C(a%5B0%5D.match(/%5Elinkiq_(%5Cd+)$/)%7C%7C%5B%5D)%5B1%5D;return%20s?%5B%7Bmeter:s,files:%5B%5D%7D%5D:null%7Dasync%20function%20M(t)%7Bvar%20n=location.pathname.match(/ShowCase%5C.aspx/i)&&new%20URLSearchParams(location.search).get(%22cc%22);if(n&&document.body.innerText.indexOf(t)%3E=0)return%20s=document.body.innerText,n;var%20r=(await%20V(%22/Home.aspx%22)).doc.querySelector(%22form%22),a=r?Array.prototype.slice.call(r.querySelectorAll(%22input%22)):%5B%5D,i=a.find(function(e)%7Breturn/meternumber/i.test(e.name%7C%7C%22%22)%7D),o=a.find(function(e)%7Breturn%22submit%22===(e.type%7C%7C%22%22).toLowerCase()&&%22S%C3%B8g%22===(e.value%7C%7C%22%22).trim()%7D);if(!i%7C%7C!o)throw%20new%20Error(%22LOGIN%22);var%20l=%7B%7D;l%5Bi.name%5D=t,l%5Bo.name%5D=o.value;var%20c=new%20URL(r.getAttribute(%22action%22)%7C%7C%22Home.aspx%22,location.origin+%22/Home.aspx%22),u=await%20V(c.href,%7Bmethod:%22POST%22,headers:%7B%22Content-Type%22:%22application/x-www-form-urlencoded%22%7D,body:D(r,l).toString()%7D);if(!/ShowCustomer%5C.aspx/i.test(u.url))throw%20new%20Error(%22M%C3%A5ler%20%22+t+%22%20blev%20ikke%20fundet%20entydigt.%22);s=u.doc.body?u.doc.body.textContent:%22%22;var%20d=%7B%7D,f=%5B%5D;if(Array.prototype.forEach.call(u.doc.querySelectorAll('%5Bonclick*=%22ShowCase.aspx%22%5D'),function(n)%7Bvar%20r=((n.getAttribute(%22onclick%22)%7C%7C%22%22).match(/cc=(%5Cd+)/)%7C%7C%5B%5D)%5B1%5D;if(r&&!d%5Br%5D)%7Bd%5Br%5D=1;var%20a=i(%22.ucCHCol2%22);e.indexOf(a.toLowerCase())%3E=0%7C%7Cf.push(%7Bcc:r,date:i(%22.ucCHCol1%22),status:a,type:i(%22.ucCHCol3%22),own:n.textContent.indexOf(t)%3E=0%7D)%7Dfunction%20i(e)%7Bvar%20t=n.querySelector(e);return%20t?t.textContent.trim():%22%22%7D%7D),1===f.length)return%20f%5B0%5D.cc;if(!f.length)throw%20new%20Error(%22Ingen%20%C3%A5ben%20sag%20for%20m%C3%A5ler%20%22+t+%22.%22);return%20Q(%22LinkIQ:%20%22+f.length+%22%20%C3%A5bne%20sager%20for%20m%C3%A5ler%20%22+t+%22.%20V%C3%A6lg%20sag:%22,f.map(function(e)%7Breturn%7Blabel:e.date+%22%20%C2%B7%20%22+e.status+%22%20%C2%B7%20%22+e.type+(e.own?%22%20%C2%B7%20m%C3%A5ler%20n%C3%A6vnt%22:%22%22),value:e.cc%7D%7D).concat(%5B%7Blabel:%22Spring%20over%22,value:null%7D%5D))%7Dfunction%20F(e)%7Breturn%22%20%22+String(e%7C%7C%22%22).toLowerCase().replace(/%5B%5E0-9a-z%C3%A6%C3%B8%C3%A5%C3%A4%C3%B6%C3%BC%5D+/g,%22%20%22).replace(/%5Cs+/g,%22%20%22).trim()+%22%20%22%7Dfunction%20G(e,t)%7Bvar%20n=String(e%7C%7C%22%22).split(%22,%22)%5B0%5D,r=(n.match(/%5Cd+%5Cs*%5Ba-z%C3%A6%C3%B8%C3%A5%5D?%5Cb/i)%7C%7C%5B%22%22%5D)%5B0%5D.replace(/%5Cs+/g,%22%22).toLowerCase(),a=F(n.replace(/%5Cd.*$/,%22%22)).trim();return!a%7C%7C!r%7C%7CF(t).replace(/(%5Cd)%20(%5Ba-z%C3%A6%C3%B8%C3%A5%5D)%20/g,%22$1$2%20%22).indexOf(%22%20%22+a+%22%20%22+r+%22%20%22)%3E=0%7Dasync%20function%20z(e,t)%7Bif(!t.length)return%5B%5D;var%20n=%7B%7D;try%7Bvar%20r=await%20$(function()%7Breturn%20fetch(%22/Handlers/GetFiles.ashx?caseId=%22+e,%7Bcredentials:%22same-origin%22%7D)%7D);(await%20r.json()).files.forEach(function(e)%7Bn%5Be.name%5D=1%7D)%7Dcatch(e)%7B%7Dvar%20a=t.filter(function(e)%7Breturn!n%5Be.name%5D%7D);if(!a.length)return%5B%5D;var%20i=new%20FormData;a.forEach(function(e)%7Bi.append(%22files%22,e.blob,e.name)%7D),i.append(%22caseId%22,e);var%20o=await%20$(function()%7Breturn%20fetch(%22/Handlers/FileHandler.ashx%22,%7Bmethod:%22POST%22,body:i,credentials:%22same-origin%22,headers:%7B%22X-Requested-With%22:%22XMLHttpRequest%22%7D%7D)%7D),l=o.ok?await%20o.json().catch(function()%7Breturn%20null%7D):null;if(!l%7C%7C!l.files)throw%20new%20Error(%22Upload%20fejlede%20(HTTP%20%22+o.status+%22)%22);return%20l.files.map(function(e)%7Breturn%20e.name%7D)%7Dasync%20function%20B(e,n,r)%7Bn=String(n%7C%7C%22%22).replace(/%5B%5Cu2013%5Cu2014%5D/g,%22-%22);var%20a=%22/Cases/ShowCase.aspx?cc=%22+e,i=await%20V(a);if(function(e)%7Breturn!e.doc.querySelector(%22form%22)%7C%7C/login%7Clogon%7Csignin/i.test(e.url)%7D(i))throw%20new%20Error(%22LOGIN%22);var%20o=i.doc.querySelector(%22form%22),l=i.doc.querySelector('textarea%5Bname=%22'+t+'LogTextTextArea%22%5D'),c=i.doc.querySelector('input%5Bname=%22'+t+'SaveLogButton%22%5D');if(!o%7C%7C!l%7C%7C!c)throw%20new%20Error(%22Fandt%20ikke%20feltet%20Ny%20aktivitet%22);for(var%20u=function(e)%7Breturn%20String(e%7C%7C%22%22).toLowerCase().replace(/%5B%5E0-9a-z%C3%A6%C3%B8%C3%A5%C3%A4%C3%B6%C3%BC()%5D+/g,%22%22)%7D,s=u(i.doc.body.textContent),d=u(n),f=s.indexOf(d);f%3E=0;)%7Bif(%22(slettet)%22!==s.substr(f+d.length,9))return%22exists%22;f=s.indexOf(d,f+1)%7Dvar%20p=%7B%7D;if(p%5Bl.name%5D=n,p%5Bc.name%5D=c.getAttribute(%22value%22)%7C%7C%22Gem%22,r)%7Bvar%20m=function(e,t)%7Bvar%20n=String(t%7C%7C%22%22).trim().toLowerCase(),r=null;return%20Array.prototype.forEach.call(e.querySelectorAll(%22input%5Btype=radio%5D%22),function(t)%7Bvar%20a=t.id?e.querySelector('label%5Bfor=%22'+t.id+'%22%5D'):null,i=a?a.textContent:t.nextSibling?t.nextSibling.textContent:t.parentNode?t.parentNode.textContent:%22%22;r%7C%7CString(i%7C%7C%22%22).trim().toLowerCase()!==n%7C%7C(r=t)%7D),r%7D(i.doc,r);if(!m)throw%20new%20Error(%22Status%20%E2%80%9E%22+r+%22%E2%80%9C%20findes%20ikke%20i%20VVS-dialog%22);Array.prototype.forEach.call(i.doc.querySelectorAll('input%5Btype=radio%5D%5Bname=%22'+m.name+'%22%5D'),function(e)%7Be.removeAttribute(%22checked%22)%7D),p%5Bm.name%5D=m.getAttribute(%22value%22);var%20g=i.doc.querySelector('select%5Bname$=%22NewStatusDropDownList%22%5D');g&&g.querySelector('option%5Bvalue=%22'+m.getAttribute(%22value%22)+'%22%5D')&&(p%5Bg.name%5D=m.getAttribute(%22value%22))%7Dvar%20h=new%20URL(o.getAttribute(%22action%22)%7C%7Ca,location.origin+a),v=await%20V(h.href,%7Bmethod:%22POST%22,headers:%7B%22Content-Type%22:%22application/x-www-form-urlencoded%22%7D,body:D(o,p).toString()%7D),w=u(v.doc.body?v.doc.body.textContent:%22%22),y=u(n);if(y&&w.indexOf(y)%3C0)throw%20new%20Error(%22Aktiviteten%20blev%20ikke%20fundet%20efter%20Gem%20%E2%80%93%20se%20sagen%22)%7Dfunction%20_()%7Breturn%20new%20Promise(function(e,t)%7Bvar%20n=indexedDB.open(%22linkiq-li%22,1);n.onupgradeneeded=function()%7Bn.result.createObjectStore(%22kv%22)%7D,n.onsuccess=function()%7Be(n.result)%7D,n.onerror=function()%7Bt(n.error)%7D%7D)%7Dasync%20function%20J(e,t)%7Bvar%20n=%7B%7D;for%20await(var%20r%20of%20e.values())if(!(%22file%22!==r.kind%7C%7Cr.name.indexOf(t)%3C0))%7Bvar%20a=(r.name.match(/%5C.(pdf%7Cpng%7Cjpe?g)$/i)%7C%7C%5B%5D)%5B1%5D;if(a)%7Ba=%22pdf%22===a.toLowerCase()?%22pdf%22:%22img%22;var%20i=await%20r.getFile();(!n%5Ba%5D%7C%7Ci.lastModified%3En%5Ba%5D.lastModified)&&(n%5Ba%5D=i)%7D%7Dreturn%5B%22pdf%22,%22img%22%5D.filter(function(e)%7Breturn%20n%5Be%5D%7D).map(function(e)%7Breturn%7Bname:n%5Be%5D.name,blob:n%5Be%5D%7D%7D)%7Dasync%20function%20X(e)%7Bif(!window.showDirectoryPicker)return%20null;if(d)try%7Bvar%20t=await%20J(d,e);if(t.length)return%20t%7Dcatch(e)%7B%7Dvar%20n=null;try%7Bn=await%20async%20function(e)%7Bvar%20t=await%20_();return%20new%20Promise(function(n)%7Bvar%20r=t.transaction(%22kv%22).objectStore(%22kv%22).get(e);r.onsuccess=function()%7Bn(r.result)%7D,r.onerror=function()%7Bn(null)%7D%7D)%7D(%22dir%22)%7Dcatch(e)%7Bn=null%7Dreturn%20new%20Promise(function(t)%7Basync%20function%20r(n)%7Btry%7Bif(%22granted%22!==await%20n.queryPermission(%7Bmode:%22read%22%7D)&&%22granted%22!==await%20n.requestPermission(%7Bmode:%22read%22%7D))return%20void%20t(null);await%20async%20function(e,t)%7Btry%7Bvar%20n=await%20_()%7Dcatch(e)%7Breturn%7Dreturn%20new%20Promise(function(r)%7Btry%7Bvar%20a=n.transaction(%22kv%22,%22readwrite%22);a.objectStore(%22kv%22).put(t,e),a.oncomplete=r,a.onerror=r%7Dcatch(e)%7Br()%7D%7D)%7D(%22dir%22,n),d=n;var%20r=await%20J(n,e);if(!r.length)return%20j(%22LinkIQ:%20ingen%20rapport%20med%20%22+e+%22%20i%20mappen%20%E2%80%9E%22+n.name+%22%E2%80%9C.%22),await%20i(2e3),void%20t(null);t(r)%7Dcatch(e)%7Bt(null)%7D%7Dj(%22LinkIQ:%20m%C3%A5ler%20%22+e+%22%20%E2%80%93%20rapporten%20hentes%20fra%20mappen%22),n&&P(%22Brug%20mappen%20%E2%80%9E%22+n.name+%22%E2%80%9C%22,function()%7Br(n)%7D,!0),P(n?%22V%C3%A6lg%20en%20anden%20mappe%22:%22V%C3%A6lg%20rapportmappen%20(%C3%A9n%20gang)%22,async%20function()%7Btry%7Br(await%20window.showDirectoryPicker(%7Bid:%22linkiq-rapporter%22,mode:%22read%22%7D))%7Dcatch(e)%7Bt(null)%7D%7D,!n),P(%22V%C3%A6lg%20filerne%20selv%22,function()%7Bt(null)%7D)%7D)%7Dfunction%20W(e,t)%7Bt=t%7C%7C%5BString(e)%5D;var%20n=function(e)%7Breturn%20t.some(function(t)%7Breturn%20e.indexOf(t)%3E=0%7D)%7D;return%20new%20Promise(function(t)%7Bj(%22LinkIQ:%20m%C3%A5ler%20%22+e+%22%20%E2%80%93%20v%C3%A6lg%20rapporten%20(PDF/PNG)%20fra%20mappen%22);var%20a=document.createElement(%22input%22);a.type=%22file%22,a.multiple=!0,a.accept=%22.pdf,.png,.jpg,application/pdf,image/*%22,a.style.cssText=%22display:block;margin:0%200%2010px;color:%23fff%22,r.appendChild(a);var%20i=T(%22%22),o=P(%22Send%20til%20sagen%22,function()%7Bvar%20e=Array.prototype.slice.call(a.files%7C%7C%5B%5D).filter(function(e,t)%7Breturn%20r.querySelector('%5Bdata-i=%22'+t+'%22%5D').checked%7D);t(e.map(function(e)%7Breturn%7Bname:e.name,blob:e%7D%7D))%7D,!0);o.disabled=!0,P(%22Send%20uden%20filer%22,function()%7Bt(%5B%5D)%7D),a.onchange=function()%7Bi.textContent=%22%22,Array.prototype.forEach.call(a.files,function(e,t)%7Bvar%20r=document.createElement(%22label%22),a=document.createElement(%22input%22);a.type=%22checkbox%22,a.dataset.i=t,a.checked=n(e.name),r.style.display=%22block%22,r.appendChild(a),r.appendChild(document.createTextNode(%22%20%22+e.name+(n(e.name)?%22%22:%22%20%20(ikke%20denne%20m%C3%A5ler!)%22))),i.appendChild(r)%7D),o.disabled=!1%7D%7D)%7D%7D();";
+window.LINKIQ_VVS_CODE = "!async function(){var e=[\"afsluttet\",\"lukket\"],t=\"ctl00$DefaultContent$CaseNewLogUC$\";if(\"vvsdialog.kmd.dk\"===location.hostname){var n=document.getElementById(\"linkiq-box\");n&&n.remove();var r=document.createElement(\"div\");r.id=\"linkiq-box\",r.style.cssText=\"position:fixed;left:0;right:0;top:0;z-index:99999;background:#1f5e4f;color:#fff;font:17px/1.4 Arial,sans-serif;padding:14px;max-height:100%;overflow:auto;box-shadow:0 2px 10px rgba(0,0,0,.5)\",document.body.appendChild(r);var a=new DOMParser,i=function(e){return new Promise(function(t){setTimeout(t,e)})},o=/^https:\\/\\/(valentinstm\\.github\\.io|[a-z0-9-]+\\.kredslob\\.dk)$|^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$/,l=null,c=null,u=[],s=\"\",d=null;try{j(\"LinkIQ: henter opgaver \u2026\");var f=await async function(){return window.opener?new Promise(function(e){var t=!1;window.addEventListener(\"message\",function n(r){r.source===window.opener&&o.test(r.origin)&&r.data&&\"items\"===r.data.liq&&(l=r.origin,t=!0,window.removeEventListener(\"message\",n),e(r.data.items||[]))});try{window.opener.postMessage({liq:\"hello\",v:2},\"*\")}catch(t){return void e(null)}setTimeout(function(){t||e(null)},2500)}):null}(),p=!!f;f&&f.length||(f=H(),p=!1);var m=\"\";if(!f){try{navigator.clipboard&&navigator.clipboard.readText&&(m=await Promise.race([navigator.clipboard.readText(),i(4e3).then(function(){return\"\"})]))}catch(e){m=\"\"}f=H(m=String(m||\"\").trim())}if(!f){var g=(prompt(\"LinkIQ: M\u00e5lernummer?\",/^\\d{6,12}$/.test(m)?m:\"\")||\"\").replace(/\\D/g,\"\");if(!g)return void r.remove();f=[{meter:g,files:[]}]}var h=f.filter(function(e){return!(p||void 0===e.text||e.files&&e.files.length)});if(h.length>1&&!window.showDirectoryPicker){var v=await W(h.map(function(e){return e.meter}).join(\", \"),h.map(function(e){return String(e.meter)}));h.forEach(function(e){var t={};v.filter(function(t){return t.name.indexOf(String(e.meter))>=0}).forEach(function(e){var n=/\\.pdf$/i.test(e.name)?\"pdf\":\"img\";(!t[n]||(e.blob.lastModified||0)>(t[n].blob.lastModified||0))&&(t[n]=e)}),e.files=[\"pdf\",\"img\"].filter(function(e){return t[e]}).map(function(e){return t[e]}),e.picked=!0})}for(var w=[],y=null,b=0;b<f.length;b++){var k=f[b],x=f.length>1?\"(\"+(b+1)+\"/\"+f.length+\") \":\"\";try{j(\"LinkIQ: \"+x+\"s\u00f8ger m\u00e5ler \"+k.meter+\" \u2026\");var S=await M(String(k.meter));if(!S){w.push(k.meter+\": sprunget over\");continue}if(k.addr&&!G(k.addr,s))if(!await Q(\"LinkIQ: m\u00e5ler \"+k.meter+\" er m\u00e5lt p\u00e5 \"+k.addr+\", men den adresse st\u00e5r ikke p\u00e5 sagen i VVS-dialog. Sidder m\u00e5leren p\u00e5 den rigtige adresse?\",[{label:\"Ja, send alligevel\",value:!0},{label:\"Nej \u2013 spring over, og tjek sagen\",value:!1,main:!0}])){w.push(\"\u2717 \"+k.meter+\": adressen passer ikke med sagen\"),R({liq:\"result\",id:k.id,ok:!1,msg:\"Adressen (\"+k.addr+\") passer ikke med sagen \"+S+\". Tjek, at m\u00e5leren sidder p\u00e5 den rigtige adresse.\"});continue}var C=k.files||[];p||C.length||void 0===k.text||k.picked||(C=await X(String(k.meter))||await W(k.meter)),j(\"LinkIQ: \"+x+\"sag \"+S+\" \u2013 uploader \u2026\");var L=await z(S,C),A=null;k.text&&(j(\"LinkIQ: \"+x+\"sag \"+S+\" \u2013 skriver Ny aktivitet og status \u2026\"),A=await B(S,k.text,k.status)),y=S;var q=(L.length?L.length+\" fil(er)\":\"ingen nye filer\")+(k.text?\"exists\"===A?\", aktiviteten fandtes allerede\":\", aktivitet\"+(k.status?\" + \"+k.status:\"\"):\"\");if(w.push(\"\u2713 \"+k.meter+\" \u2192 sag \"+S+\": \"+q),R({liq:\"result\",id:k.id,ok:!0,cc:S,msg:q}),!k.text&&!C.length&&1===f.length)return void(location.href=\"/Cases/ShowCase.aspx?cc=\"+S)}catch(e){var E=e&&\"LOGIN\"===e.message?\"Log ind i VVS-dialog (Chrome udfylder selv), og tryk p\u00e5 li igen.\":e&&e.message?e.message:String(e);if(w.push(\"\u2717 \"+k.meter+\": \"+E),R({liq:\"result\",id:k.id,ok:!1,msg:E}),e&&\"LOGIN\"===e.message)break}}/^linkiq_j/.test(String(window.name||\"\"))&&(window.name=\"\"),j(\"LinkIQ: f\u00e6rdig\"),w.forEach(function(e){T(e)});var I=c&&u.length&&!window.opener;if(I){var O=btoa(unescape(encodeURIComponent(JSON.stringify(u)))).replace(/\\+/g,\"-\").replace(/\\//g,\"_\").replace(/=+$/,\"\");P(\"Tilbage til LinkIQ\",function(){location.href=c+\"#liqdone=\"+O},!0)}else 1===f.length&&y&&\"\u2713\"===w[0].charAt(0)&&setTimeout(function(){location.href=\"/Cases/ShowCase.aspx?cc=\"+y},2500);y&&P(\"Vis sagen\",function(){location.href=\"/Cases/ShowCase.aspx?cc=\"+y},!I),N()}catch(e){j(\"LinkIQ: Fejl \u2013 \"+(e&&e.message?e.message:e)),N()}}else alert(\"LinkIQ: \u00c5bn VVS-dialog og log ind f\u00f8rst.\");function T(e,t){var n=document.createElement(\"div\");return n.textContent=e,n.style.margin=\"0 0 8px\",n.style.whiteSpace=\"pre-wrap\",t&&(n.style.fontWeight=\"bold\"),r.appendChild(n),n}function P(e,t,n){var a=document.createElement(\"button\");return a.type=\"button\",a.textContent=e,a.style.cssText=\"display:block;width:100%;margin:0 0 8px;padding:12px;font:16px Arial,sans-serif;text-align:left;border:0;border-radius:6px;\"+(n?\"background:#ffd23f;color:#111;font-weight:bold\":\"background:#fff;color:#111\"),a.onclick=t,r.appendChild(a),a}function j(e){r.textContent=\"\",T(e,!0)}function N(){P(\"Luk\",function(){r.remove()})}function Q(e,t){return new Promise(function(n){j(e),t.forEach(function(e){P(e.label,function(){n(e.value)},e.main)})})}async function $(e){for(var t,n=0;n<3;n++)try{return await e()}catch(e){t=e,await i(1500*(n+1))}throw t}async function V(e,t){var n=await $(function(){return fetch(e,Object.assign({credentials:\"same-origin\"},t||{}))}),r=await n.text();return{res:n,url:n.url,html:r,doc:a.parseFromString(r,\"text/html\")}}function D(e,t){var n=new URLSearchParams;return Array.prototype.forEach.call(e.querySelectorAll(\"input,select,textarea\"),function(e){if(e.name&&!e.disabled){var r=(e.type||\"\").toLowerCase();if(\"submit\"!==r&&\"button\"!==r&&\"image\"!==r&&\"file\"!==r&&\"reset\"!==r&&(!t||!Object.prototype.hasOwnProperty.call(t,e.name))&&(\"checkbox\"!==r&&\"radio\"!==r||e.hasAttribute(\"checked\")))if(\"SELECT\"!==e.tagName)n.append(e.name,\"TEXTAREA\"===e.tagName?e.textContent:e.getAttribute(\"value\")||\"\");else{var a=e.querySelector(\"option[selected]\")||e.querySelector(\"option\");a&&n.append(e.name,null!==a.getAttribute(\"value\")?a.getAttribute(\"value\"):a.textContent)}}}),Object.keys(t||{}).forEach(function(e){null!==t[e]&&n.append(e,t[e])}),n}function R(e){e.id&&u.push({id:e.id,ok:e.ok,cc:e.cc,msg:e.msg});try{window.opener&&l&&window.opener.postMessage(e,l)}catch(e){}}function U(e){return atob(e.replace(/-/g,\"+\").replace(/_/g,\"/\"))}function H(e){var t=String(window.name||\"\").split(\"|LIQCODE:\")[0],n=t.split(\"|LIQBACK:\");if(n[1]){var r=null;try{r=new URL(decodeURIComponent(n[1]))}catch(e){r=null}r&&o.test(r.origin)&&(c=r.origin+r.pathname+r.search),t=n[0]}var a=t.split(\"|LIQFILES:\"),i={};if(a[1])try{i=JSON.parse(decodeURIComponent(escape(U(a[1]))))}catch(e){i={}}var l=a[0].match(/^linkiq_j([\\w-]+)$/)||location.search.match(/[?&]liq=([\\w-]+)/)||null||String(e||\"\").trim().match(/^LIQ1:([\\w-]+)$/)||null;if(l)try{var u=JSON.parse(decodeURIComponent(escape(U(l[1]))));return(Array.isArray(u)?u:[u]).map(function(e){var t=(i[e.id]||[]).map(function(e){for(var t=atob(e.d),n=new Uint8Array(t.length),r=0;r<t.length;r++)n[r]=t.charCodeAt(r);return{name:e.n,blob:new Blob([n],{type:e.t||\"application/octet-stream\"})}});return{id:e.id,meter:e.m,status:e.s,text:e.t,files:t,addr:e.a||\"\"}})}catch(e){}var s=(location.hash.match(/linkiq=(\\d+)/)||[])[1]||(a[0].match(/^linkiq_(\\d+)$/)||[])[1];return s?[{meter:s,files:[]}]:null}async function M(t){var n=location.pathname.match(/ShowCase\\.aspx/i)&&new URLSearchParams(location.search).get(\"cc\");if(n&&document.body.innerText.indexOf(t)>=0)return s=document.body.innerText,n;var r=(await V(\"/Home.aspx\")).doc.querySelector(\"form\"),a=r?Array.prototype.slice.call(r.querySelectorAll(\"input\")):[],i=a.find(function(e){return/meternumber/i.test(e.name||\"\")}),o=a.find(function(e){return\"submit\"===(e.type||\"\").toLowerCase()&&\"S\u00f8g\"===(e.value||\"\").trim()});if(!i||!o)throw new Error(\"LOGIN\");var l={};l[i.name]=t,l[o.name]=o.value;var c=new URL(r.getAttribute(\"action\")||\"Home.aspx\",location.origin+\"/Home.aspx\"),u=await V(c.href,{method:\"POST\",headers:{\"Content-Type\":\"application/x-www-form-urlencoded\"},body:D(r,l).toString()});if(!/ShowCustomer\\.aspx/i.test(u.url))throw new Error(\"M\u00e5ler \"+t+\" blev ikke fundet entydigt.\");s=u.doc.body?u.doc.body.textContent:\"\";var d={},f=[];if(Array.prototype.forEach.call(u.doc.querySelectorAll('[onclick*=\"ShowCase.aspx\"]'),function(n){var r=((n.getAttribute(\"onclick\")||\"\").match(/cc=(\\d+)/)||[])[1];if(r&&!d[r]){d[r]=1;var a=i(\".ucCHCol2\");e.indexOf(a.toLowerCase())>=0||f.push({cc:r,date:i(\".ucCHCol1\"),status:a,type:i(\".ucCHCol3\"),own:n.textContent.indexOf(t)>=0})}function i(e){var t=n.querySelector(e);return t?t.textContent.trim():\"\"}}),1===f.length)return f[0].cc;if(!f.length)throw new Error(\"Ingen \u00e5ben sag for m\u00e5ler \"+t+\".\");return Q(\"LinkIQ: \"+f.length+\" \u00e5bne sager for m\u00e5ler \"+t+\". V\u00e6lg sag:\",f.map(function(e){return{label:e.date+\" \u00b7 \"+e.status+\" \u00b7 \"+e.type+(e.own?\" \u00b7 m\u00e5ler n\u00e6vnt\":\"\"),value:e.cc}}).concat([{label:\"Spring over\",value:null}]))}function F(e){return\" \"+String(e||\"\").toLowerCase().replace(/[^0-9a-z\u00e6\u00f8\u00e5\u00e4\u00f6\u00fc]+/g,\" \").replace(/\\s+/g,\" \").trim()+\" \"}function G(e,t){var n=String(e||\"\").split(\",\")[0],r=(n.match(/\\d+\\s*[a-z\u00e6\u00f8\u00e5]?\\b/i)||[\"\"])[0].replace(/\\s+/g,\"\").toLowerCase(),a=F(n.replace(/\\d.*$/,\"\")).trim();return!a||!r||F(t).replace(/(\\d) ([a-z\u00e6\u00f8\u00e5]) /g,\"$1$2 \").indexOf(\" \"+a+\" \"+r+\" \")>=0}async function z(e,t){if(!t.length)return[];var n={};try{var r=await $(function(){return fetch(\"/Handlers/GetFiles.ashx?caseId=\"+e,{credentials:\"same-origin\"})});(await r.json()).files.forEach(function(e){n[e.name]=1})}catch(e){}var a=t.filter(function(e){return!n[e.name]});if(!a.length)return[];var i=new FormData;a.forEach(function(e){i.append(\"files\",e.blob,e.name)}),i.append(\"caseId\",e);var o=await $(function(){return fetch(\"/Handlers/FileHandler.ashx\",{method:\"POST\",body:i,credentials:\"same-origin\",headers:{\"X-Requested-With\":\"XMLHttpRequest\"}})}),l=o.ok?await o.json().catch(function(){return null}):null;if(!l||!l.files)throw new Error(\"Upload fejlede (HTTP \"+o.status+\")\");return l.files.map(function(e){return e.name})}async function B(e,n,r){n=String(n||\"\").replace(/[\\u2013\\u2014]/g,\"-\");var a=\"/Cases/ShowCase.aspx?cc=\"+e,i=await V(a);if(function(e){return!e.doc.querySelector(\"form\")||/login|logon|signin/i.test(e.url)}(i))throw new Error(\"LOGIN\");var o=i.doc.querySelector(\"form\"),l=i.doc.querySelector('textarea[name=\"'+t+'LogTextTextArea\"]'),c=i.doc.querySelector('input[name=\"'+t+'SaveLogButton\"]');if(!o||!l||!c)throw new Error(\"Fandt ikke feltet Ny aktivitet\");for(var u=function(e){return String(e||\"\").toLowerCase().replace(/[^0-9a-z\u00e6\u00f8\u00e5\u00e4\u00f6\u00fc()]+/g,\"\")},s=u(i.doc.body.textContent),d=u(n),f=s.indexOf(d);f>=0;){if(\"(slettet)\"!==s.substr(f+d.length,9))return\"exists\";f=s.indexOf(d,f+1)}var p={};if(p[l.name]=n,p[c.name]=c.getAttribute(\"value\")||\"Gem\",r){var m=function(e,t){var n=String(t||\"\").trim().toLowerCase(),r=null;return Array.prototype.forEach.call(e.querySelectorAll(\"input[type=radio]\"),function(t){var a=t.id?e.querySelector('label[for=\"'+t.id+'\"]'):null,i=a?a.textContent:t.nextSibling?t.nextSibling.textContent:t.parentNode?t.parentNode.textContent:\"\";r||String(i||\"\").trim().toLowerCase()!==n||(r=t)}),r}(i.doc,r);if(!m)throw new Error(\"Status \u201e\"+r+\"\u201c findes ikke i VVS-dialog\");Array.prototype.forEach.call(i.doc.querySelectorAll('input[type=radio][name=\"'+m.name+'\"]'),function(e){e.removeAttribute(\"checked\")}),p[m.name]=m.getAttribute(\"value\");var g=i.doc.querySelector('select[name$=\"NewStatusDropDownList\"]');g&&g.querySelector('option[value=\"'+m.getAttribute(\"value\")+'\"]')&&(p[g.name]=m.getAttribute(\"value\"))}var h=new URL(o.getAttribute(\"action\")||a,location.origin+a),v=await V(h.href,{method:\"POST\",headers:{\"Content-Type\":\"application/x-www-form-urlencoded\"},body:D(o,p).toString()}),w=u(v.doc.body?v.doc.body.textContent:\"\"),y=u(n);if(y&&w.indexOf(y)<0)throw new Error(\"Aktiviteten blev ikke fundet efter Gem \u2013 se sagen\")}function _(){return new Promise(function(e,t){var n=indexedDB.open(\"linkiq-li\",1);n.onupgradeneeded=function(){n.result.createObjectStore(\"kv\")},n.onsuccess=function(){e(n.result)},n.onerror=function(){t(n.error)}})}async function J(e,t){var n={};for await(var r of e.values())if(!(\"file\"!==r.kind||r.name.indexOf(t)<0)){var a=(r.name.match(/\\.(pdf|png|jpe?g)$/i)||[])[1];if(a){a=\"pdf\"===a.toLowerCase()?\"pdf\":\"img\";var i=await r.getFile();(!n[a]||i.lastModified>n[a].lastModified)&&(n[a]=i)}}return[\"pdf\",\"img\"].filter(function(e){return n[e]}).map(function(e){return{name:n[e].name,blob:n[e]}})}async function X(e){if(!window.showDirectoryPicker)return null;if(d)try{var t=await J(d,e);if(t.length)return t}catch(e){}var n=null;try{n=await async function(e){var t=await _();return new Promise(function(n){var r=t.transaction(\"kv\").objectStore(\"kv\").get(e);r.onsuccess=function(){n(r.result)},r.onerror=function(){n(null)}})}(\"dir\")}catch(e){n=null}return new Promise(function(t){async function r(n){try{if(\"granted\"!==await n.queryPermission({mode:\"read\"})&&\"granted\"!==await n.requestPermission({mode:\"read\"}))return void t(null);await async function(e,t){try{var n=await _()}catch(e){return}return new Promise(function(r){try{var a=n.transaction(\"kv\",\"readwrite\");a.objectStore(\"kv\").put(t,e),a.oncomplete=r,a.onerror=r}catch(e){r()}})}(\"dir\",n),d=n;var r=await J(n,e);if(!r.length)return j(\"LinkIQ: ingen rapport med \"+e+\" i mappen \u201e\"+n.name+\"\u201c.\"),await i(2e3),void t(null);t(r)}catch(e){t(null)}}j(\"LinkIQ: m\u00e5ler \"+e+\" \u2013 rapporten hentes fra mappen\"),n&&P(\"Brug mappen \u201e\"+n.name+\"\u201c\",function(){r(n)},!0),P(n?\"V\u00e6lg en anden mappe\":\"V\u00e6lg rapportmappen (\u00e9n gang)\",async function(){try{r(await window.showDirectoryPicker({id:\"linkiq-rapporter\",mode:\"read\"}))}catch(e){t(null)}},!n),P(\"V\u00e6lg filerne selv\",function(){t(null)})})}function W(e,t){t=t||[String(e)];var n=function(e){return t.some(function(t){return e.indexOf(t)>=0})};return new Promise(function(t){j(\"LinkIQ: m\u00e5ler \"+e+\" \u2013 v\u00e6lg rapporten (PDF/PNG) fra mappen\");var a=document.createElement(\"input\");a.type=\"file\",a.multiple=!0,a.accept=\".pdf,.png,.jpg,application/pdf,image/*\",a.style.cssText=\"display:block;margin:0 0 10px;color:#fff\",r.appendChild(a);var i=T(\"\"),o=P(\"Send til sagen\",function(){var e=Array.prototype.slice.call(a.files||[]).filter(function(e,t){return r.querySelector('[data-i=\"'+t+'\"]').checked});t(e.map(function(e){return{name:e.name,blob:e}}))},!0);o.disabled=!0,P(\"Send uden filer\",function(){t([])}),a.onchange=function(){i.textContent=\"\",Array.prototype.forEach.call(a.files,function(e,t){var r=document.createElement(\"label\"),a=document.createElement(\"input\");a.type=\"checkbox\",a.dataset.i=t,a.checked=n(e.name),r.style.display=\"block\",r.appendChild(a),r.appendChild(document.createTextNode(\" \"+e.name+(n(e.name)?\"\":\"  (ikke denne m\u00e5ler!)\"))),i.appendChild(r)}),o.disabled=!1}})}}();";
 window.LINKIQ_VVS_LOADER = "javascript:!function()%7Bvar%20e=%22linkiq-li-code%22,t=window.opener,i=0,a=%22LinkIQ:%20%C3%85bn%20VVS-dialog%20med%20%E2%80%9ESend%20til%20VVS-dialog%E2%80%9C%20i%20LinkIQ,%20og%20tryk%20p%C3%A5%20li%20der.%20(Eller:%20LinkIQ%20%E2%80%BA%20Opret%20bogm%C3%A6rket%20li%20%E2%80%BA%20%E2%80%9EKopi%C3%A9r%20hele%20koden%20til%20VVS-dialog%E2%80%9C,%20og%20tryk%20s%C3%A5%20p%C3%A5%20li%20igen.)%22;function%20n(t)%7Bi=1;try%7BlocalStorage.setItem(e,t)%7Dcatch(e)%7B%7Dtry%7B(0,eval)(t)%7Dcatch(e)%7Balert(%22LinkIQ:%20%22+e.message)%7D%7Dfunction%20o()%7Bif(!i)%7Bvar%20t=null;try%7Bt=localStorage.getItem(e)%7Dcatch(e)%7B%7Dt?n(t):navigator.clipboard&&navigator.clipboard.readText&&navigator.clipboard.readText().then(function(e)%7B0===(e=String(e%7C%7C%22%22)).indexOf(%22LIQCODE:%22)?n(e.slice(8)):alert(a)%7D,function()%7Balert(a)%7D)%7D%7Dvar%20r=String(window.name%7C%7C%22%22),l=r.indexOf(%22%7CLIQCODE:%22);if(l%3E0)%7Bvar%20d=decodeURIComponent(r.slice(l+9));return%20window.name=r.slice(0,l),void%20n(d)%7Dif(t)%7BaddEventListener(%22message%22,function%20e(a)%7Ba.source===t&&a.data&&%22code%22===a.data.liq&&a.data.code&&(removeEventListener(%22message%22,e),i%7C%7Cn(a.data.code))%7D);try%7Bt.postMessage(%7Bliq:%22code%22%7D,%22*%22)%7Dcatch(e)%7B%7DsetTimeout(o,1500)%7Delse%20o()%7D();";
 
 </script>
@@ -15014,6 +15070,7 @@ var qrcode = function() {
     if (needsN && !(n >= 1 && n <= 60)) return null;
     return { kind: l.kind, n };
   }
+  const cleanAddress = (a) => String(a || '').replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
   function cleanInstall(i) {
     if (!i || typeof i !== 'object') return null;
     const out = { meterLevel: cleanLevel(i.meterLevel, LEVEL_KINDS),
@@ -15364,7 +15421,7 @@ var qrcode = function() {
       return s;
     }
 
-    createSession(meterSerial, technician, gps = null) {
+    createSession(meterSerial, technician, gps = null, address = '') {
       meterSerial = String(meterSerial || '').trim();
       technician = String(technician || '').trim() || 'necunoscut';
       if (!METER_RE.test(meterSerial)) throw new EngineError(422, 'BAD_METER_SERIAL', 'Seria contorului trebuie să aibă 4–20 litere sau cifre');
@@ -15377,8 +15434,10 @@ var qrcode = function() {
           gps: this._position(meterSerial, gps),
           startedMs: now, finishedMs: null, status: 'ACTIVE', state: 'READY', initialCallMs: null, finalCallMs: null,
           outcome: null, note: null, decision: null, samples: [], obs: [], nextSampleId: 1 };
-        this.save();
       }
+      const addr = cleanAddress(address);
+      if (addr) s.address = addr;                // the address the installer is at (forbrugssted)
+      this.save();
       return this.summary(s.id);
     }
 
@@ -15553,7 +15612,7 @@ var qrcode = function() {
      * Kamstrup snapshot, showing which of our receivers hear it and when.
      * Nothing is stored on the device.
      */
-    async check(meterSerial, gps = null, technician = '') {
+    async check(meterSerial, gps = null, technician = '', address = '') {
       meterSerial = String(meterSerial || '').trim();
       if (!METER_RE.test(meterSerial)) throw new EngineError(422, 'BAD_METER_SERIAL', 'Seria contorului trebuie să aibă 4–20 litere sau cifre');
       this._needRegistry(this.db.demo);
@@ -15608,7 +15667,12 @@ var qrcode = function() {
       const current = others.filter((r) => r.age === 'CURRENT');
       const pick = current.find((r) => r.relation === 'DISTINCT_SITE') || current[0]
         || others.find((r) => r.relation === 'DISTINCT_SITE') || others[0] || null;
+      const usable = (r) => r.age === 'CURRENT' && r.bestRssi >= this.cfg.rssiMarginalDbm;
       const contact = { current: rows.filter((r) => r.age === 'CURRENT').length,
+        usable: rows.filter(usable).length, weak: rows.filter((r) => r.age === 'CURRENT' && !usable(r)).length,
+        usableSites: new Set(rows.filter(usable).map((r) => r.siteCode || r.serial)).size,
+        goodPrimary: !!(rows[0] && usable(rows[0]) && rows[0].bestRssi >= this.cfg.rssiGoodDbm),
+        marginalDbm: this.cfg.rssiMarginalDbm, goodDbm: this.cfg.rssiGoodDbm,
         occasional: rows.filter((r) => r.age === 'OCCASIONAL').length, old: rows.filter((r) => r.age === 'OLD').length,
         currentMaxMin: this.cfg.contactCurrentMaxMin, historyMaxH: this.cfg.contactHistoryMaxH };
       const lastSeenMs = parseTs(payload.LastSeenTimestampUtc);
@@ -15617,7 +15681,7 @@ var qrcode = function() {
       if (g.lat === null) warnings.push('NO_GPS');
       if (rows.length && !p1) warnings.push('NO_RECENT_CONTACT');
       return {
-        session: { id: null, meterSerial, technician: String(technician || '').trim(), gps: g, status: 'CHECK', state: 'CHECK',
+        session: { id: null, meterSerial, technician: String(technician || '').trim(), gps: g, address: cleanAddress(address) || null, status: 'CHECK', state: 'CHECK',
           startedUtc: iso(now), finishedUtc: iso(now), initialCallUtc: null, finalCallUtc: null, outcome: null, note: null, demo: this.db.demo },
         current: null, coarse: [], fine: [], final: null, coarseWinner: null, fineWinner: null,
         best: p1 ? { phase: 'check', step: null, rssi: p1.bestRssi, serial: p1.serial } : null,
@@ -15791,7 +15855,7 @@ var qrcode = function() {
       return {
         session: { id: s.id, meterSerial: s.meterSerial, technician: s.technician, gps: { ...s.gps }, status: s.status,
           state: s.state, startedUtc: iso(s.startedMs), finishedUtc: iso(s.finishedMs), initialCallUtc: iso(s.initialCallMs),
-          finalCallUtc: iso(s.finalCallMs), outcome: s.outcome, note: s.note, demo: s.demo, install: s.install || null },
+          finalCallUtc: iso(s.finalCallMs), outcome: s.outcome, note: s.note, demo: s.demo, install: s.install || null, address: s.address || null },
         current, coarse, fine, final, coarseWinner, fineWinner, best,
         primary: best ? { serial: primarySerial, siteCode: primarySite, siteName: pReg ? pReg.name : null,
           address: pReg ? pReg.address : null, rssi: best.rssi } : null,
@@ -15814,8 +15878,8 @@ var qrcode = function() {
       }
       if (route === '/api/me') return { technician: null };
       if (route === '/api/sites') return this.sites(q.lat !== undefined ? Number(q.lat) : null, q.lon !== undefined ? Number(q.lon) : null);
-      if (route === '/api/check' && method === 'POST') return this.check(body.meterSerial, body.gps || null, body.technician || '');
-      if (route === '/api/sessions' && method === 'POST') return this.createSession(body.meterSerial, body.technician, body.gps || null);
+      if (route === '/api/check' && method === 'POST') return this.check(body.meterSerial, body.gps || null, body.technician || '', body.address || '');
+      if (route === '/api/sessions' && method === 'POST') return this.createSession(body.meterSerial, body.technician, body.gps || null, body.address || '');
       if (m && !m[2]) return this.summary(m[1]);
       if (m && m[2] === 'call-confirmed') return this.callConfirmed(m[1], body.phase || 'initial', body.step === undefined ? 1 : body.step);
       if (m && m[2] === 'accept') return this.accept(m[1]);
@@ -15882,8 +15946,13 @@ var qrcode = function() {
   function contactText(s) {
     const c = s.check && s.check.contact;
     if (!c) return '';
+    // what counts is a usable link: heard in the last hour AND a signal of at least the marginal
+    // limit. Many weak or old links are no reserve, however many there are.
     const parts = [];
-    if (c.current) parts.push(T('{0} cu contact în ultima oră', c.current));
+    if (c.usable !== undefined) {
+      parts.push(T('{0} utilizabile (≥ {1} dBm, ultima oră)', c.usable, c.marginalDbm));
+      if (c.weak) parts.push(T('{0} slabe (< {1} dBm): nu contează', c.weak, c.marginalDbm));
+    } else if (c.current) parts.push(T('{0} cu contact în ultima oră', c.current));
     if (c.occasional) parts.push(T('{0} doar ocazional (1–{1} ore)', c.occasional, c.historyMaxH));
     if (c.old) parts.push(T('{0} fără contact de peste {1} ore (nu contează)', c.old, c.historyMaxH));
     return parts.join(' · ');
@@ -15893,6 +15962,13 @@ var qrcode = function() {
     const c = s.check && s.check.contact;
     if (!c || !s.receivers.length) return ['red', T('Niciun concentrator de-al nostru nu a auzit contorul.')];
     if (!s.primary) return ['red', T('Fără contact în ultimele {0} ore: datele din această perioadă se pierd.', c.historyMaxH)];
+    if (c.usable !== undefined) {
+      if (!c.usable) return c.current ? ['red', T('Contact doar cu semnal slab (sub {0} dBm): datele orare se pot pierde.', c.marginalDbm)]
+        : ['yellow', T('Niciun contact în ultima oră: datele ajung cu întârziere.')];
+      if (c.usable >= 2 && c.goodPrimary) return ['green', c.usableSites >= 2 ? T('Date orare, semnal bun și rezervă pe alt site.') : T('Date orare, semnal bun și rezervă pe același site.')];
+      if (c.usable >= 2) return ['yellow', T('Date orare cu rezervă, dar semnalul principal e doar la limită.')];
+      return ['yellow', T('O singură legătură utilizabilă: fără rezervă sigură.')];
+    }
     if (c.current >= 2) return ['green', T('Date orare, cu redundanță.')];
     if (c.current === 1) return ['yellow', T('Un singur concentrator cu contact în ultima oră: fără redundanță.')];
     return ['yellow', T('Niciun contact în ultima oră: datele ajung cu întârziere.')];
@@ -16759,6 +16835,7 @@ var qrcode = function() {
     render();
     renderReadings();
     renderVvs();
+    renderElsyn();
     if (navigator.wakeLock) navigator.wakeLock.request('screen').then((w) => { wakeLock = w; }).catch(() => {});
   }
 
@@ -16767,7 +16844,7 @@ var qrcode = function() {
     store.del('session'); store.del('ui');
     if (pollTimer) { clearInterval(pollTimer); clearInterval(tickTimer); pollTimer = tickTimer = null; }
     if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
-    $('meter').value = '';
+    $('meter').value = ''; $('addr').value = '';
     $('scan-info').hidden = true; $('scan-chips').hidden = true;
     $('report-msg').hidden = true; $('report-preview').hidden = true; lastPhoto = null; instPhotos.forget();
     $('vvs-msg').textContent = T('Copiază seria contorului și deschide VVS-dialog. Acolo scrie li în bara de adrese și alege bookmark-ul cu steluță.');
@@ -16873,7 +16950,7 @@ var qrcode = function() {
     if (pickMarker) { pickMarker.remove(); pickMarker = null; }
     showView(S ? 'align' : 'start');
   }
-  $('pick-btn').onclick = () => { picking = true; picked = null; $('pick-ok').disabled = true; $('pick-info').textContent = T('Nicio poziție aleasă.'); showView('map'); };
+  $('pick-btn').onclick = () => { picking = true; picked = null; pickedAddr = null; $('pick-ok').disabled = true; $('pick-info').textContent = T('Nicio poziție aleasă.'); showView('map'); };
   $('pick-cancel').onclick = endPick;
   $('map-pos').onclick = () => $('pos-btn').click();
   $('pos-btn').onclick = () => { picking = true; picked = null; $('pick-ok').disabled = true; $('pick-info').textContent = T('Nicio poziție aleasă.'); showView('map'); };
@@ -16883,7 +16960,7 @@ var qrcode = function() {
       const pos = { lat: picked.lat, lon: picked.lon, accuracyM: null };
       try {
         apply(S.session.status === 'CHECK'
-          ? await api('/api/check', 'POST', { meterSerial: S.session.meterSerial, technician: S.session.technician, gps: pos })
+          ? await api('/api/check', 'POST', { meterSerial: S.session.meterSerial, technician: S.session.technician, gps: pos, address: S.session.address || '' })
           : await api(`/api/sessions/${S.session.id}/position`, 'POST', { gps: pos }));
       } catch (e) { showError('align-error', e.status === 404 ? 'Poziția se poate schimba doar în varianta fără server.' : e.message); }
       lastFit = '';
@@ -16892,6 +16969,7 @@ var qrcode = function() {
       return;
     }
     gps = { lat: picked.lat, lon: picked.lon, accuracyM: null };
+    if (pickedAddr) $('addr').value = pickedAddr;
     $('gps-info').textContent = T('Poziție aleasă pe hartă: {0}, {1}.', picked.lat.toFixed(5), picked.lon.toFixed(5));
     endPick();
     showCandidates();
@@ -16906,12 +16984,12 @@ var qrcode = function() {
     }
     return m && Math.abs(+m[1]) <= 90 && Math.abs(+m[2]) <= 180 ? [+m[1], +m[2]] : null;
   }
-  let lastSearch = '';
+  let lastSearch = '', pickedAddr = null;
   async function searchAddress(t) {
     const list = $('pick-results'), info = $('pick-info');
     list.replaceChildren(); list.hidden = true;
     info.textContent = T('Caut adresa…');
-    const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=0&limit=5&countrycodes=dk&accept-language=da'
+    const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countrycodes=dk&accept-language=da'
       + '&viewbox=9.4,56.5,10.9,55.8&q=' + encodeURIComponent(t);
     let res;
     try {
@@ -16920,7 +16998,10 @@ var qrcode = function() {
       res = await r.json();
     } catch (e) { info.textContent = T('Căutarea adresei nu merge acum ({0}). Atinge harta sau folosește GPS.', e.message); return; }
     if (!res.length) { info.textContent = T('Nu am găsit adresa. Scrie strada, numărul și orașul, de ex. Søndergade 1, 8000 Aarhus C.'); return; }
-    const pick = (x) => { list.hidden = true; if (ensureMap()) setPick(+x.lat, +x.lon, true); $('pick-info').textContent = x.display_name.split(', ').slice(0, 4).join(', ') + ' · ' + T('verifică pe hartă și mută punctul dacă e nevoie.'); };
+    const pick = (x) => {
+      list.hidden = true; if (ensureMap()) setPick(+x.lat, +x.lon, true);
+      const a = x.address || {}, town = a.city || a.town || a.village || a.suburb || '';
+      pickedAddr = a.road ? `${a.road}${a.house_number ? ' ' + a.house_number : ''}${a.postcode ? ', ' + a.postcode + (town ? ' ' + town : '') : ''}` : x.display_name.split(', ').slice(0, 2).join(' '); $('pick-info').textContent = x.display_name.split(', ').slice(0, 4).join(', ') + ' · ' + T('verifică pe hartă și mută punctul dacă e nevoie.'); };
     if (res.length === 1) { pick(res[0]); return; }
     for (const x of res) {
       const li = document.createElement('li'), b = document.createElement('button');
@@ -16950,7 +17031,7 @@ var qrcode = function() {
     $('start-error').hidden = true;
     store.set('tech', $('tech').value.trim());
     try {
-      enterSession(await api('/api/sessions', 'POST', { meterSerial: $('meter').value.trim(), technician: $('tech').value.trim(), gps }));
+      enterSession(await api('/api/sessions', 'POST', { meterSerial: $('meter').value.trim(), technician: $('tech').value.trim(), gps, address: $('addr').value.trim() }));
     } catch (e) { showError('start-error', e.message); needRegistry(e); }
   };
 
@@ -16963,7 +17044,7 @@ var qrcode = function() {
     $('start-error').hidden = true;
     const meter = $('meter').value.trim();
     if (!meter) { showError('start-error', 'Introdu sau scanează seria contorului.'); return; }
-    try { enterSession(await api('/api/check', 'POST', { meterSerial: meter, technician: $('tech').value.trim(), gps })); }
+    try { enterSession(await api('/api/check', 'POST', { meterSerial: meter, technician: $('tech').value.trim(), gps, address: $('addr').value.trim() })); }
     catch (e) { showError('start-error', e.status === 404 ? 'Verificarea fără CALL există doar în varianta fără server.' : e.message); needRegistry(e); }
   };
   // no registry: point at the card where it is loaded
@@ -17589,14 +17670,19 @@ var qrcode = function() {
   // report: they cannot carry hourly data, and they may stem from the meter being switched
   // on before installation (heard on the road or in the van).
   const REPORT_MAX_AGE_H = 9;
-  const REPORT_VERSION = '0.1';   // the report's own layout; changes without a new app version
+  const REPORT_VERSION = '0.2';   // the report's own layout; changes without a new app version
   const isStale = (q) => q.ageMin !== null && q.ageMin !== undefined && q.ageMin > REPORT_MAX_AGE_H * 60;
 
   async function buildReport(s) {
     const staleCount = s.receivers.filter(isStale).length;
     const shown = s.receivers.filter((q) => !isStale(q));
+    // On paper only the links that can carry the data: the primary, and the others with at least
+    // the marginal signal and contact within the history window. The rest is counted, not listed.
+    const margDbm = (cfg.thresholds || { marginalDbm: -110 }).marginalDbm;
+    const useful = shown.filter((q) => q.relation === 'PRIMARY' || (q.bestRssi >= margDbm && q.age !== 'OLD'));
+    const weakHidden = shown.length - useful.length;
     const W = 1080, P = 56, big = document.createElement('canvas');
-    big.width = W; big.height = 4400;
+    big.width = W; big.height = 5400;
     const x = big.getContext('2d');
     let y = 0;
     const font = (weight, px) => { x.font = `${weight} ${px}px ${SANS}`; };
@@ -17612,7 +17698,7 @@ var qrcode = function() {
     };
     const breaks = [];                          // places where a printed page may end (never inside a map or a line)
     let keep = false;                           // a heading stays with what follows it
-    const brk = () => { if (keep) { keep = false; return; } breaks.push(Math.round(y)); };
+    const brk = () => { if (keep) { keep = false; return; } breaks.push(Math.round(y) + 14); };   // below the descenders of the line above
     const section = (title) => { brk(); keep = true; y += 36; x.fillStyle = INK.light; x.fillRect(P, y, W - 2 * P, 2); y += 50; font(700, 30); text(title, P, y, INK.navy); y += 10; };
     const row = (label, value, color = INK.ink) => {
       brk();
@@ -17646,6 +17732,7 @@ var qrcode = function() {
     row(T('Data'), fmtTime(s.session.finishedUtc || s.session.startedUtc));
     row(T('Instalator'), s.session.technician);
     const g = s.session.gps;
+    if (s.session.address) row(T('Adresă'), s.session.address);
     row(T('Poziție'), g && g.lat !== null ? `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}` + (g.accuracyM ? ` (±${g.accuracyM} m)` : '') + (g.source === 'saved' ? ' · ' + T('salvată la vizita din {0}', fmtTime(g.savedUtc)) : '') : T('neînregistrată'));
     if (isCheck) {
       row(T('Auzit ultima dată'), s.check.lastSeenUtc ? `${fmtTime(s.check.lastSeenUtc)} (${ago(s.check.lastSeenUtc)})` : '–');
@@ -17662,10 +17749,28 @@ var qrcode = function() {
       row(T('Locul antenei'), ins.antennaType === 'internal' ? T('în contor') : levelText(ins.antennaPlace));
     }
 
+    if (!isCheck) {
+      // the El og syn fields, so the separate KMD form is not needed; the last two are filled by the app itself
+      const es = (ui.vvs && ui.vvs.meter === s.session.meterSerial && ui.vvs.es) || {};
+      const vals = Object.fromEntries(filledReadings().filter((r) => r.value).map((r) => [r.k, true]));
+      const all3 = ['E1', 'V1', 'HR'].every((k) => vals[k]);
+      const nPh = instPhotos.count(), nUnit = instPhotos.countOf('unit');
+      section(T('El og syn'));
+      const miss = (v) => v || T('necompletat');
+      row('Anlæg', miss(es.anlaeg), es.anlaeg ? INK.ink : INK.gray);
+      row('Vandvarmer', miss(es.vv), es.vv ? INK.ink : INK.gray);
+      if (es.unit || es.vv === 'Unit') row('Unit', miss(es.unit), es.unit ? INK.ink : INK.gray);
+      if (es.model) row('Model', es.model);
+      row('Hovedhaner lukket', miss(es.haner), es.haner ? INK.ink : INK.gray);
+      row('Plomberet', miss(es.plomb), es.plomb === 'Ja' ? INK.green : es.plomb ? INK.amber : INK.gray);
+      row(T('Cele 3 registre citite'), all3 ? T('Da: E1, V1 și HR') : T('Nu: lipsește {0}', ['E1', 'V1', 'HR'].filter((k) => !vals[k]).join(', ')), all3 ? INK.green : INK.amber);
+      row(T('Foto'), nPh ? T('Da: {0} poze', nPh) + (nUnit ? '' : ' · ' + T('fără vandvarmer / unit')) : T('Nu'), nPh && nUnit ? INK.green : INK.amber);
+    }
+
     y = await drawReadings(x, P, W, y, (t) => { section(t); return y; }, font, text);
     y = drawVvsSection(x, P, W, y, (t) => { section(t); return y; }, font, text);
 
-    const sm = { ...s, receivers: shown };
+    const sm = { ...s, receivers: useful };
     const mapCanvas = await reportMap(sm, W - 2 * P, 620);
     if (mapCanvas) {
       section(T('Hartă'));
@@ -17767,14 +17872,15 @@ var qrcode = function() {
 
     section(T('Receptoare'));
     const where = (q) => [q.siteName, q.address].filter(Boolean).join(', ');
-    const p1 = shown.find((q) => q.relation === 'PRIMARY');
+    const p1 = useful.find((q) => q.relation === 'PRIMARY');
     row(T('Receptor principal'), p1 ? [p1.serial, dbm(p1.bestRssi), where(p1)].filter(Boolean).join(' · ') : '–');
     const b = s.backup;
     const occasional = b && b.age && b.age !== 'CURRENT';
     row(T('Rezervă'), b ? [b.serial, dbm(b.bestRssi), T(RELATION_RO[b.redundancy] || 'site necunoscut'), b.siteName,
       occasional ? T('doar ocazional – nu contează ca redundanță') : null].filter(Boolean).join(' · ') : T('niciuna'), b && !occasional ? INK.ink : INK.gray);
     y += 16;
-    for (const q of shown.slice(0, 10)) {
+    for (const q of useful.slice(0, 12)) {
+      brk();
       y += 36; font(500, 23);
       const old = q.age === 'OLD', ageCol = q.age === 'CURRENT' ? INK.green : q.age === 'OCCASIONAL' ? INK.amber : INK.gray;
       text(q.serial, P, y, old ? INK.gray : INK.ink); text(dbm(q.bestRssi), P + 250, y, old ? INK.gray : INK.ink, 'right');
@@ -17785,7 +17891,12 @@ var qrcode = function() {
       font(500, 21);
       text((wrap(where(q) + (q.distanceM !== null ? ' · ' + meters(q.distanceM) : ''), W - 2 * P - 660)[0] || ''), P + 660, y, INK.gray);
     }
-    if (shown.length > 10) { y += 34; font(500, 20); text(T('… și încă {0}', shown.length - 10), P, y, INK.gray); }
+    if (useful.length > 12) { y += 34; font(500, 20); text(T('… și încă {0}', useful.length - 12), P, y, INK.gray); }
+    if (weakHidden) {
+      y += 36; font(600, 21);
+      for (const l of wrap(T('{0} alte legături sub {1} dBm sau fără contact de peste 8 ore nu sunt arătate: nu pot duce datele în siguranță.', weakHidden, margDbm), W - 2 * P)) { text(l, P, y, INK.gray); y += 30; }
+      y -= 30;
+    }
     if (staleCount) {
       y += 34; font(500, 20);
       text(T(staleCount === 1 ? '1 concentrator văzut ultima dată acum peste {1} ore nu este inclus în raport.' : '{0} concentratoare văzute ultima dată acum peste {1} ore nu sunt incluse în raport.', staleCount, REPORT_MAX_AGE_H), P, y, INK.gray);
@@ -17794,7 +17905,7 @@ var qrcode = function() {
     for (const l of wrap(limitsText(isCheck), W - 2 * P)) { y += 28; text(l, P, y, INK.gray); }
     if (instPhotos.count()) {
       section(T('Poze cu instalația'));
-      row('', instPhotos.count() === 1 ? T('1 poză pe pagina următoare') : T('{0} poze în paginile următoare: montaj și punere în funcțiune', instPhotos.count()));
+      row('', instPhotos.count() === 1 ? T('1 poză pe pagina următoare') : T('{0} poze în paginile următoare: montaj, punere în funcțiune și vandvarmer / unit', instPhotos.count()));
     }
     if (s.session.note) {
       section(T('Observații'));
@@ -18286,6 +18397,10 @@ var qrcode = function() {
     if (!check) {
       const n = instPhotos.count();
       rows.push({ ok: n > 0, label: T('Poze cu instalația'), sub: n === 1 ? T('1 poză') : n ? T('{0} poze', n) : T('Nicio poză încă.'), open: n ? async () => viewer.open(await instPhotos.files()) : null });
+      const nu = instPhotos.countOf('unit');
+      rows.push({ ok: nu > 0, label: T('Poza cu vandvarmer / unit'), sub: nu ? T('făcută') : T('plăcuța de tip: ce unitate e montată') });
+      const es = (ui.vvs && ui.vvs.es) || {}, esMiss = ['anlaeg', 'vv', 'haner', 'plomb'].filter((k) => !es[k]).length;
+      rows.push({ ok: !esMiss, label: T('Instalația (El og syn)'), sub: esMiss ? T('{0} câmpuri necompletate', esMiss) : elsynLine(es).replace(/^Installation: /, ''), open: () => { showView('align'); $('elsyn-card').scrollIntoView({ block: 'center' }); } });
       if (!internal) rows.push({ ok: !!lastPhoto, opt: true, label: T('Poza antenei'), sub: lastPhoto ? T('făcută') : T('opțională'), open: lastPhoto ? async () => viewer.open([{ name: T('Poza antenei'), blob: await canvasBlob(lastPhoto, 'image/jpeg') }]) : null });
     }
     const rd = (ui.readings || []).filter((r) => r.value);
@@ -18318,7 +18433,7 @@ var qrcode = function() {
   // stamped with meter, moment, time and place, kept with the session (IndexedDB) until the
   // report is made, and added to the PDF as history and proof of a correct installation.
   const instPhotos = (() => {
-    const MAX = 6, STAGES = { mount: 'La montaj', start: 'La punerea în funcțiune' }, FILE = { mount: 'montage', start: 'idrift' };
+    const MAX = 8, STAGES = { mount: 'La montaj', start: 'La punerea în funcțiune', unit: 'Vandvarmer / unit' }, FILE = { mount: 'montage', start: 'idrift', unit: 'unit' };
     let key = null, list = [], loading = null, asked = false;
     const keyOf = (s) => 'iph:' + (s.session.id || s.session.meterSerial);
     async function sync() {
@@ -18366,10 +18481,10 @@ var qrcode = function() {
         del.onclick = () => { if (!confirm(T('Ștergi poza?'))) return; URL.revokeObjectURL(p.url); list.splice(i, 1); keep(); draw(); renderLeave(); };
         li.append(img, cap, del); ul.append(li);
       });
-      const nm = list.filter((p) => p.stage === 'mount').length, ns = list.length - nm;
-      $('iphoto-n').textContent = list.length ? T('({0} la montaj, {1} la punerea în funcțiune)', nm, ns) : '';
+      const nm = list.filter((p) => p.stage === 'mount').length, ns = list.filter((p) => p.stage === 'start').length, nu = list.filter((p) => p.stage === 'unit').length;
+      $('iphoto-n').textContent = list.length ? T('({0} la montaj, {1} la punerea în funcțiune, {2} vandvarmer/unit)', nm, ns, nu) : '';
       $('iphoto-card').classList.toggle('need', !list.length && !!S && S.session.status !== 'CHECK' && S.session.status !== 'ACTIVE');
-      for (const id of ['iphoto-mount', 'iphoto-start']) $(id).parentElement.classList.toggle('disabled', list.length >= MAX);
+      for (const id of ['iphoto-mount', 'iphoto-start', 'iphoto-unit']) $(id).parentElement.classList.toggle('disabled', list.length >= MAX);
     }
     async function add(file, stage) {
       if (!file || !S) return;
@@ -18389,6 +18504,7 @@ var qrcode = function() {
     }
     $('iphoto-mount').onchange = (ev) => { const f = ev.target.files[0]; ev.target.value = ''; add(f, 'mount'); };
     $('iphoto-start').onchange = (ev) => { const f = ev.target.files[0]; ev.target.value = ''; add(f, 'start'); };
+    $('iphoto-unit').onchange = (ev) => { const f = ev.target.files[0]; ev.target.value = ''; add(f, 'unit'); };
     return {
       // while measuring: under the installation card; at the end: in the report card, above "save"
       place(s, kind) {
@@ -18403,16 +18519,17 @@ var qrcode = function() {
         draw();
       },
       count: () => list.length,
+      countOf: (st) => list.filter((p) => p.stage === st).length,
       async files() {
         await sync();
-        const name = { mount: T('La montaj'), start: T('La punerea în funcțiune') };
+        const name = { mount: T('La montaj'), start: T('La punerea în funcțiune'), unit: T('Vandvarmer / unit') };
         return list.map((p, i) => ({ name: `${name[p.stage]} ${i + 1}`, blob: p.blob }));
       },
       async pages() {
         await sync();
         const out = [];
-        for (const st of ['mount', 'start']) {
-          list.filter((q) => q.stage === st).forEach((p, k, arr) => out.push(p));
+        for (const st of ['mount', 'start', 'unit']) {
+          list.filter((q) => q.stage === st).forEach((p) => out.push(p));
         }
         const res = [];
         for (const p of out) {
@@ -18428,8 +18545,12 @@ var qrcode = function() {
       // asked once per session before a report is saved without any installation photo
       async ask(then) {
         await sync();
-        if (asked || list.length || !S || S.session.status === 'CHECK') { then(); return; }
+        const noUnit = !list.some((p) => p.stage === 'unit');
+        if (asked || (list.length && !noUnit) || !S || S.session.status === 'CHECK') { then(); return; }
         asked = true;
+        $('iask-title').textContent = T(list.length ? 'Lipsește poza cu vandvarmer / unit' : 'Nu ai nicio poză cu instalația');
+        $('iask-text').textContent = T(list.length ? 'Poza cu plăcuța de tip arată ce unitate e montată la adresă. Fă una înainte de raport.'
+          : 'Pozele de la montaj și de la punerea în funcțiune arată cum a fost lăsată instalația. Fă cel puțin una înainte de raport, și una cu vandvarmer / unit.');
         $('iphoto-ask').hidden = false;
         $('iask-no').onclick = () => { $('iphoto-ask').hidden = true; then(); };
         $('iask-yes').onclick = () => {
@@ -18879,8 +19000,42 @@ var qrcode = function() {
     const lines = [];
     if (v.result && !(v.result === 'Fejl' && v.faults.length)) lines.push(v.result);
     for (const f of VT.faults) if (v.faults.includes(f)) lines.push(VT.faultPrefix + f);
+    const inst = elsynLine(v.es);
+    if (inst) lines.push(inst);
     if (v.comment && v.comment.trim()) lines.push(VT.commentPrefix + v.comment.trim().replace(/\s+/g, ' '));
     return lines.join('\n');
+  }
+  const ES = { anlaeg: ['Direkte', 'Indirekte', 'Direkte med bladesløjfe'], vv: ['Veksler', 'Beholder', 'Unit'],
+    unit: ['APV', 'Gemina Termix', 'Hoval', 'Metrotherm', 'Redan', 'Wavin'], yn: ['Ja', 'Nej'] };
+  function elsynState() {
+    const v = vvsState();
+    if (!v.es) v.es = { anlaeg: null, vv: null, unit: null, model: '', haner: null, plomb: null };
+    return v.es;
+  }
+  // one line in Ny aktivitet, never with the result words the robot looks for
+  function elsynLine(es) {
+    if (!es) return '';
+    const p = [];
+    if (es.anlaeg) p.push('Anlæg ' + es.anlaeg);
+    if (es.vv) p.push('Vandvarmer ' + es.vv);
+    if (es.unit) p.push('Unit ' + es.unit);
+    if (es.model && es.model.trim()) p.push('Model ' + es.model.trim().replace(/\s+/g, ' '));
+    if (es.haner) p.push('Hovedhaner lukket ' + es.haner);
+    if (es.plomb) p.push('Plomberet ' + es.plomb);
+    return p.length ? 'Installation: ' + p.join(', ') : '';
+  }
+  function renderElsyn() {
+    if (!S) return;
+    $('elsyn-card').hidden = S.session.status === 'CHECK';
+    const es = elsynState(), save = () => { store.set('ui', ui); renderElsyn(); renderVvs(); vvsQueueTouch(); };
+    const one = (id, key, opts) => chipRow($(id), opts.map((o) => [o, o]), es[key], (o) => { es[key] = es[key] === o ? null : o; save(); });
+    one('ch-es-anlaeg', 'anlaeg', ES.anlaeg); one('ch-es-vv', 'vv', ES.vv); one('ch-es-unit', 'unit', ES.unit);
+    one('ch-es-haner', 'haner', ES.yn); one('ch-es-plomb', 'plomb', ES.yn);
+    const showUnit = !es.vv || es.vv === 'Unit';      // brand row only matters for a unit
+    $('ch-es-unit').hidden = !showUnit; $('ch-es-unit').previousElementSibling.hidden = !showUnit;
+    if (!showUnit && es.unit) es.unit = null;
+    if (document.activeElement !== $('es-model')) $('es-model').value = es.model || '';
+    $('es-model').onchange = () => { es.model = $('es-model').value.trim().slice(0, 60); save(); };
   }
   const vvsReady = (v) => !!(v.result || v.faults.length) && !!v.status;
   function renderVvs() {
@@ -18947,6 +19102,7 @@ var qrcode = function() {
     if (!e) { e = { id, meter: String(S.session.meterSerial), created: new Date().toISOString(), files: [], state: 'pending' }; q.unshift(e); }
     if (e.state === 'sent' && (fileName || vvsText(v) !== e.text || v.status !== e.status)) e.state = 'pending';   // changed after sending
     e.text = vvsText(v); e.status = v.status; e.updated = new Date().toISOString();
+    if (S.session.address) e.addr = S.session.address;
     if (fileName && blob) {
       const ext = (fileName.match(/\.[a-z0-9]+$/i) || [''])[0].toLowerCase();
       const old = e.files.find((f) => f.toLowerCase().endsWith(ext));
@@ -19224,7 +19380,7 @@ var qrcode = function() {
   async function openVvs(items) {
     vvsOffer = items.map((e) => e.id);
     const first = items[0];
-    const work = b64url(new TextEncoder().encode(JSON.stringify(items.slice(0, 30).map((e) => ({ m: e.meter, s: e.status || '', t: e.text || '', id: e.id })))));
+    const work = b64url(new TextEncoder().encode(JSON.stringify(items.slice(0, 30).map((e) => ({ m: e.meter, s: e.status || '', t: e.text || '', id: e.id, a: e.addr || '' })))));
     const path = 'Home.aspx?liq=' + work;
     if (isAndroidApp() && openWay() !== 'tab') {
       location.href = androidUrl(openWay(), VVS_ORIGIN + '/' + path);
@@ -19264,7 +19420,7 @@ var qrcode = function() {
       for (const e of q.filter((x) => vvsOffer.includes(x.id))) {
         const files = [];
         for (const f of e.files) { try { const b = await kv.get('vvsf:' + e.id + ':' + f); if (b) files.push({ name: f, blob: b }); } catch { /* */ } }
-        items.push({ id: e.id, meter: e.meter, status: e.status, text: e.text, files });
+        items.push({ id: e.id, meter: e.meter, status: e.status, text: e.text, files, addr: e.addr || '' });
       }
       ev.source.postMessage({ liq: 'items', items }, VVS_ORIGIN);
     } else if (ev.data.liq === 'result') {
